@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_green_track/presentation/pages/authentication/LoginScreen.dart';
-import 'package:flutter_green_track/presentation/pages/dashboard_tpk/admin_dashboard_penyemaian.dart';
-import 'package:flutter_green_track/presentation/pages/dashboard_tpk/admin_dashboard_tpk_page.dart';
-import 'package:flutter_green_track/presentation/pages/intro/intro_page.dart';
-import 'package:flutter_green_track/presentation/pages/navigation/navigation_page.dart';
-import 'package:flutter_green_track/presentation/pages/navigation/penyemaian/page/page_bibit/page_detail_bibit.dart';
-import 'package:flutter_green_track/presentation/pages/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
+import 'package:flutter_green_track/routes.dart';
 import 'package:get/get.dart';
 
 void main() {
@@ -50,59 +44,8 @@ class MyApp extends StatelessWidget {
           background: Colors.white,
         ),
       ),
-      initialRoute: SplashScreen.routeName,
-      getPages: [
-        GetPage(
-          name: DaftarBibitPage.routeName,
-          page: () => const DaftarBibitPage(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: SplashScreen.routeName!,
-          page: () => SplashScreen(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: IntroScreen.routeName!,
-          page: () => const DaftarBibitPage(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: BibitDetailPage.routeName,
-          page: () => const BibitDetailPage(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: LoginScreen.routeName!,
-          page: () => LoginScreen(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: DaftarBibitPage.routeName,
-          page: () => const DaftarBibitPage(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: PenyemaianDashboardScreen.routeName!,
-          page: () => PenyemaianDashboardScreen(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: TPKDashboardScreen.routeName!,
-          page: () => TPKDashboardScreen(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: MainNavigationContainer.routeName,
-          page: () => const BibitDetailPage(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: BibitDetailPage.routeName,
-          page: () => const BibitDetailPage(),
-          transition: Transition.rightToLeft,
-        ),
-      ],
+      initialRoute: AppRoutes.splash,
+      getPages: AppRoutes.routes,
     );
   }
 }
