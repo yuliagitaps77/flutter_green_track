@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
+import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_pengisian.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_inventory_kayu.dart';
 import 'package:get/get.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_penyemaian.dart';
@@ -20,9 +23,19 @@ class AppRoutes {
   static const String navigation = '/navigation';
   static const String penyemaianDashboard = '/penyemaian-dashboard';
   static const String tpkDashboard = '/tpk-dashboard';
-
+  static const String resetPasswordPage = "/ubah-katasandi";
   // List of GetX route definitions
   static final List<GetPage> routes = [
+    GetPage(
+      name: UbahKataSandiScreen.routeName,
+      page: () => UbahKataSandiScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: InventoryKayuPage.routeName,
+      page: () => InventoryKayuPage(),
+      transition: Transition.fadeIn,
+    ),
     GetPage(
       name: HistoryPengisianPage.routeName,
       page: () => HistoryPengisianPage(),
@@ -48,6 +61,9 @@ class AppRoutes {
       page: () => LoginScreen(),
       transition: Transition.rightToLeft,
     ),
+    GetPage(
+        name: OtpVerificationScreen.routeName!,
+        page: () => OtpVerificationScreen(email: "yulia")),
     GetPage(
       name: daftarBibit,
       page: () => const DaftarBibitPage(),
