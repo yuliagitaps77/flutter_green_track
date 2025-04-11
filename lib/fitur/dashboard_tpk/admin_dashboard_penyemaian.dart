@@ -217,13 +217,6 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           // Handle plant care
         },
       },
-      {
-        'icon': Icons.analytics_rounded,
-        'title': 'Laporan\nBulanan',
-        'onTap': () {
-          // Handle scan history
-        },
-      }
     ];
 
     return Column(

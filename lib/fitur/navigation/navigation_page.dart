@@ -202,69 +202,83 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Main content
-          _buildBody(),
+      body: MediaQuery(
+        // Memastikan ukuran responsif dengan mempertimbangkan densitas piksel
+        data: MediaQuery.of(context).copyWith(
+          textScaleFactor: 1.0, // Mengunci skala teks
+        ),
+        child: Stack(
+          children: [
+            // Main content
+            _buildBody(),
 
-          // Bottom navigation bar on top of content but behind the FAB
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _buildCustomBottomNavBar(),
-          ),
-
-          // Scan button on top of everything
-          Positioned(
-            bottom: 40, // Position it above the nav bar
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _buildScanButton(),
+            // Bottom navigation bar on top of content but behind the FAB
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildCustomBottomNavBar(),
             ),
-          ),
-        ],
+
+            // Scan button on top of everything
+            Positioned(
+              bottom: 35, // Adjusted position to align with navigation bar
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _buildScanButton(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // Custom scan button
   Widget _buildScanButton() {
+    // Responsive sizing based on screen width
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double buttonSize = screenWidth < 360 ? 58 : 62;
+
     return AnimatedBuilder(
       animation: _scanBtnAnimController,
       builder: (context, child) {
         return GestureDetector(
           onTap: () => _handleScanPressed(),
           child: Container(
-            width: 65,
-            height: 65,
+            width: buttonSize,
+            height: buttonSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Color(0xFF4CAF50).withOpacity(0.3),
+                  color: Color(0xFF43A047).withOpacity(0.4),
                   blurRadius: _scanBtnGlowAnimation.value,
                   spreadRadius: _scanBtnGlowAnimation.value / 2,
                 ),
               ],
             ),
-            child: Transform.scale(
-              scale: _scanBtnScaleAnimation.value,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    offset: Offset(0, 2),
+                    blurRadius: 5,
                   ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                ],
+              ),
+              child: Icon(
+                Icons.qr_code_scanner_rounded,
+                color: Colors.white,
+                size: 28,
               ),
             ),
           ),
@@ -334,37 +348,44 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
   }
 
   Widget _buildCustomBottomNavBar() {
-    // Get labels based on user role
+    // Get labels based on user role with shorter text
     final List<String> labels = widget.userRole == UserRole.adminPenyemaian
-        ? ['Dashboard', 'Bibit', '', 'Riwayat', 'Lainnya']
-        : ['Dashboard', 'Inventory', '', 'Riwayat', 'Lainnya'];
+        ? ['Beranda', 'Bibit', '', 'Riwayat', 'Aktivitas']
+        : ['Beranda', 'Inventory Kayu', '', 'Riwayat', 'Aktivitas'];
 
     // Get icons based on user role
     final List<IconData> icons = widget.userRole == UserRole.adminPenyemaian
         ? [
-            Icons.dashboard_rounded,
+            Icons.home_rounded,
             Icons.forest_rounded,
-            Icons.qr_code_scanner_rounded, // Placeholder for scan button space
+            Icons.qr_code_scanner_rounded,
             Icons.history_rounded,
             Icons.menu_rounded,
           ]
         : [
-            Icons.dashboard_rounded,
+            Icons.home_rounded,
             Icons.inventory_2_rounded,
-            Icons.qr_code_scanner_rounded, // Placeholder for scan button space
+            Icons.qr_code_scanner_rounded,
             Icons.history_rounded,
             Icons.menu_rounded,
           ];
 
+    // Responsive sizing based on screen width
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double navItemWidth =
+        (screenWidth - 60) / 4; // Account for scan button gap
+    final double iconSize = screenWidth < 360 ? 20 : 22;
+    final double fontSize = screenWidth < 360 ? 10 : 11;
+
     return Container(
-      height: 80,
+      height: 75, // Slightly reduced height
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
-            offset: Offset(0, -5),
+            offset: Offset(0, -2),
           ),
         ],
         borderRadius: BorderRadius.only(
@@ -381,8 +402,8 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
             right: 0,
             child: Center(
               child: Container(
-                width: 75,
-                height: 30,
+                width: 70,
+                height: 28,
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.only(
@@ -396,7 +417,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
           // Navigation items
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(5, (index) {
               // Skip the middle button (scan) in the row
               if (index == 2) {
@@ -410,51 +431,48 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
                 return InkWell(
                   onTap: () => navigationController.changePage(index),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    margin: EdgeInsets.only(top: 10),
+                    width: navItemWidth,
+                    padding: EdgeInsets.symmetric(vertical: 5),
+                    margin: EdgeInsets.only(top: 5),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Color(0xFF4CAF50).withOpacity(0.1)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Animated icon
-                        // Animated icon
-                        AnimatedContainer(
-                          duration: Duration(milliseconds: 300),
-                          curve: Curves.elasticOut,
-                          transform: isSelected
-                              ? (Matrix4.identity()
-                                ..scale(
-                                    1.2)) // Perbaiki penggunaan cascade operator
-                              : Matrix4.identity(),
-                          child: Icon(
-                            icons[
-                                index], // Pastikan list icons telah dideklarasikan
-                            color: isSelected
-                                ? Color(0xFF2E7D32)
-                                : Colors.grey[600],
-                            size: 24,
-                          ),
+                        // Animated icon with simplified animation
+                        Icon(
+                          icons[index],
+                          color:
+                              isSelected ? Color(0xFF2E7D32) : Colors.grey[600],
+                          size: iconSize,
                         ),
 
-                        SizedBox(height: 4),
-                        // Text label
-                        Text(
-                          labels[index],
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? Color(0xFF2E7D32)
-                                : Colors.grey[600],
+                        const SizedBox(height: 4),
+
+                        // Text label with FittedBox for responsive sizing
+                        if (labels[index].isNotEmpty) // Skip empty labels
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              labels[index],
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Color(0xFF2E7D32)
+                                    : Colors.grey[600],
+                              ),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

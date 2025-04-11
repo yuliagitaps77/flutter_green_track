@@ -41,18 +41,6 @@ class TPKDashboardController extends GetxController {
         'onTap': () => handleAction(2),
         'highlight': false,
       },
-      {
-        'icon': Icons.calendar_month_rounded,
-        'title': 'Jadwal\nPengiriman',
-        'onTap': () => handleAction(3),
-        'highlight': false,
-      },
-      {
-        'icon': Icons.analytics_rounded,
-        'title': 'Laporan\nTPK',
-        'onTap': () => handleAction(4),
-        'highlight': false,
-      },
     ]);
   }
 
