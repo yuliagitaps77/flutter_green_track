@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/jadwal_perawatan/jadwal_perawatan_page.dart';
@@ -354,6 +355,7 @@ class _SplashScreenState extends State<SplashScreen>
   // Particle system for ambient effects
   List<Particle> _particles = [];
   late AnimationController _particleController;
+  final AuthController _authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -442,12 +444,15 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseController.repeat(reverse: false);
     _particleController.repeat();
 
-    // If user is already logged in, navigate automatically after animation
-    if (widget.isUserAlreadyLogin) {
-      Timer(Duration(seconds: 3), () {
-        _navigateToIntro();
-      });
-    }
+    // Check authentication status after animation completes
+    Future.delayed(Duration(seconds: 2), () {
+      if (_authController.isLoggedIn) {
+        // User is already logged in, auth controller will handle navigation
+      } else {
+        // Navigate to login screen
+        Get.offAllNamed('/login');
+      }
+    });
   }
 
   void _generateParticles() {

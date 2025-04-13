@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:get/get.dart';
-import '../../controllers/authentication/authentication_controller.dart';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
+import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
+import 'package:get/get.dart';
 import 'dart:math' as math;
 
 class LoginScreen extends StatefulWidget {
@@ -19,6 +24,12 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController passwordController = TextEditingController();
   final RxBool isPasswordVisible = false.obs;
 
+  // Controller untuk loading state lokal
+  final RxBool isLocalLoading = false.obs;
+
+  // Reference ke AuthController untuk login
+  late final AuthController _authController;
+
   late AnimationController _backgroundAnimController;
   late AnimationController _formAnimController;
   late Animation<double> _formAnimation;
@@ -26,6 +37,9 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+
+    // Initialize auth controller
+    _initAuthController();
 
     _backgroundAnimController = AnimationController(
       vsync: this,
@@ -43,6 +57,23 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     _formAnimController.forward();
+  }
+
+  // Initialize auth controller dengan pengecekan jika sudah ada
+  void _initAuthController() {
+    try {
+      if (Get.isRegistered<AuthController>()) {
+        _authController = Get.find<AuthController>();
+        print('AuthController ditemukan');
+      } else {
+        print('Mendaftarkan AuthController baru');
+        _authController = Get.put(AuthController(), permanent: true);
+      }
+    } catch (e) {
+      print('Error saat inisialisasi AuthController: $e');
+      // Fall back to creating a new instance if there's an issue
+      _authController = Get.put(AuthController(), permanent: true);
+    }
   }
 
   @override
@@ -144,6 +175,27 @@ class _LoginScreenState extends State<LoginScreen>
 
                         Spacer(),
 
+                        // Obx widget untuk menampilkan loading indicator saat sedang login
+                        Obx(() => isLocalLoading.value ||
+                                _authController.isLoading.value
+                            ? Column(
+                                children: [
+                                  CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF4CAF50)),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'Proses login...',
+                                    style: TextStyle(
+                                        color: Color(0xFF4CAF50),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500),
+                                  )
+                                ],
+                              )
+                            : SizedBox.shrink()),
+
                         SizedBox(height: 20),
                       ],
                     ),
@@ -208,8 +260,6 @@ class _LoginScreenState extends State<LoginScreen>
             },
           ),
         ),
-
-        // Floating leaves
       ],
     );
   }
@@ -246,6 +296,8 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           child: TextField(
             controller: emailController,
+            keyboardType:
+                TextInputType.emailAddress, // Ensure proper keyboard type
             decoration: InputDecoration(
               hintText: "Email",
               prefixIcon: Icon(
@@ -310,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen>
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: _handleForgotPassword,
             child: Text(
               "Lupa Password?",
               style: TextStyle(
@@ -325,22 +377,7 @@ class _LoginScreenState extends State<LoginScreen>
 
         // Login button with animation
         GestureDetector(
-          onTap: () {
-            final email = emailController.text.trim().toLowerCase();
-
-            // Role-based navigation contoh
-            if (email.contains('penyemaian')) {
-              // Login sebagai Admin Penyemaian
-              Get.off(() => MainNavigationContainer(
-                    userRole: UserRole.adminPenyemaian,
-                  ));
-            } else {
-              // Login sebagai Admin TPK (default)
-              Get.off(() => MainNavigationContainer(
-                    userRole: UserRole.adminTPK,
-                  ));
-            }
-          },
+          onTap: _handleLogin,
           child: Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 18),
@@ -387,5 +424,91 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       ],
     );
+  }
+
+  // Handle login button press
+  void _handleLogin() async {
+    // Set loading state
+    isLocalLoading.value = true;
+
+    try {
+      // Validate inputs
+      String email = emailController.text.trim();
+      String password = passwordController.text.trim();
+
+      if (email.isEmpty || password.isEmpty) {
+        Get.snackbar('Error', 'Email dan password harus diisi',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white);
+        return;
+      }
+
+      // Debugging
+      print('Attempting login with email: $email');
+
+      // Attempt login
+      bool success = await _authController.login(email, password);
+
+      // Handling berdasarkan hasil login
+      if (success) {
+        print('Login successful');
+
+        // Tambahan: Cek role dan navigasi ke halaman yang sesuai
+        final role = _authController.userRole.value;
+
+        print(
+            'User role: ${role == UserRole.adminTPK ? "Admin TPK" : "Admin Penyemaian"}');
+
+        // Navigate to the appropriate screen
+        Get.offAll(() => MainNavigationContainer(
+              userRole: role,
+            ));
+      } else {
+        print('Login failed');
+        // AuthController sudah menampilkan snackbar error
+      }
+    } catch (e) {
+      print('Unexpected error during login: $e');
+      Get.snackbar('Error', 'Terjadi kesalahan: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    } finally {
+      // Reset loading state
+      isLocalLoading.value = false;
+    }
+  }
+
+  // Handle forgot password
+  void _handleForgotPassword() {
+    String email = emailController.text.trim();
+
+    if (email.isEmpty) {
+      Get.snackbar('Error', 'Masukkan email Anda terlebih dahulu',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return;
+    }
+
+    // Set loading state
+    isLocalLoading.value = true;
+
+    // Panggil fungsi reset password
+    _authController.resetPassword(email).then((success) {
+      if (success) {
+        // Feedback sukses sudah ditampilkan di AuthController
+      }
+    }).catchError((error) {
+      print('Error resetting password: $error');
+      Get.snackbar('Error', 'Terjadi kesalahan saat reset password',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }).whenComplete(() {
+      // Reset loading state
+      isLocalLoading.value = false;
+    });
   }
 }

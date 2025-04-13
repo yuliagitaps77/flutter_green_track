@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/admingenerator/admin_generator.dart';
 import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
@@ -26,6 +27,11 @@ class AppRoutes {
   static const String resetPasswordPage = "/ubah-katasandi";
   // List of GetX route definitions
   static final List<GetPage> routes = [
+    GetPage(
+      name: AdminGeneratorPage.routeName,
+      page: () => AdminGeneratorPage(),
+      transition: Transition.fadeIn,
+    ),
     GetPage(
       name: UbahKataSandiScreen.routeName,
       page: () => UbahKataSandiScreen(),

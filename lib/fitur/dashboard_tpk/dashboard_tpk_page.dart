@@ -9,11 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:math' as math;
 
-enum UserRole {
-  adminPenyemaian,
-  adminTPK,
-}
-
 // Base Dashboard Controller with common functionality
 abstract class BaseDashboardController extends GetxController {
   var selectedIndex = 0.obs;

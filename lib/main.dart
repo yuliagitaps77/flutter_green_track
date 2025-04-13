@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/routes.dart';
+import 'package:flutter_green_track/services/firebase_init.dart';
 import 'package:get/get.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await FirebaseInitializer.initialize();
+
   runApp(MyApp());
 }
 
