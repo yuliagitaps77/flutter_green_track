@@ -1,31 +1,6 @@
-// Define user roles for the app
-enum UserRole {
-  adminTPK,
-  adminPenyemaian,
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Convert UserRole enum to string for storage
-String userRoleToString(UserRole role) {
-  switch (role) {
-    case UserRole.adminTPK:
-      return 'adminTPK';
-    case UserRole.adminPenyemaian:
-      return 'adminPenyemaian';
-    default:
-      return 'adminTPK'; // Default role
-  }
-}
-
-// Convert string back to UserRole enum
-UserRole stringToUserRole(String roleStr) {
-  switch (roleStr) {
-    case 'adminPenyemaian':
-      return UserRole.adminPenyemaian;
-    case 'adminTPK':
-    default:
-      return UserRole.adminTPK;
-  }
-}
+enum UserRole { adminPenyemaian, adminTPK }
 
 class UserModel {
   final String id;
@@ -42,42 +17,42 @@ class UserModel {
     required this.photoUrl,
   });
 
-  // Convert user model to JSON for storage
+  // Convert Firestore document to UserModel
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      id: doc.id,
+      name: data['nama_lengkap'] ?? '',
+      email: data['email'] ?? '',
+      role: data['role']?.contains('admin_penyemaian') == true
+          ? UserRole.adminPenyemaian
+          : UserRole.adminTPK,
+      photoUrl: data['photo_url'] ?? '',
+    );
+  }
+
+  // Convert UserModel to JSON for SharedPreferences
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
       'email': email,
-      'role': userRoleToString(role),
+      'role':
+          role == UserRole.adminPenyemaian ? 'admin_penyemaian' : 'admin_tpk',
       'photoUrl': photoUrl,
     };
   }
 
-  // Create user model from JSON
+  // Create UserModel from JSON (SharedPreferences)
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      role: stringToUserRole(json['role'] ?? 'adminTPK'),
+      role: json['role'] == 'admin_penyemaian'
+          ? UserRole.adminPenyemaian
+          : UserRole.adminTPK,
       photoUrl: json['photoUrl'] ?? '',
-    );
-  }
-
-  // Create a copy of the user with some updated fields
-  UserModel copyWith({
-    String? id,
-    String? name,
-    String? email,
-    UserRole? role,
-    String? photoUrl,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      role: role ?? this.role,
-      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

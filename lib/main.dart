@@ -1,8 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/routes.dart';
 import 'package:get/get.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  // Register global controllers
+  Get.put(AuthenticationController());
+
   runApp(MyApp());
 }
 

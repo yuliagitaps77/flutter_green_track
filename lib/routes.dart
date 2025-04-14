@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/admin_generator.dart';
 import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
@@ -24,8 +25,14 @@ class AppRoutes {
   static const String penyemaianDashboard = '/penyemaian-dashboard';
   static const String tpkDashboard = '/tpk-dashboard';
   static const String resetPasswordPage = "/ubah-katasandi";
+  static const String halamanBuatAkun = "/admin_akub";
+
   // List of GetX route definitions
   static final List<GetPage> routes = [
+    GetPage(
+      name: halamanBuatAkun,
+      page: () => AdminAccountCreatorScreen(),
+    ),
     GetPage(
       name: UbahKataSandiScreen.routeName,
       page: () => UbahKataSandiScreen(),

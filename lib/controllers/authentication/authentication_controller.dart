@@ -1,14 +1,16 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/data/repositories/authentication_repository.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
+import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 enum LoginStatus { initial, loading, success, failure }
 
 class AuthenticationController extends GetxController {
-  final AuthenticationRepository repository = AuthenticationRepository();
+  final FirebaseService _firebaseService = FirebaseService();
 
   // Observable variables for form fields
   final emailController = TextEditingController();
@@ -47,11 +49,27 @@ class AuthenticationController extends GetxController {
   // Check if user is already logged in
   Future<void> checkLoggedInStatus() async {
     try {
-      final user = await repository.getCurrentUser();
-      if (user != null) {
-        currentUser.value = user;
+      // Check local storage first
+      final localUser = await _firebaseService.getLocalUser();
+      if (localUser != null) {
+        currentUser.value = localUser;
         // Navigate based on role if already logged in
-        _navigateBasedOnRole(user.role);
+        _navigateBasedOnRole(localUser.role);
+        return;
+      }
+
+      // Check Firebase Auth
+      final firebaseUser = _firebaseService.getCurrentFirebaseUser();
+      if (firebaseUser != null) {
+        // Get user details from Firestore
+        final userData = await _firebaseService.getUserData(firebaseUser.uid);
+        if (userData != null) {
+          currentUser.value = userData;
+          // Save user to local storage
+          await _firebaseService.saveUserLocally(userData);
+          // Navigate based on role
+          _navigateBasedOnRole(userData.role);
+        }
       }
     } catch (e) {
       print('Error checking login status: $e');
@@ -83,40 +101,52 @@ class AuthenticationController extends GetxController {
     try {
       loginStatus.value = LoginStatus.loading;
 
-      // In a real app, this would be an API call to login
-      // For demo, we'll just simulate a login based on email
-      await Future.delayed(
-          Duration(milliseconds: 800)); // Simulate network delay
-
-      UserRole role;
-
-      // Determine role based on email
-      if (email.contains('penyemaian')) {
-        role = UserRole.adminPenyemaian;
-      } else {
-        role = UserRole.adminTPK;
-      }
-
-      // Create a mock user
-      final user = UserModel(
-        id: '1',
-        name: email.split('@')[0],
-        email: email,
-        role: role,
-        photoUrl: '',
+      // Authenticate with Firebase
+      final userCredential = await _firebaseService.signInWithEmailAndPassword(
+        email,
+        password,
       );
 
-      // Store user in repository
-      await repository.setCurrentUser(user);
+      if (userCredential.user != null) {
+        // Get user data from Firestore
+        final userData =
+            await _firebaseService.getUserData(userCredential.user!.uid);
 
-      // Update current user
-      currentUser.value = user;
+        if (userData != null) {
+          // Save user locally
+          await _firebaseService.saveUserLocally(userData);
 
-      // Login successful
-      loginStatus.value = LoginStatus.success;
+          // Update current user
+          currentUser.value = userData;
 
-      // Navigate based on role
-      _navigateBasedOnRole(role);
+          // Login successful
+          loginStatus.value = LoginStatus.success;
+
+          // Navigate based on role
+          _navigateBasedOnRole(userData.role);
+        } else {
+          // User exists in Auth but not in Firestore
+          throw Exception('User data not found');
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      loginStatus.value = LoginStatus.failure;
+
+      // Handle specific Firebase Auth errors
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage.value = 'Email tidak terdaftar';
+          break;
+        case 'wrong-password':
+          errorMessage.value = 'Password salah';
+          break;
+        case 'invalid-credential':
+          errorMessage.value = 'Email atau password salah';
+          break;
+        default:
+          errorMessage.value = 'Login gagal: ${e.message}';
+      }
+      print('Login error: ${e.code} - ${e.message}');
     } catch (e) {
       loginStatus.value = LoginStatus.failure;
       errorMessage.value = 'Login gagal: ${e.toString()}';
@@ -127,10 +157,18 @@ class AuthenticationController extends GetxController {
   // Handle logout
   Future<void> logout() async {
     try {
-      await repository.logout();
+      // Sign out from Firebase
+      await _firebaseService.signOut();
+
+      // Clear local storage
+      await _firebaseService.removeLocalUser();
+
+      // Reset user state
       currentUser.value = null;
       resetForm();
-      Get.offAllNamed('/login'); // Navigate back to login screen
+
+      // Navigate back to login screen
+      Get.offAllNamed('/login');
     } catch (e) {
       print('Logout error: $e');
     }
@@ -138,17 +176,37 @@ class AuthenticationController extends GetxController {
 
   // Handle forgot password
   void forgotPassword() {
-    // Implement password recovery logic
-    print('Forgot password requested for: ${emailController.text}');
-    // For demo, just show a snackbar
-    Get.snackbar(
-      'Lupa Password',
-      'Link reset password telah dikirim ke email Anda',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green[100],
-      colorText: Colors.green[800],
-      duration: Duration(seconds: 3),
-    );
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Masukkan email Anda terlebih dahulu',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+      );
+      return;
+    }
+
+    // Send password reset email
+    FirebaseAuth.instance.sendPasswordResetEmail(email: email).then((_) {
+      Get.snackbar(
+        'Lupa Password',
+        'Link reset password telah dikirim ke email Anda',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[800],
+        duration: Duration(seconds: 3),
+      );
+    }).catchError((error) {
+      Get.snackbar(
+        'Error',
+        'Gagal mengirim link reset password: ${error.message}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+      );
+    });
   }
 
   // Navigate based on user role
