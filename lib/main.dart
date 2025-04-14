@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/admingenerator/admin_generator.dart';
 import 'package:flutter_green_track/routes.dart';
 import 'package:flutter_green_track/services/firebase_init.dart';
 import 'package:get/get.dart';
@@ -50,8 +51,10 @@ class MyApp extends StatelessWidget {
           background: Colors.white,
         ),
       ),
-      initialRoute: AppRoutes.splash,
+      //admin untuk
+      initialRoute: AdminGeneratorPage.routeName,
       getPages: AppRoutes.routes,
+      //AdminGeneratorPage()
     );
   }
 }
