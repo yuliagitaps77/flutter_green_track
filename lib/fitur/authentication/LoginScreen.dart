@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_penyemaian.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
-import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:get/get.dart';
 import '../../controllers/authentication/authentication_controller.dart';
 import 'dart:math' as math;
@@ -15,9 +11,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final RxBool isPasswordVisible = false.obs;
+  // Get reference to the authentication controller
+  final AuthenticationController controller =
+      Get.put(AuthenticationController());
 
   late AnimationController _backgroundAnimController;
   late AnimationController _formAnimController;
@@ -49,8 +45,6 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _backgroundAnimController.dispose();
     _formAnimController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
     super.dispose();
   }
 
@@ -245,7 +239,8 @@ class _LoginScreenState extends State<LoginScreen>
             ],
           ),
           child: TextField(
-            controller: emailController,
+            controller: controller.emailController,
+            keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: "Email",
               prefixIcon: Icon(
@@ -277,8 +272,8 @@ class _LoginScreenState extends State<LoginScreen>
             ],
           ),
           child: Obx(() => TextField(
-                controller: passwordController,
-                obscureText: !isPasswordVisible.value,
+                controller: controller.passwordController,
+                obscureText: !controller.isPasswordVisible.value,
                 decoration: InputDecoration(
                   hintText: "Password",
                   prefixIcon: Icon(
@@ -286,10 +281,9 @@ class _LoginScreenState extends State<LoginScreen>
                     color: Color(0xFF4CAF50),
                   ),
                   suffixIcon: GestureDetector(
-                    onTap: () =>
-                        isPasswordVisible.value = !isPasswordVisible.value,
+                    onTap: controller.togglePasswordVisibility,
                     child: Icon(
-                      isPasswordVisible.value
+                      controller.isPasswordVisible.value
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                       color: Color(0xFF757575),
@@ -304,13 +298,27 @@ class _LoginScreenState extends State<LoginScreen>
               )),
         ),
 
+        // Error message (if any)
+        Obx(() => controller.errorMessage.isNotEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  controller.errorMessage.value,
+                  style: TextStyle(
+                    color: Colors.red[700],
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            : SizedBox.shrink()),
+
         SizedBox(height: 10),
 
         // Forgot password link
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: controller.forgotPassword,
             child: Text(
               "Lupa Password?",
               style: TextStyle(
@@ -324,67 +332,66 @@ class _LoginScreenState extends State<LoginScreen>
         SizedBox(height: 30),
 
         // Login button with animation
-        GestureDetector(
-          onTap: () {
-            final email = emailController.text.trim().toLowerCase();
-
-            // Role-based navigation contoh
-            if (email.contains('penyemaian')) {
-              // Login sebagai Admin Penyemaian
-              Get.off(() => MainNavigationContainer(
-                    userRole: UserRole.adminPenyemaian,
-                  ));
-            } else {
-              // Login sebagai Admin TPK (default)
-              Get.off(() => MainNavigationContainer(
-                    userRole: UserRole.adminTPK,
-                  ));
-            }
-          },
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF66BB6A),
-                  Color(0xFF4CAF50),
-                  Color(0xFF388E3C),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF4CAF50).withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "MASUK",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    letterSpacing: 1,
+        Obx(() => GestureDetector(
+              onTap: controller.loginStatus.value == LoginStatus.loading
+                  ? null
+                  : controller.login,
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF66BB6A),
+                      Color(0xFF4CAF50),
+                      Color(0xFF388E3C),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF4CAF50).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 10),
-                Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
+                child: controller.loginStatus.value == LoginStatus.loading
+                    ? Center(
+                        child: SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "MASUK",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Icon(
+                            Icons.arrow_forward,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+              ),
+            )),
       ],
     );
   }

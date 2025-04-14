@@ -6,7 +6,7 @@ import 'package:flutter_green_track/fitur/history_pengisian/page_history_pengisi
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_inventory_kayu.dart';
 import 'package:get/get.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_penyemaian.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/intro/intro_page.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';

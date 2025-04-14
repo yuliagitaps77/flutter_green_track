@@ -1,3 +1,4 @@
+import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:get/get.dart';
 import '../../data/repositories/navigation_repository.dart';

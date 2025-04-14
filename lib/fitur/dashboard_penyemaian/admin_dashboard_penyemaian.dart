@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
-import 'package:flutter_green_track/fitur/jadwal_perawatan/jadwal_perawatan_page.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
-
-// Import shared widgets
 
 class PenyemaianDashboardScreen extends StatefulWidget {
   static String? routeName = "/PagePenyemaianDashboardScreen";
@@ -25,29 +22,10 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
   late Animation<double> _breathingAnimation;
   late AnimationController _menuAnimController;
   late Animation<double> _menuAnimation;
+
   // Controller for Penyemaian Dashboard
   final PenyemaianDashboardController controller =
       Get.put(PenyemaianDashboardController());
-
-  final List<FlSpot> growthSpots = [
-    FlSpot(0, 2.5),
-    FlSpot(1, 3.1),
-    FlSpot(2, 3.6),
-    FlSpot(3, 4.2),
-    FlSpot(4, 4.5),
-    FlSpot(5, 5.3),
-    FlSpot(6, 5.9),
-  ];
-
-  final List<FlSpot> scannedSpots = [
-    FlSpot(0, 5),
-    FlSpot(1, 12),
-    FlSpot(2, 8),
-    FlSpot(3, 18),
-    FlSpot(4, 10),
-    FlSpot(5, 15),
-    FlSpot(6, 20),
-  ];
 
   @override
   void initState() {
@@ -115,9 +93,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
                 // App bar with menu and profile
                 AppBarWidget(
                   onMenuTap: () => _menuAnimController.forward(),
-                  onProfileTap: () {
-                    // Handle profile tap
-                  },
+                  onProfileTap: () => controller.handleProfileTap(),
                 ),
 
                 // Dashboard content
@@ -132,12 +108,12 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
                           SizedBox(height: 20),
 
                           // Greeting section
-                          GreetingWidget(
-                            name: "Yulia Gita",
-                            role: "Admin Penyemaian",
-                            description:
-                                "Pantau perkembangan tanaman dan kelola informasi bibit dengan mudah!",
-                          ),
+                          Obx(() => GreetingWidget(
+                                name: controller.userProfile.value.name,
+                                role: controller.userProfile.value.role,
+                                description:
+                                    "Pantau perkembangan tanaman dan kelola informasi bibit dengan mudah!",
+                              )),
 
                           SizedBox(height: 25),
 
@@ -165,13 +141,13 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           ),
 
           // Menu overlay
-          SideMenuWidget(
-            name: "Yulia Gita",
-            role: "Admin Penyemaian",
-            menuItems: _getMenuItems(),
-            menuAnimation: _menuAnimation,
-            onClose: () => _menuAnimController.reverse(),
-          ),
+          Obx(() => SideMenuWidget(
+                name: controller.userProfile.value.name,
+                role: controller.userProfile.value.role,
+                menuItems: controller.getMenuItems(),
+                menuAnimation: _menuAnimation,
+                onClose: () => _menuAnimController.reverse(),
+              )),
         ],
       ),
     );
@@ -179,46 +155,6 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
 
   // Quick actions section
   Widget _buildQuickActions() {
-    // List of actions for Penyemaian Admin
-    List<Map<String, dynamic>> actions = [
-      {
-        'icon': Icons.qr_code_scanner_rounded,
-        'title': 'Scan\nBarcode',
-        'onTap': () {
-          // Handle scan barcode
-        },
-        'highlight': true, // Highlight main action
-      },
-      {
-        'icon': Icons.print_rounded,
-        'title': 'Cetak\nBarcode',
-        'onTap': () {
-          // Handle print barcode
-        },
-      },
-      {
-        'icon': Icons.forest_rounded,
-        'title': 'Daftar\nBibit',
-        'onTap': () {
-          // Handle view plants list
-        },
-      },
-      {
-        'icon': Icons.calendar_month_rounded,
-        'title': 'Jadwal\nRawat',
-        'onTap': () {
-          Get.to(PlantCareScheduleScreen());
-        },
-      },
-      {
-        'icon': Icons.history,
-        'title': 'Riwayat\nScan',
-        'onTap': () {
-          // Handle plant care
-        },
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,7 +173,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
             TextButton(
               onPressed: () {
                 // Show all actions in modal sheet
-                _showAllActions(actions);
+                _showAllActions(controller.actions);
               },
               child: Text(
                 "Lihat Semua",
@@ -252,41 +188,34 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         ),
         SizedBox(height: 15),
 
-        // Grid layout for action cards - Improved to handle varying text lengths
-        GridView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, // 3 items per row
-            childAspectRatio: 1.0, // Adjusted aspect ratio for better text fit
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: math.min(6, actions.length), // Max 6 items on dashboard
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            return MouseRegion(
-              onEnter: (_) {
-                setState(() {
-                  action['highlight'] = true; // Highlight the icon when hovered
-                });
-              },
-              onExit: (_) {
-                setState(() {
-                  action['highlight'] =
-                      false; // Remove highlight when mouse exits
-                });
-              },
-              child: ActionCardWidget(
-                icon: action['icon'],
-                title: action['title'],
-                onTap: action['onTap'],
-                highlight: action['highlight'] ?? false,
-                breathingAnimation: _breathingAnimation,
+        // Grid layout for action cards - Using Obx for reactivity
+        Obx(() => GridView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3, // 3 items per row
+                childAspectRatio:
+                    1.0, // Adjusted aspect ratio for better text fit
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
               ),
-            );
-          },
-        ),
+              itemCount: math.min(
+                  6, controller.actions.length), // Max 6 items on dashboard
+              itemBuilder: (context, index) {
+                final action = controller.actions[index];
+                return MouseRegion(
+                  onEnter: (_) => controller.handleHover(index, true),
+                  onExit: (_) => controller.handleHover(index, false),
+                  child: ActionCardWidget(
+                    icon: action['icon'],
+                    title: action['title'],
+                    onTap: action['onTap'],
+                    highlight: action['highlight'] ?? false,
+                    breathingAnimation: _breathingAnimation,
+                  ),
+                );
+              },
+            )),
       ],
     );
   }
@@ -327,30 +256,34 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(Get.context!).size.height * 0.5,
               ),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: BouncingScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1.1,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: actions.length,
-                itemBuilder: (context, index) {
-                  final action = actions[index];
-                  return ActionCardWidget(
-                    icon: action['icon'],
-                    title: action['title'],
-                    onTap: () {
-                      Get.back();
-                      action['onTap']();
+              child: Obx(() => GridView.builder(
+                    shrinkWrap: true,
+                    physics: BouncingScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 1.1,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: actions.length,
+                    itemBuilder: (context, index) {
+                      final action = actions[index];
+                      return MouseRegion(
+                        onEnter: (_) => controller.handleHover(index, true),
+                        onExit: (_) => controller.handleHover(index, false),
+                        child: ActionCardWidget(
+                          icon: action['icon'],
+                          title: action['title'],
+                          onTap: () {
+                            Get.back();
+                            action['onTap']();
+                          },
+                          highlight: action['highlight'] ?? false,
+                          breathingAnimation: _breathingAnimation,
+                        ),
+                      );
                     },
-                    highlight: action['highlight'] ?? false,
-                    breathingAnimation: _breathingAnimation,
-                  );
-                },
-              ),
+                  )),
             ),
           ],
         ),
@@ -378,28 +311,28 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           children: [
             // Plant Growth Card
             Expanded(
-              child: StatCardWidget(
-                title: "Pertumbuhan Bibit",
-                value: "+15%",
-                trend: "Bulan ini",
-                icon: Icons.trending_up_rounded,
-                spots: growthSpots,
-                color: Color(0xFF4CAF50),
-                breathingAnimation: _breathingAnimation,
-              ),
+              child: Obx(() => StatCardWidget(
+                    title: "Pertumbuhan Bibit",
+                    value: controller.pertumbuhanBibit.value,
+                    trend: controller.growthStatTrend.value,
+                    icon: Icons.trending_up_rounded,
+                    spots: controller.growthSpots,
+                    color: Color(0xFF4CAF50),
+                    breathingAnimation: _breathingAnimation,
+                  )),
             ),
             SizedBox(width: 15),
             // Scanned Plants Card
             Expanded(
-              child: StatCardWidget(
-                title: "Bibit Dipindai",
-                value: "87",
-                trend: "Minggu ini",
-                icon: Icons.qr_code_scanner_rounded,
-                spots: scannedSpots,
-                color: Color(0xFF66BB6A),
-                breathingAnimation: _breathingAnimation,
-              ),
+              child: Obx(() => StatCardWidget(
+                    title: "Bibit Dipindai",
+                    value: controller.bibitDipindai.value,
+                    trend: controller.scanStatTrend.value,
+                    icon: Icons.qr_code_scanner_rounded,
+                    spots: controller.scannedSpots,
+                    color: Color(0xFF66BB6A),
+                    breathingAnimation: _breathingAnimation,
+                  )),
             ),
           ],
         ),
@@ -420,26 +353,26 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           ),
           child: Column(
             children: [
-              SummaryItemWidget(
-                icon: Icons.forest_rounded,
-                title: "Total Bibit",
-                value: "1,245",
-                color: Color(0xFF4CAF50),
-              ),
+              Obx(() => SummaryItemWidget(
+                    icon: Icons.forest_rounded,
+                    title: "Total Bibit",
+                    value: controller.totalBibit.value,
+                    color: Color(0xFF4CAF50),
+                  )),
               Divider(height: 20),
-              SummaryItemWidget(
-                icon: Icons.nature_people_rounded,
-                title: "Bibit Siap Tanam",
-                value: "482",
-                color: Color(0xFF66BB6A),
-              ),
+              Obx(() => SummaryItemWidget(
+                    icon: Icons.nature_people_rounded,
+                    title: "Bibit Siap Tanam",
+                    value: controller.bibitSiapTanam.value,
+                    color: Color(0xFF66BB6A),
+                  )),
               Divider(height: 20),
-              SummaryItemWidget(
-                icon: Icons.notifications_rounded,
-                title: "Butuh Perhatian",
-                value: "23",
-                color: Color(0xFFFF9800),
-              ),
+              Obx(() => SummaryItemWidget(
+                    icon: Icons.notifications_rounded,
+                    title: "Butuh Perhatian",
+                    value: controller.bibitButuhPerhatian.value,
+                    color: Color(0xFFFF9800),
+                  )),
             ],
           ),
         ),
@@ -462,35 +395,22 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         ),
         SizedBox(height: 15),
 
-        // Activity items
-        ActivityItemWidget(
-          icon: Icons.qr_code_scanner_rounded,
-          title: "Scan Barcode Bibit Mahoni",
-          time: "Baru saja",
-          highlight: true,
-        ),
-        ActivityItemWidget(
-          icon: Icons.edit_rounded,
-          title: "Pembaruan Data Bibit Jati",
-          time: "2 jam yang lalu",
-        ),
-        ActivityItemWidget(
-          icon: Icons.print_rounded,
-          title: "Pencetakan 25 Barcode",
-          time: "Kemarin, 16:30",
-        ),
-        ActivityItemWidget(
-          icon: Icons.add_circle_outline_rounded,
-          title: "Pendaftaran 30 Bibit Baru",
-          time: "Kemarin, 14:15",
-        ),
+        // Activity items with Obx for reactivity
+        Obx(() => Column(
+              children: controller.recentActivities
+                  .map((activity) => ActivityItemWidget(
+                        icon: activity.icon,
+                        title: activity.title,
+                        time: activity.time,
+                        highlight: activity.highlight,
+                      ))
+                  .toList(),
+            )),
 
         // View all button
         Center(
           child: TextButton(
-            onPressed: () {
-              // Handle view all activities
-            },
+            onPressed: () => controller.viewAllActivities(),
             child: Text(
               "Lihat Semua",
               style: TextStyle(
@@ -503,51 +423,36 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
       ],
     );
   }
+}
 
-  // Get menu items for side menu
-  List<Map<String, dynamic>> _getMenuItems() {
-    return [
-      {
-        'icon': Icons.dashboard_rounded,
-        'title': "Dashboard",
-        'isActive': true,
-        'onTap': () {
-          _menuAnimController.reverse();
-        },
-      },
-      {
-        'icon': Icons.edit_note_rounded,
-        'title': "Update Informasi Bibit",
-        'onTap': () {
-          _menuAnimController.reverse();
-          // Handle update plant info
-        },
-      },
-      {
-        'icon': Icons.settings_rounded,
-        'title': "Pengaturan",
-        'onTap': () {
-          _menuAnimController.reverse();
-          // Handle settings
-        },
-      },
-      {
-        'icon': Icons.lock_outline_rounded,
-        'title': "Ubah Kata Sandi",
-        'onTap': () {
-          _menuAnimController.reverse();
-          // Handle change password
-        },
-      },
-      {
-        'icon': Icons.logout_rounded,
-        'title': "Logout",
-        'isDestructive': true,
-        'onTap': () {
-          _menuAnimController.reverse();
-          showLogoutConfirmation(context);
-        },
-      },
-    ];
-  }
+// This function would normally be in a separate file
+void showLogoutConfirmation(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Konfirmasi Logout"),
+        content: Text("Apakah Anda yakin ingin keluar dari aplikasi?"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+            },
+            child: Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              // Handle logout
+              // Get.offAllNamed('/login');
+            },
+            child: Text(
+              "Logout",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }
