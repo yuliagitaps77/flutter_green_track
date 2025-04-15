@@ -1,14 +1,15 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_green_track/admingenerator/admin_generator.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/routes.dart';
-import 'package:flutter_green_track/services/firebase_init.dart';
 import 'package:get/get.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
 
-  // Initialize Firebase
-  await FirebaseInitializer.initialize();
+  // Register global controllers
+  Get.put(AuthenticationController());
 
   runApp(MyApp());
 }
@@ -51,10 +52,8 @@ class MyApp extends StatelessWidget {
           background: Colors.white,
         ),
       ),
-      //admin untuk
       initialRoute: AppRoutes.splash,
       getPages: AppRoutes.routes,
-      //AdminGeneratorPage()
     );
   }
 }

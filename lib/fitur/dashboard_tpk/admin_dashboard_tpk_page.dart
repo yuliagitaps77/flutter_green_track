@@ -28,27 +28,6 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
   // Controller for TPK Dashboard
   final TPKDashboardController controller = Get.put(TPKDashboardController());
 
-  // Data for charts
-  final List<FlSpot> inventorySpots = [
-    FlSpot(0, 10),
-    FlSpot(1, 14),
-    FlSpot(2, 18),
-    FlSpot(3, 15),
-    FlSpot(4, 20),
-    FlSpot(5, 16),
-    FlSpot(6, 22),
-  ];
-
-  final List<FlSpot> revenueSpots = [
-    FlSpot(0, 5),
-    FlSpot(1, 8),
-    FlSpot(2, 10),
-    FlSpot(3, 15),
-    FlSpot(4, 18),
-    FlSpot(5, 14),
-    FlSpot(6, 20),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -79,6 +58,16 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
       parent: _menuAnimController,
       curve: Curves.easeOut,
     );
+
+    // Listen to menu state changes from controller
+    ever(controller.isMenuOpen, (bool isOpen) {
+      if (isOpen && _menuAnimController.status != AnimationStatus.completed) {
+        _menuAnimController.forward();
+      } else if (!isOpen &&
+          _menuAnimController.status != AnimationStatus.dismissed) {
+        _menuAnimController.reverse();
+      }
+    });
   }
 
   @override
@@ -91,92 +80,94 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Color(0xFFF5F9F5),
-                  Color(0xFFEDF7ED),
-                ],
-              ),
-            ),
-          ),
-
-          // Dashboard content
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // App bar with menu and profile
-                AppBarWidget(
-                  onMenuTap: () => _menuAnimController.forward(),
-                  onProfileTap: () {
-                    // Handle profile tap
-                  },
-                ),
-
-                // Dashboard content
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 20),
-
-                          // Greeting section
-                          GreetingWidget(
-                            name: "Fitri Meydayani",
-                            role: "Admin TPK",
-                            description:
-                                "Kelola inventori kayu dan jadwal pengiriman dengan mudah!",
-                          ),
-
-                          SizedBox(height: 25),
-
-                          // Quick action cards
-                          _buildQuickActions(),
-
-                          SizedBox(height: 25),
-
-                          // Statistics section
-                          _buildStatisticsSection(),
-
-                          SizedBox(height: 20),
-
-                          // Recent activities
-                          _buildRecentActivities(),
-
-                          SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
+      body: Obx(() => Stack(
+            children: [
+              // Background gradient
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      Color(0xFFF5F9F5),
+                      Color(0xFFEDF7ED),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // Floating Action Button
+              // Dashboard content
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // App bar with menu and profile
+                    AppBarWidget(
+                      onMenuTap: () => controller.toggleMenu(),
+                      onProfileTap: () => controller.handleProfileTap(),
+                    ),
 
-          // Menu overlay
-          SideMenuWidget(
-            name: "Fitri Meydayani",
-            role: "Admin TPK",
-            menuItems: _getMenuItems(),
-            menuAnimation: _menuAnimation,
-            onClose: () => _menuAnimController.reverse(),
-          ),
-        ],
-      ),
+                    // Dashboard content
+                    Expanded(
+                      child: controller.isLoading.value
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFF4CAF50)))
+                          : SingleChildScrollView(
+                              physics: BouncingScrollPhysics(),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(height: 20),
+
+                                    // Greeting section - using user profile from controller
+                                    Obx(() => GreetingWidget(
+                                          name:
+                                              controller.userProfile.value.name,
+                                          role:
+                                              controller.userProfile.value.role,
+                                          description:
+                                              "Kelola inventori kayu dan jadwal pengiriman dengan mudah!",
+                                        )),
+
+                                    SizedBox(height: 25),
+
+                                    // Quick action cards
+                                    _buildQuickActions(),
+
+                                    SizedBox(height: 25),
+
+                                    // Statistics section
+                                    _buildStatisticsSection(),
+
+                                    SizedBox(height: 20),
+
+                                    // Recent activities
+                                    _buildRecentActivities(),
+
+                                    SizedBox(height: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Menu overlay using controller's menu items
+              SideMenuWidget(
+                name: controller.userProfile.value.name,
+                role: controller.userProfile.value.role,
+                menuItems: controller.getMenuItems(),
+                menuAnimation: _menuAnimation,
+                onClose: () => controller.closeMenu(),
+              ),
+            ],
+          )),
     );
   }
 
@@ -228,12 +219,16 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
                   6, controller.actions.length), // Max 6 items on dashboard
               itemBuilder: (context, index) {
                 final action = controller.actions[index];
-                return ActionCardWidget(
-                  icon: action['icon'],
-                  title: action['title'],
-                  onTap: action['onTap'],
-                  highlight: action['highlight'] ?? false,
-                  breathingAnimation: _breathingAnimation,
+                return MouseRegion(
+                  onEnter: (_) => controller.handleHover(index, true),
+                  onExit: (_) => controller.handleHover(index, false),
+                  child: ActionCardWidget(
+                    icon: action['icon'],
+                    title: action['title'],
+                    onTap: action['onTap'],
+                    highlight: action['highlight'] ?? false,
+                    breathingAnimation: _breathingAnimation,
+                  ),
                 );
               },
             )),
@@ -241,7 +236,7 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
     );
   }
 
-// Show all actions in bottom sheet
+  // Show all actions in bottom sheet
   void _showAllActions(List<Map<String, dynamic>> actions) {
     Get.bottomSheet(
       Container(
@@ -289,15 +284,19 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
                     itemCount: actions.length,
                     itemBuilder: (context, index) {
                       final action = actions[index];
-                      return ActionCardWidget(
-                        icon: action['icon'],
-                        title: action['title'],
-                        onTap: () {
-                          Get.back();
-                          action['onTap']();
-                        },
-                        highlight: action['highlight'] ?? false,
-                        breathingAnimation: _breathingAnimation,
+                      return MouseRegion(
+                        onEnter: (_) => controller.handleHover(index, true),
+                        onExit: (_) => controller.handleHover(index, false),
+                        child: ActionCardWidget(
+                          icon: action['icon'],
+                          title: action['title'],
+                          onTap: () {
+                            Get.back();
+                            action['onTap']();
+                          },
+                          highlight: action['highlight'] ?? false,
+                          breathingAnimation: _breathingAnimation,
+                        ),
                       );
                     },
                   )),
@@ -310,7 +309,6 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
     );
   }
 
-  // Sh
   // Statistics section (specific to Admin TPK)
   Widget _buildStatisticsSection() {
     return Column(
@@ -329,28 +327,28 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           children: [
             // Inventory Card
             Expanded(
-              child: StatCardWidget(
-                title: "Inventory Kayu",
-                value: "876",
-                trend: "Minggu ini",
-                icon: Icons.inventory_2_rounded,
-                spots: inventorySpots,
-                color: Color(0xFF4CAF50),
-                breathingAnimation: _breathingAnimation,
-              ),
+              child: Obx(() => StatCardWidget(
+                    title: "Inventory Kayu",
+                    value: controller.totalWood.value,
+                    trend: controller.woodStatTrend.value,
+                    icon: Icons.inventory_2_rounded,
+                    spots: controller.inventorySpots,
+                    color: Color(0xFF4CAF50),
+                    breathingAnimation: _breathingAnimation,
+                  )),
             ),
             SizedBox(width: 15),
-            // Revenue Card
+            // Scanned Wood Card
             Expanded(
-              child: StatCardWidget(
-                title: "Kayui Dipindai",
-                value: "87",
-                trend: "Bulan ini",
-                icon: Icons.qr_code_scanner_rounded,
-                spots: revenueSpots,
-                color: Color(0xFF66BB6A),
-                breathingAnimation: _breathingAnimation,
-              ),
+              child: Obx(() => StatCardWidget(
+                    title: "Kayu Dipindai",
+                    value: controller.scannedWood.value,
+                    trend: controller.scanStatTrend.value,
+                    icon: Icons.qr_code_scanner_rounded,
+                    spots: controller.revenueSpots,
+                    color: Color(0xFF66BB6A),
+                    breathingAnimation: _breathingAnimation,
+                  )),
             ),
           ],
         ),
@@ -371,12 +369,19 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           ),
           child: Column(
             children: [
-              SummaryItemWidget(
-                icon: Icons.inventory_2_rounded,
-                title: "Total Kayu",
-                value: "876",
-                color: Color(0xFF4CAF50),
-              ),
+              Obx(() => SummaryItemWidget(
+                    icon: Icons.inventory_2_rounded,
+                    title: "Total Kayu",
+                    value: controller.totalWood.value,
+                    color: Color(0xFF4CAF50),
+                  )),
+              SizedBox(height: 10),
+              Obx(() => SummaryItemWidget(
+                    icon: Icons.fact_check_rounded,
+                    title: "Total Batch",
+                    value: controller.totalBatch.value,
+                    color: Color(0xFF66BB6A),
+                  )),
             ],
           ),
         ),
@@ -399,31 +404,40 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
         ),
         SizedBox(height: 15),
 
-        // Activity items - TPK specific activities
-        ActivityItemWidget(
-          icon: Icons.qr_code_scanner_rounded,
-          title: "Scan Barcode Kayu Jati",
-          time: "Baru saja",
-          highlight: true,
-        ),
+        // Activity items from controller
+        Obx(() {
+          if (controller.recentActivities.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  "Belum ada aktivitas terbaru",
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            );
+          }
 
-        ActivityItemWidget(
-          icon: Icons.inventory_2_rounded,
-          title: "Update Stok Kayu",
-          time: "Kemarin, 16:30",
-        ),
-        ActivityItemWidget(
-          icon: Icons.assignment_rounded,
-          title: "Laporan Bulanan Dibuat",
-          time: "Kemarin, 14:15",
-        ),
+          return Column(
+            children: controller.recentActivities
+                .take(3) // Show only 3 most recent activities
+                .map((activity) => ActivityItemWidget(
+                      icon: activity.icon,
+                      title: activity.title,
+                      time: activity.time,
+                      highlight: activity.highlight,
+                    ))
+                .toList(),
+          );
+        }),
 
         // View all button
         Center(
           child: TextButton(
-            onPressed: () {
-              // Handle view all activities
-            },
+            onPressed: () => controller.viewAllActivities(),
             child: Text(
               "Lihat Semua",
               style: TextStyle(
@@ -435,44 +449,5 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
         ),
       ],
     );
-  }
-
-  // Get menu items for side menu
-  List<Map<String, dynamic>> _getMenuItems() {
-    return [
-      {
-        'icon': Icons.dashboard_rounded,
-        'title': "Dashboard",
-        'isActive': true,
-        'onTap': () {
-          _menuAnimController.reverse();
-        },
-      },
-      {
-        'icon': Icons.settings_rounded,
-        'title': "Pengaturan",
-        'onTap': () {
-          _menuAnimController.reverse();
-          // Handle settings
-        },
-      },
-      {
-        'icon': Icons.lock_outline_rounded,
-        'title': "Ubah Kata Sandi",
-        'onTap': () {
-          _menuAnimController.reverse();
-          // Handle change password
-        },
-      },
-      {
-        'icon': Icons.logout_rounded,
-        'title': "Logout",
-        'isDestructive': true,
-        'onTap': () {
-          _menuAnimController.reverse();
-          showLogoutConfirmation(context);
-        },
-      },
-    ];
   }
 }
