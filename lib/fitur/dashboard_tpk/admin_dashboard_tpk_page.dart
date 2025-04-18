@@ -180,7 +180,7 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           children: [
             Text(
               "Aksi Cepat",
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF2E7D32),
@@ -196,14 +196,14 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
                 "Lihat Semua",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF4CAF50),
+                  color: const Color(0xFF4CAF50),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
         ),
-        SizedBox(height: 15),
+        const SizedBox(height: 15),
 
         // Grid layout for action cards - menggunakan Obx untuk reaktivitas
         Obx(() => GridView.builder(
@@ -425,9 +425,9 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
             children: controller.recentActivities
                 .take(3) // Show only 3 most recent activities
                 .map((activity) => ActivityItemWidget(
-                      icon: activity.icon,
-                      title: activity.title,
-                      time: activity.time,
+                      icon: activity.icon!,
+                      title: activity.namaAktivitas,
+                      time: activity.time ?? '',
                       highlight: activity.highlight,
                     ))
                 .toList(),
@@ -440,7 +440,7 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
             onPressed: () => controller.viewAllActivities(),
             child: Text(
               "Lihat Semua",
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF4CAF50),
                 fontWeight: FontWeight.w600,
               ),

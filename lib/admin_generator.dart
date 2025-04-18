@@ -1,5 +1,7 @@
 // File: admin/admin_account_creator_screen.dart
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -46,40 +48,7 @@ class _AdminAccountCreatorScreenState extends State<AdminAccountCreatorScreen> {
     super.dispose();
   }
 
-  // Load existing accounts
-  Future<void> _loadAccounts() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final QuerySnapshot snapshot = await _firestore.collection('akun').get();
-
-      setState(() {
-        _accounts = snapshot.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return {
-            'id': doc.id,
-            'nama_lengkap': data['nama_lengkap'] ?? 'Tidak ada nama',
-            'email': data['email'] ?? 'Tidak ada email',
-            'role': (data['role'] as List<dynamic>?)?.join(', ') ??
-                'Tidak ada role',
-          };
-        }).toList();
-      });
-    } catch (e) {
-      print('Error loading accounts: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat daftar akun')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Create new account
+// Create new account
   Future<void> _createAccount() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -88,6 +57,7 @@ class _AdminAccountCreatorScreenState extends State<AdminAccountCreatorScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final name = _nameController.text.trim();
+    final role = _selectedRole;
 
     setState(() {
       _isLoading = true;
@@ -105,12 +75,33 @@ class _AdminAccountCreatorScreenState extends State<AdminAccountCreatorScreen> {
       await _firestore.collection('akun').doc(userCredential.user!.uid).set({
         'email': email,
         'nama_lengkap': name,
-        'role': [_selectedRole],
+        'role': [role],
         'last_login': null,
         'kode_otp': '',
         'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
+        'dashboard': role == 'admin_penyemaian'
+            ? {
+                'total_bibit': 0,
+                'bibit_siap_tanam': 0,
+                'butuh_perhatian': 0,
+                'total_bibit_dipindai': 0,
+                'last_updated': FieldValue.serverTimestamp()
+              }
+            : {
+                'total_kayu': 0,
+                'total_kayu_dipindai': 0,
+                'total_batch': 0,
+                'last_updated': FieldValue.serverTimestamp()
+              }
       });
+
+      // Buat data dummy untuk akun baru berdasarkan role
+      if (role == 'admin_penyemaian') {
+        await _generateSimpleBibitData(userCredential.user!.uid, 20);
+      } else if (role == 'admin_tpk') {
+        await _generateSimpleKayuData(userCredential.user!.uid, 20);
+      }
 
       // Clear form
       _emailController.clear();
@@ -123,7 +114,7 @@ class _AdminAccountCreatorScreenState extends State<AdminAccountCreatorScreen> {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Akun berhasil dibuat'),
+          content: Text('Akun berhasil dibuat dengan data awal'),
           backgroundColor: Colors.green,
         ),
       );
@@ -317,6 +308,327 @@ class _AdminAccountCreatorScreenState extends State<AdminAccountCreatorScreen> {
           content: Text('Terjadi kesalahan: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _generateSimpleDummyAccounts() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Daftar akun dummy sederhana
+      final List<Map<String, dynamic>> dummyUsers = [
+        {
+          'email': 'superadmin@example.com',
+          'password': 'Admin123',
+          'nama_lengkap': 'Super Admin',
+          'role': ['admin_penyemaian', 'admin_tpk'],
+        },
+        {
+          'email': 'penyemaian@example.com',
+          'password': 'Admin123',
+          'nama_lengkap': 'Admin Penyemaian',
+          'role': ['admin_penyemaian'],
+        },
+        {
+          'email': 'tpk@example.com',
+          'password': 'Admin123',
+          'nama_lengkap': 'Admin TPK',
+          'role': ['admin_tpk'],
+        },
+      ];
+
+      for (final user in dummyUsers) {
+        try {
+          // Buat akun di Firebase Auth
+          UserCredential userCredential =
+              await _auth.createUserWithEmailAndPassword(
+            email: user['email'] as String,
+            password: user['password'] as String,
+          );
+
+          // Tambahkan data ke Firestore
+          await _firestore
+              .collection('akun')
+              .doc(userCredential.user!.uid)
+              .set({
+            'email': user['email'],
+            'nama_lengkap': user['nama_lengkap'],
+            'role': user['role'],
+            'last_login': null,
+            'kode_otp': '',
+            'created_at': FieldValue.serverTimestamp(),
+            'updated_at': FieldValue.serverTimestamp(),
+          });
+
+          // Buat data dashboard sederhana
+          if ((user['role'] as List<dynamic>).contains('admin_penyemaian')) {
+            await _generateSimpleBibitData(userCredential.user!.uid, 50);
+          }
+
+          if ((user['role'] as List<dynamic>).contains('admin_tpk')) {
+            await _generateSimpleKayuData(userCredential.user!.uid, 50);
+          }
+
+          print('Berhasil membuat akun: ${user['email']}');
+        } catch (e) {
+          print('Error membuat akun ${user['email']}: $e');
+          // Lanjutkan ke akun berikutnya jika terjadi error
+        }
+      }
+
+      // Refresh daftar akun setelah selesai
+      await _loadAccounts();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Akun dummy berhasil dibuat'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Error generating simple dummy accounts: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Terjadi kesalahan: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Fungsi untuk membuat data bibit sederhana
+// Fungsi untuk membuat data bibit sederhana dengan jadwal perawatan
+  Future<void> _generateSimpleBibitData(String userId, int count) async {
+    final jenisBibit = ['Mahoni', 'Jati', 'Sengon', 'Meranti', 'Eboni'];
+    final varietas = ['Lokal', 'Unggul', 'Hybrid'];
+    final kondisi = ['Baik', 'Butuh Perawatan', 'Siap Tanam'];
+    final Random random = Random();
+
+    // Jenis perawatan untuk jadwal
+    final List<String> jenisPerawatan = [
+      'Penyiraman',
+      'Pemupukan',
+      'Pengendalian Hama',
+      'Pemindahan Pot',
+      'Pemangkasan'
+    ];
+
+    // Untuk menghitung statistik
+    int totalBibit = 0;
+    int bibitSiapTanam = 0;
+    int butuhPerhatian = 0;
+    int totalBibitDipindai = 0;
+
+    // Buat data bibit sederhana
+    for (int i = 0; i < count; i++) {
+      final String namaBibit = jenisBibit[random.nextInt(jenisBibit.length)];
+      final String varietasBibit = varietas[random.nextInt(varietas.length)];
+      final String kondisiBibit = kondisi[random.nextInt(kondisi.length)];
+      final int usia = 1 + random.nextInt(24); // 1-24 bulan
+      final double tinggi = 10 + random.nextDouble() * 90; // 10-100 cm
+
+      final bibitRef = _firestore.collection('bibit').doc();
+
+      await bibitRef.set({
+        'id_user': userId,
+        'nama_bibit': namaBibit,
+        'varietas': varietasBibit,
+        'usia': usia,
+        'tinggi': tinggi,
+        'jenis_bibit': 'Pohon',
+        'kondisi': kondisiBibit,
+        'status_hama': 'Tidak Ada',
+        'media_tanam': 'Tanah',
+        'nutrisi': 'NPK',
+        'asal_bibit': 'Lokal',
+        'produktivitas': random.nextDouble() * 5,
+        'catatan': 'Bibit $namaBibit varietas $varietasBibit',
+        'created_at': FieldValue.serverTimestamp(),
+        'tanggal_pembibitan': Timestamp.fromDate(
+            DateTime.now().subtract(Duration(days: random.nextInt(365)))),
+        'gambar_image': [
+          'https://via.placeholder.com/150?text=Bibit+$namaBibit',
+        ],
+        'barcode':
+            'BT${DateTime.now().millisecondsSinceEpoch}${random.nextInt(1000)}',
+        'url_bibit': 'https://yourapp.com/bibit/${bibitRef.id}',
+        'lokasi_tanam': {
+          'lat': -6.2 + random.nextDouble(),
+          'lng': 106.8 + random.nextDouble(),
+          'alamat': 'Lokasi Tanam Sample',
+        },
+        'updated_at': FieldValue.serverTimestamp()
+      });
+
+      // Buat jadwal perawatan untuk bibit ini (1-3 jadwal)
+      final int jadwalCount = 1 + random.nextInt(3);
+      for (int j = 0; j < jadwalCount; j++) {
+        // Pilih jenis perawatan secara acak
+        final String jenis =
+            jenisPerawatan[random.nextInt(jenisPerawatan.length)];
+
+        // Jadwal untuk 1-30 hari ke depan
+        final DateTime jadwalDate =
+            DateTime.now().add(Duration(days: 1 + random.nextInt(30)));
+
+        // Buat dokumen jadwal perawatan
+        await bibitRef.collection('jadwal_perawatan').add({
+          'id_user': userId,
+          'jadwal': Timestamp.fromDate(jadwalDate),
+          'jenis_perawatan': jenis,
+          'judul_perawatan': 'Jadwal $jenis $namaBibit',
+          'deskripsi':
+              'Lakukan $jenis pada bibit $namaBibit varietas $varietasBibit sesuai dengan prosedur standar.',
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp()
+        });
+      }
+
+      // Update statistik
+      totalBibit++;
+      if (kondisiBibit == 'Siap Tanam') bibitSiapTanam++;
+      if (kondisiBibit == 'Butuh Perawatan') butuhPerhatian++;
+
+      // Buat riwayat pindai untuk 30% bibit
+      if (random.nextDouble() < 0.3) {
+        await bibitRef.collection('pengisian_history').add({
+          'id_user': userId,
+          'tanggal': Timestamp.fromDate(
+              DateTime.now().subtract(Duration(days: random.nextInt(30)))),
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp()
+        });
+
+        totalBibitDipindai++;
+      }
+    }
+
+    // Update statistik di akun pengguna
+    await _firestore
+        .collection('dashboard_informasi_admin_penyemaian')
+        .doc(userId)
+        .set({
+      'total_bibit': totalBibit,
+      'bibit_siap_tanam': bibitSiapTanam,
+      'butuh_perhatian': butuhPerhatian,
+      'total_bibit_dipindai': totalBibitDipindai,
+      'previous_total_bibit': totalBibit > 10 ? totalBibit - 10 : 0,
+      'created_at': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp()
+    });
+  }
+
+  // Fungsi untuk membuat data kayu sederhana
+  Future<void> _generateSimpleKayuData(String userId, int count) async {
+    final jenisKayu = ['Mahoni', 'Jati', 'Sengon', 'Meranti', 'Sonokeling'];
+    final varietas = ['Lokal', 'Unggul', 'Premium'];
+    final batchPanen = ['BATCH-2025-01', 'BATCH-2025-02', 'BATCH-2025-03'];
+    final Random random = Random();
+
+    // Untuk menghitung statistik
+    int totalKayu = 0;
+    int totalKayuDipindai = 0;
+    Set<String> uniqueBatches = {};
+
+    // Buat data kayu sederhana
+    for (int i = 0; i < count; i++) {
+      final String namaKayu = jenisKayu[random.nextInt(jenisKayu.length)];
+      final String varietasKayu = varietas[random.nextInt(varietas.length)];
+      final String batch = batchPanen[random.nextInt(batchPanen.length)];
+      uniqueBatches.add(batch);
+
+      final int usia = 24 + random.nextInt(120); // 2-12 tahun (dalam bulan)
+      final double tinggi = 200 + random.nextDouble() * 800; // 2-10 meter
+
+      final kayuRef = _firestore.collection('kayu').doc();
+
+      await kayuRef.set({
+        'id_user': userId,
+        'nama_kayu': namaKayu,
+        'varietas': varietasKayu,
+        'usia': usia,
+        'tinggi': tinggi,
+        'jenis_kayu': 'Hardwood',
+        'catatan': 'Kayu $namaKayu batch $batch',
+        'created_at': FieldValue.serverTimestamp(),
+        'tanggal_lahir_pohon': Timestamp.fromDate(DateTime.now()
+            .subtract(Duration(days: 365 * (2 + random.nextInt(8))))),
+        'gambar_image': [
+          'https://via.placeholder.com/150?text=Kayu+$namaKayu',
+        ],
+        'barcode':
+            'KY${DateTime.now().millisecondsSinceEpoch}${random.nextInt(1000)}',
+        'url_bibit': 'https://yourapp.com/kayu/${kayuRef.id}',
+        'lokasi_tanam': 'Area Tanam Sample',
+        'batch_panen': batch,
+        'updated_at': FieldValue.serverTimestamp()
+      });
+
+      // Update statistik
+      totalKayu++;
+
+      // Buat riwayat scan untuk 40% kayu
+      if (random.nextDouble() < 0.4) {
+        await kayuRef.collection('riwayat_scan').add({
+          'id_user': userId,
+          'tanggal': Timestamp.fromDate(
+              DateTime.now().subtract(Duration(days: random.nextInt(60)))),
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp()
+        });
+
+        totalKayuDipindai++;
+      }
+    }
+
+    // Update statistik di akun pengguna
+    await _firestore.collection('akun').doc(userId).update({
+      'dashboard': {
+        'total_kayu': totalKayu,
+        'total_kayu_dipindai': totalKayuDipindai,
+        'total_batch': uniqueBatches.length,
+        'last_updated': FieldValue.serverTimestamp()
+      }
+    });
+  }
+
+  // Fungsi perbaikan untuk _loadAccounts - tanpa orderBy yang bermasalah
+  Future<void> _loadAccounts() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Query tanpa orderBy
+      final QuerySnapshot snapshot = await _firestore.collection('akun').get();
+
+      setState(() {
+        _accounts = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id,
+            'nama_lengkap': data['nama_lengkap'] ?? 'Tidak ada nama',
+            'email': data['email'] ?? 'Tidak ada email',
+            'role': (data['role'] as List<dynamic>?)?.join(', ') ??
+                'Tidak ada role',
+          };
+        }).toList();
+      });
+    } catch (e) {
+      print('Error loading accounts: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat daftar akun: ${e.toString()}')),
       );
     } finally {
       setState(() {

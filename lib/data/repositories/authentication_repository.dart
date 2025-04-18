@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 
 import '../models/authentication_model.dart';
@@ -73,6 +75,8 @@ class AuthenticationRepository {
         email: email,
         role: role,
         photoUrl: '',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       );
 
       // Store user in local storage

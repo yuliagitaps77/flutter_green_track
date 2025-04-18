@@ -20,6 +20,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
@@ -83,24 +84,6 @@ class FirebaseService {
     await prefs.remove('user_data');
   }
 
-  // Dashboard data methods
-  Future<Map<String, dynamic>> getPenyemaianDashboardData(String userId) async {
-    try {
-      DocumentSnapshot doc = await _firestore
-          .collection('dashboard_informasi_admin_penyemaian')
-          .doc(userId)
-          .get();
-
-      if (doc.exists) {
-        return doc.data() as Map<String, dynamic>;
-      }
-      return {};
-    } catch (e) {
-      print('Error getting dashboard data: $e');
-      return {};
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getRecentActivities(String userId,
       {int limit = 5}) async {
     try {
@@ -121,6 +104,187 @@ class FirebaseService {
     } catch (e) {
       print('Error getting recent activities: $e');
       return [];
+    }
+  }
+  // Tambahkan metode ini ke FirebaseService
+
+// Menghitung data dashboard langsung dari koleksi bibit
+  Future<Map<String, dynamic>> calculatePenyemaianDashboardData(
+      String userId) async {
+    try {
+      // Ambil semua bibit yang terkait dengan user ini
+      QuerySnapshot bibitSnapshot = await _firestore
+          .collection('bibit')
+          .where('id_user', isEqualTo: userId)
+          .get();
+
+      // Inisialisasi counter
+      int totalBibit = bibitSnapshot.docs.length;
+      int bibitSiapTanam = 0;
+      int butuhPerhatian = 0;
+
+      // Hitung berdasarkan kondisi
+      for (var doc in bibitSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        String kondisi = data['kondisi'] as String? ?? '';
+
+        if (kondisi == 'Siap Tanam') {
+          bibitSiapTanam++;
+        } else if (kondisi == 'Butuh Perawatan' || kondisi == 'Kritis') {
+          butuhPerhatian++;
+        }
+      }
+
+      // Hitung bibit yang dipindai (menggunakan collection group query)
+      int totalBibitDipindai = await _firestore
+          .collectionGroup('pengisian_history')
+          .where('id_user', isEqualTo: userId)
+          .get()
+          .then((snapshot) => snapshot.docs.length);
+
+      // Ambil data sebelumnya (1 bulan lalu) untuk perhitungan pertumbuhan
+      // Gunakan timestamp dari dokumen bibit
+      int previousTotalBibit = 0;
+      final oneMonthAgo = DateTime.now().subtract(Duration(days: 30));
+
+      for (var doc in bibitSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        Timestamp? createdAt = data['created_at'] as Timestamp?;
+
+        if (createdAt != null && createdAt.toDate().isAfter(oneMonthAgo)) {
+          previousTotalBibit++;
+        }
+      }
+
+      // Hitung previous total (bibit yang ada sebelum 1 bulan lalu)
+      previousTotalBibit = totalBibit - previousTotalBibit;
+      if (previousTotalBibit < 0) previousTotalBibit = 0;
+
+      return {
+        'total_bibit': totalBibit,
+        'bibit_siap_tanam': bibitSiapTanam,
+        'butuh_perhatian': butuhPerhatian,
+        'total_bibit_dipindai': totalBibitDipindai,
+        'previous_total_bibit': previousTotalBibit,
+      };
+    } catch (e) {
+      print('Error calculating penyemaian dashboard data: $e');
+      return {};
+    }
+  }
+
+// Menghitung data dashboard langsung dari koleksi kayu
+  Future<Map<String, dynamic>> calculateTPKDashboardData(String userId) async {
+    try {
+      // Ambil semua kayu yang terkait dengan user ini
+      QuerySnapshot kayuSnapshot = await _firestore
+          .collection('kayu')
+          .where('id_user', isEqualTo: userId)
+          .get();
+
+      // Inisialisasi counter
+      int totalKayu = kayuSnapshot.docs.length;
+
+      // Hitung kayu yang dipindai
+      int totalKayuDipindai = await _firestore
+          .collectionGroup('riwayat_scan')
+          .where('id_user', isEqualTo: userId)
+          .get()
+          .then((snapshot) => snapshot.docs.length);
+
+      // Hitung jumlah batch unik
+      Set<String> uniqueBatches = {};
+      for (var doc in kayuSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        String batch = data['batch_panen'] as String? ?? '';
+        if (batch.isNotEmpty) {
+          uniqueBatches.add(batch);
+        }
+      }
+
+      int totalBatch = uniqueBatches.length;
+
+      return {
+        'total_kayu': totalKayu,
+        'total_kayu_dipindai': totalKayuDipindai,
+        'total_batch': totalBatch,
+      };
+    } catch (e) {
+      print('Error calculating TPK dashboard data: $e');
+      return {};
+    }
+  }
+
+// Update getPenyemaianDashboardData untuk menggunakan fungsi perhitungan langsung
+  Future<Map<String, dynamic>> getPenyemaianDashboardData(String userId) async {
+    try {
+      // Coba ambil dari cache dulu (opsional, untuk performa)
+      final prefs = await SharedPreferences.getInstance();
+      final String cacheKey = 'dashboard_penyemaian_$userId';
+      final String? cachedData = prefs.getString(cacheKey);
+      final int cacheExpiry = prefs.getInt('${cacheKey}_expiry') ?? 0;
+
+      // Jika cache masih valid (tidak lebih dari 5 menit), gunakan cache
+      if (cachedData != null &&
+          cacheExpiry > DateTime.now().millisecondsSinceEpoch) {
+        return jsonDecode(cachedData);
+      }
+
+      // Hitung data dashboard langsung dari koleksi bibit
+      final dashboardData = await calculatePenyemaianDashboardData(userId);
+
+      // Simpan hasil ke cache untuk 5 menit
+      await prefs.setString(cacheKey, jsonEncode(dashboardData));
+      await prefs.setInt('${cacheKey}_expiry',
+          DateTime.now().add(Duration(minutes: 5)).millisecondsSinceEpoch);
+
+      return dashboardData;
+    } catch (e) {
+      print('Error getting penyemaian dashboard data: $e');
+      return {};
+    }
+  }
+
+// Buat fungsi TPK dashboard
+  Future<Map<String, dynamic>> getTPKDashboardData(String userId) async {
+    try {
+      // Coba ambil dari cache dulu (opsional, untuk performa)
+      final prefs = await SharedPreferences.getInstance();
+      final String cacheKey = 'dashboard_tpk_$userId';
+      final String? cachedData = prefs.getString(cacheKey);
+      final int cacheExpiry = prefs.getInt('${cacheKey}_expiry') ?? 0;
+
+      // Jika cache masih valid (tidak lebih dari 5 menit), gunakan cache
+      if (cachedData != null &&
+          cacheExpiry > DateTime.now().millisecondsSinceEpoch) {
+        return jsonDecode(cachedData);
+      }
+
+      // Hitung data dashboard langsung dari koleksi kayu
+      final dashboardData = await calculateTPKDashboardData(userId);
+
+      // Simpan hasil ke cache untuk 5 menit
+      await prefs.setString(cacheKey, jsonEncode(dashboardData));
+      await prefs.setInt('${cacheKey}_expiry',
+          DateTime.now().add(Duration(minutes: 5)).millisecondsSinceEpoch);
+
+      return dashboardData;
+    } catch (e) {
+      print('Error getting TPK dashboard data: $e');
+      return {};
+    }
+  }
+
+// Fungsi helper untuk menghapus cache dashboard
+  Future<void> clearDashboardCache(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('dashboard_penyemaian_$userId');
+      await prefs.remove('dashboard_penyemaian_${userId}_expiry');
+      await prefs.remove('dashboard_tpk_$userId');
+      await prefs.remove('dashboard_tpk_${userId}_expiry');
+    } catch (e) {
+      print('Error clearing dashboard cache: $e');
     }
   }
 }

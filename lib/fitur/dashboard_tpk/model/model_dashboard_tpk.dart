@@ -13,20 +13,6 @@ class UserProfileModel {
   });
 }
 
-class ActivityModel {
-  final IconData icon;
-  final String title;
-  final String time;
-  final bool highlight;
-
-  ActivityModel({
-    required this.icon,
-    required this.title,
-    required this.time,
-    this.highlight = false,
-  });
-}
-
 // inventory_model.dart
 class InventoryModel {
   final String woodType;

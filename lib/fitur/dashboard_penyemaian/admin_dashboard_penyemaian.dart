@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
+import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
+import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
@@ -58,6 +60,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
     );
   }
 
+  final navigationController = Get.find<NavigationController>();
   @override
   void dispose() {
     _breathingController.dispose();
@@ -91,9 +94,14 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // App bar with menu and profile
-                AppBarWidget(
-                  onMenuTap: () => _menuAnimController.forward(),
-                  onProfileTap: () => controller.handleProfileTap(),
+                GestureDetector(
+                  onTap: () {
+                    controller.refreshDashboardData();
+                  },
+                  child: AppBarWidget(
+                    onMenuTap: () => _menuAnimController.forward(),
+                    onProfileTap: () => controller.handleProfileTap(),
+                  ),
                 ),
 
                 // Dashboard content
@@ -399,9 +407,9 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         Obx(() => Column(
               children: controller.recentActivities
                   .map((activity) => ActivityItemWidget(
-                        icon: activity.icon,
-                        title: activity.title,
-                        time: activity.time,
+                        icon: activity.icon!,
+                        title: activity.namaAktivitas,
+                        time: activity.tanggalWaktu.toString(),
                         highlight: activity.highlight,
                       ))
                   .toList(),

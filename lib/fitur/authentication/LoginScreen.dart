@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/admin_generator.dart';
 import 'package:get/get.dart';
 import '../../controllers/authentication/authentication_controller.dart';
 import 'dart:math' as math;
@@ -110,7 +111,11 @@ class _LoginScreenState extends State<LoginScreen>
                             height: MediaQuery.of(context).size.height * 0.08),
 
                         // App logo
-                        _buildAppLogo(),
+                        GestureDetector(
+                            onTap: () {
+                              Get.to(AdminAccountCreatorScreen());
+                            },
+                            child: _buildAppLogo()),
 
                         SizedBox(height: 30),
 
