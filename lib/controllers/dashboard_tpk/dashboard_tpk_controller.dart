@@ -1,23 +1,15 @@
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
 import 'package:get/get.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import '../../data/models/user_model.dart';
-import '../../service/services.dart';
-import '../../controllers/authentication/authentication_controller.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
+import '../../controllers/authentication/authentication_controller.dart';
+import '../../service/services.dart';
 import '../dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 
 class TPKDashboardController extends GetxController {
@@ -80,49 +72,71 @@ class TPKDashboardController extends GetxController {
     initUserData();
   }
 
-  // Initialize user data
   Future<void> initUserData() async {
     try {
+      print('Initializing user data...');
+
       // Get current user from local storage
       final user = await _firebaseService.getLocalUser();
       if (user != null) {
+        print('User found in local storage');
         currentUserId = user.id;
+
+        // Check if user photoUrl is null before accessing it
+        if (user.photoUrl == null) {
+          print('Warning: User photoUrl is null, using default photo.');
+        }
 
         // Update user profile with actual user data
         userProfile.value = UserProfileModel(
-          name: user.name,
+          name: user.name ?? 'Unknown', // Use a fallback value if null
           role:
               user.role == UserRole.adminTPK ? "Admin TPK" : "Admin Penyemaian",
-          photoUrl: user.photoUrl!,
+          photoUrl:
+              user.photoUrl ?? 'default_photo_url', // Provide default if null
         );
 
         fetchDashboardData();
         fetchRecentActivities();
       } else {
         print('User not found in local storage');
-        // Jika tidak ada user dalam local storage, cek Firebase Auth
+
+        // If no user found in local storage, check Firebase Auth
         final firebaseUser = _firebaseService.getCurrentFirebaseUser();
         if (firebaseUser != null) {
+          print('Firebase user found');
+
           // Get user details from Firestore
           final userData = await _firebaseService.getUserData(firebaseUser.uid);
           if (userData != null) {
+            print('User data retrieved from Firestore');
             currentUserId = userData.id;
+
+            // Check if userData photoUrl is null before accessing it
+            if (userData.photoUrl == null) {
+              print('Warning: User photoUrl is null, using default photo.');
+            }
 
             // Update user profile with data from Firestore
             userProfile.value = UserProfileModel(
-              name: userData.name,
+              name: userData.name ?? 'Unknown', // Use a fallback value if null
               role: userData.role == UserRole.adminTPK
                   ? "Admin TPK"
                   : "Admin Penyemaian",
-              photoUrl: userData.photoUrl!,
+              photoUrl: userData.photoUrl ??
+                  'default_photo_url', // Provide default if null
             );
 
-            // Simpan user ke local storage
+            // Save user to local storage
             await _firebaseService.saveUserLocally(userData);
 
             fetchDashboardData();
             fetchRecentActivities();
+          } else {
+            print('No user data found in Firestore');
           }
+        } else {
+          print('No Firebase user found');
         }
       }
     } catch (e) {

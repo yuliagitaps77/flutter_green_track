@@ -1,16 +1,14 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
-import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/fitur/jadwal_perawatan/jadwal_perawatan_page.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
-import 'package:fl_chart/fl_chart.dart';
 
-import '../../fitur/dashboard_penyemaian/repository/penyemaian_repository.dart';
 import '../../fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
 
 class PenyemaianDashboardController extends GetxController {
@@ -79,52 +77,73 @@ class PenyemaianDashboardController extends GetxController {
   // Initialize user data
   Future<void> initUserData() async {
     try {
+      print('Initializing user data...');
+
       // Get current user from local storage
       final user = await _firebaseService.getLocalUser();
       if (user != null) {
+        print('User found in local storage');
         currentUserId = user.id;
 
         // Update user profile with actual user data
+        print('Updating user profile...');
+        print('User Name: ${user.name}');
+        print('User Role: ${user.role}');
+        print('User Photo URL: ${user.photoUrl}');
+
         userProfile.value = UserProfileModel(
-          name:
-              user.name, // Menggunakan nama user yang sebenarnya dari Firestore
+          name: user.name ?? 'Unknown', // Use a fallback value if null
           role: user.role == UserRole.adminPenyemaian
               ? "Admin Penyemaian"
               : "Admin TPK",
-          photoUrl: user.photoUrl!,
+          photoUrl: user.photoUrl ??
+              'default_photo_url', // Provide default URL if null
         );
 
         fetchDashboardData();
         fetchRecentActivities();
       } else {
         print('User not found in local storage');
-        // Jika tidak ada user dalam local storage, cek Firebase Auth
+
+        // If no user found in local storage, check Firebase Auth
         final firebaseUser = _firebaseService.getCurrentFirebaseUser();
         if (firebaseUser != null) {
+          print('Firebase user found');
+
           // Get user details from Firestore
           final userData = await _firebaseService.getUserData(firebaseUser.uid);
           if (userData != null) {
+            print('User data retrieved from Firestore');
+            print('User Name: ${userData.name}');
+            print('User Role: ${userData.role}');
+            print('User Photo URL: ${userData.photoUrl}');
+
             currentUserId = userData.id;
 
             // Update user profile with data from Firestore
             userProfile.value = UserProfileModel(
-              name: userData.name,
+              name: userData.name ?? 'Unknown', // Use a fallback value if null
               role: userData.role == UserRole.adminPenyemaian
                   ? "Admin Penyemaian"
                   : "Admin TPK",
-              photoUrl: userData.photoUrl!,
+              photoUrl:
+                  userData.photoUrl ?? 'default_photo_url', // Fallback URL
             );
 
-            // Simpan user ke local storage
+            // Save user to local storage
             await _firebaseService.saveUserLocally(userData);
 
             fetchDashboardData();
             fetchRecentActivities();
+          } else {
+            print('No user data found in Firestore');
           }
+        } else {
+          print('No Firebase user found');
         }
       }
     } catch (e) {
-      print('Error initializing user data: $e');
+      print('Error initializing user data: ${e}');
     }
   }
 
