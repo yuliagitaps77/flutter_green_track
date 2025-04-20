@@ -1,18 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_green_track/admin_generator.dart';
+import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
-import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
-import 'package:flutter_green_track/fitur/history_pengisian/page_history_pengisian.dart';
-import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_inventory_kayu.dart';
-import 'package:get/get.dart';
-import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
+import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
+import 'package:flutter_green_track/fitur/history_pengisian/page_history_pengisian.dart';
 import 'package:flutter_green_track/fitur/intro/intro_page.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_detail_bibit.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
+import 'package:get/get.dart';
+
+import 'fitur/dashboard_penyemaian/page_cetak_bibit.dart';
 
 class AppRoutes {
   // Route names as static constants
@@ -33,6 +34,9 @@ class AppRoutes {
       name: halamanBuatAkun,
       page: () => AdminAccountCreatorScreen(),
     ),
+    GetPage(
+        name: CetakBarcodeBibitPage.routeName,
+        page: () => CetakBarcodeBibitPage()),
     GetPage(
       name: UbahKataSandiScreen.routeName,
       page: () => UbahKataSandiScreen(),

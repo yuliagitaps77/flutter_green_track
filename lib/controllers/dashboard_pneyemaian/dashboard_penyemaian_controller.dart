@@ -9,6 +9,7 @@ import 'package:flutter_green_track/fitur/jadwal_perawatan/jadwal_perawatan_page
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
 
+import '../../fitur/dashboard_penyemaian/page_cetak_bibit.dart';
 import '../../fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
 
 class PenyemaianDashboardController extends GetxController {
@@ -236,7 +237,7 @@ class PenyemaianDashboardController extends GetxController {
 
   void navigateToPrintBarcode() {
     print('Navigating to Print Barcode page');
-    // Get.toNamed('/print-barcode');
+    Get.toNamed(CetakBarcodeBibitPage.routeName);
   }
 
   void navigateToDaftarBibit() {
