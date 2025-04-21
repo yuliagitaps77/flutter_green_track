@@ -273,9 +273,12 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
   }
 
   Future<void> _exportQR(String name) async {
-    final status = await Permission.storage.request();
-    if (!status.isGranted) {
-      Get.snackbar("Akses ditolak", "Tidak bisa menyimpan QR tanpa izin.");
+    // Android 13+ pakai permission READ_MEDIA_IMAGES
+    final photosPermission = await Permission.photos.request();
+    final storagePermission = await Permission.storage.request();
+
+    if (!photosPermission.isGranted && !storagePermission.isGranted) {
+      Get.snackbar("Akses Ditolak", "Tidak bisa menyimpan QR tanpa izin.");
       return;
     }
 
@@ -292,8 +295,13 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
 
-      await ImageGallerySaver.saveFile(file.path);
-      Get.snackbar("Sukses", "QR disimpan ke galeri.");
+      final result = await ImageGallerySaver.saveFile(file.path);
+
+      if (result['isSuccess'] == true) {
+        Get.snackbar("Sukses", "QR berhasil disimpan ke galeri.");
+      } else {
+        Get.snackbar("Gagal", "QR tidak berhasil disimpan.");
+      }
     } catch (e) {
       Get.snackbar("Error", "Gagal menyimpan QR: $e");
     }
