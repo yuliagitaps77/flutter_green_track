@@ -1,3 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
+import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +14,10 @@ import 'package:uuid/uuid.dart';
 
 class BarcodeController extends GetxController {
   // Text controllers
+  final Bibit? bibit = Get.arguments as Bibit?;
+  bool get isEditMode => bibit != null;
+  var isLoading = false.obs;
+
   final idBibitController = TextEditingController();
   final namaBibitController = TextEditingController();
   final varietasController = TextEditingController();
@@ -40,6 +52,40 @@ class BarcodeController extends GetxController {
       // Ensure the first image becomes the new selected one
       updateSelectedImage();
     }
+  }
+
+  void autoFillBibitForm() {
+    generateIdBibit(); // Auto generate ID
+
+    namaBibitController.text =
+        'Jati Super A${DateTime.now().millisecondsSinceEpoch % 1000}';
+    varietasController.text = 'Tectona grandis';
+    usiaController.text = '30';
+    tinggiController.text = '20';
+    jenisBibitController.text = 'Kayu keras';
+    // kondisi.value = 'Siap Tanam';
+    // statusHama.value = 'Tidak ada';
+    mediaTanamController.text = 'Polybag';
+    nutrisiController.text = 'Pupuk NPK';
+    asalBibitController.text = 'Kebun Induk Wilangan';
+    produktivitasController.text = 'Tinggi';
+    catatanController.text = 'Auto-generated untuk testing cepat.';
+    urlBibitController.text =
+        'https://example.com/bibit/${idBibitController.text}';
+
+    // Lokasi tanam dummy
+    // selectedKPH.value = 'KPH Wilangan';
+    // loadBKPHOptions(selectedKPH.value);
+    // selectedBKPH.value = bkphOptions.isNotEmpty ? bkphOptions.first : '';
+    // loadRKPHOptions(selectedBKPH.value);
+    // selectedRKPH.value = rkphOptions.isNotEmpty ? rkphOptions.first : '';
+
+    // Tanggal pembibitan
+    tanggalPembibitan.value = DateTime.now();
+    tanggalPembibitanController.text =
+        DateFormat('dd/MM/yyyy').format(tanggalPembibitan.value);
+
+    print('✅ Data form bibit berhasil diisi otomatis.');
   }
 
   // Observable values
@@ -84,6 +130,7 @@ class BarcodeController extends GetxController {
     // Initialize tanggal pembibitan with current date
     tanggalPembibitanController.text =
         DateFormat('dd/MM/yyyy').format(DateTime.now());
+    autoFillBibitForm(); // Auto-fill form for testing
   }
 
   @override
@@ -177,15 +224,46 @@ class BarcodeController extends GetxController {
     await pickImage(ImageSource.gallery);
   }
 
-  // Submit form data
-  void submitBibit() {
-    // Create a map of the bibit data
+  Future<String?> uploadImageToFreeImageHost(String imagePath) async {
+    try {
+      final apiKey = '6d207e02198a847aa98d0a2a901485a5';
+      final url = Uri.parse('https://freeimage.host/api/1/upload');
+
+      final imageBytes = await File(imagePath).readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
+      final response = await http.post(
+        url,
+        body: {
+          'key': apiKey,
+          'source': base64Image,
+          'format': 'json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final imageUrl = jsonResponse['image']['url'];
+        return imageUrl;
+      } else {
+        print('Upload failed: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveBibit({bool isUpdate = false}) async {
+    final firestore = FirebaseFirestore.instance;
+
     final bibitData = {
       'id_bibit': idBibitController.text,
       'nama_bibit': namaBibitController.text,
       'varietas': varietasController.text,
-      'usia': usiaController.text,
-      'tinggi': tinggiController.text,
+      'usia': int.tryParse(usiaController.text) ?? 0,
+      'tinggi': int.tryParse(tinggiController.text) ?? 0,
       'jenis_bibit': jenisBibitController.text,
       'kondisi': kondisi.value,
       'status_hama': statusHama.value,
@@ -194,37 +272,162 @@ class BarcodeController extends GetxController {
       'asal_bibit': asalBibitController.text,
       'produktivitas': produktivitasController.text,
       'catatan': catatanController.text,
-      'created_at': DateTime.now().toString(),
-      'tanggal_pembibitan': tanggalPembibitan.value.toString(),
-      'gambar_image': selectedImages,
+      'gambar_image': selectedImages, // URL ya, kalau upload
       'url_bibit': urlBibitController.text,
       'lokasi_tanam': {
         'kph': selectedKPH.value,
         'bkph': selectedBKPH.value,
         'rkph': selectedRKPH.value,
       },
-      'updated_at': DateTime.now().toString(),
+      'tanggal_pembibitan': tanggalPembibitan.value,
+      'updated_at': DateTime.now(),
+      if (!isUpdate) 'created_at': DateTime.now(),
     };
 
-    // Here you would typically send the data to your API or save locally
-    // For demonstration, we'll just print it and show a success message
-    print('Data bibit yang akan disimpan: $bibitData');
+    final id = idBibitController.text;
 
-    // Show success message
-    Get.snackbar(
-      'Sukses',
-      'Barcode bibit berhasil dibuat.',
-      backgroundColor: const Color(0xFF2E7D32),
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 3),
-    );
+    if (isUpdate) {
+      await firestore.collection('bibit').doc(id).update(bibitData);
+      Get.snackbar("Berhasil", "Data bibit berhasil diperbarui");
+    } else {
+      await firestore.collection('bibit').doc(id).set(bibitData);
+      Get.snackbar("Berhasil", "Data bibit berhasil ditambahkan");
+    }
 
-    // Navigate to barcode view (this would be implemented in a real app)
-    // Get.toNamed('/barcode-view', arguments: bibitData);
+    resetForm();
+  }
 
-    // Or clear the form for new entry
-    // resetForm();
+  Future<void> saveBibitToFirestore(Map<String, dynamic> bibitData) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        throw Exception("User tidak ditemukan. Harus login dulu.");
+      }
+
+      bibitData['id_user'] = userId;
+
+      await FirebaseFirestore.instance
+          .collection('bibit')
+          .doc(bibitData['id_bibit'])
+          .set(bibitData);
+
+      Get.snackbar(
+        'Sukses',
+        'Bibit berhasil disimpan ke database.',
+        backgroundColor: const Color(0xFF2E7D32),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      // Refresh daftar bibit dan kembali
+      await Get.find<BibitController>().fetchBibitFromFirestore();
+      await Get.find<BibitController>().fetchJenisList();
+      Get.back();
+      navigationController.navigateToInventory();
+
+      // Opsional: reset form setelah sukses
+
+      resetForm();
+    } catch (e) {
+      print('Gagal menyimpan bibit: $e');
+      Get.snackbar(
+        'Error',
+        'Gagal menyimpan bibit. Coba lagi.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  final navigationController = Get.find<NavigationController>();
+  // Submit form data
+  Future<void> submitBibit({bool isUpdate = false}) async {
+    isLoading.value = true;
+
+    // Validasi field wajib
+    List<String> errors = [];
+
+    if (namaBibitController.text.isEmpty) errors.add("Nama Bibit");
+    if (jenisBibitController.text.isEmpty) errors.add("Jenis Bibit");
+    if (kondisi.value.isEmpty) errors.add("Kondisi");
+    if (statusHama.value.isEmpty) errors.add("Status Hama");
+    if (mediaTanamController.text.isEmpty) errors.add("Media Tanam");
+    if (nutrisiController.text.isEmpty) errors.add("Nutrisi");
+    if (asalBibitController.text.isEmpty) errors.add("Asal Bibit");
+    if (selectedKPH.value.isEmpty) errors.add("KPH");
+    if (selectedBKPH.value.isEmpty) errors.add("BKPH");
+    if (selectedRKPH.value.isEmpty) errors.add("RKPH");
+
+    if (selectedImages.isEmpty) {
+      errors.add("Minimal 1 Gambar");
+    }
+
+    if (errors.isNotEmpty) {
+      isLoading.value = false;
+      Get.snackbar(
+        "Form Tidak Lengkap",
+        "Harap lengkapi: ${errors.join(', ')}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
+    try {
+      // Upload gambar
+      List<String> uploadedUrls = [];
+
+      for (String path in selectedImages) {
+        final uploadedUrl = await uploadImageToFreeImageHost(path);
+        if (uploadedUrl != null) {
+          uploadedUrls.add(uploadedUrl);
+        } else {
+          throw Exception("Upload gambar gagal");
+        }
+      }
+
+      final bibitData = {
+        'id_bibit': idBibitController.text,
+        'nama_bibit': namaBibitController.text,
+        'varietas': varietasController.text,
+        'usia': int.tryParse(usiaController.text) ?? 0,
+        'tinggi': int.tryParse(tinggiController.text) ?? 0,
+        'jenis_bibit': jenisBibitController.text,
+        'kondisi': kondisi.value,
+        'status_hama': statusHama.value,
+        'media_tanam': mediaTanamController.text,
+        'nutrisi': nutrisiController.text,
+        'asal_bibit': asalBibitController.text,
+        'produktivitas': produktivitasController.text,
+        'catatan': catatanController.text,
+        'tanggal_pembibitan': tanggalPembibitan.value,
+        'gambar_image': uploadedUrls,
+        'url_bibit': urlBibitController.text,
+        'lokasi_tanam': {
+          'kph': selectedKPH.value,
+          'bkph': selectedBKPH.value,
+          'rkph': selectedRKPH.value,
+        },
+        'updated_at': DateTime.now(),
+        if (!isUpdate) 'created_at': DateTime.now(),
+      };
+
+      await saveBibitToFirestore(bibitData);
+    } catch (e) {
+      print("Error saat simpan bibit: $e");
+      Get.snackbar(
+        "Error",
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+      Get.back();
+    }
   }
 
   // Reset form values

@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class CetakBarcodeBibitPage extends StatefulWidget {
   static String routeName = "/cetak-barcode-bibit";
@@ -16,11 +18,39 @@ class CetakBarcodeBibitPage extends StatefulWidget {
 class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
   final BarcodeController controller = Get.put(BarcodeController());
   final _formKey = GlobalKey<FormState>();
+  bool get isEditMode => bibit != null;
+  final Bibit? bibit = Get.arguments as Bibit?;
 
   @override
   void initState() {
     super.initState();
     controller.generateIdBibit();
+    if (isEditMode) {
+      final b = bibit!;
+      controller.idBibitController.text = b.id;
+      controller.namaBibitController.text = b.namaBibit;
+      controller.varietasController.text = b.varietas;
+      controller.usiaController.text = b.usia.toString();
+      controller.tinggiController.text = b.tinggi.toString();
+      controller.jenisBibitController.text = b.jenisBibit;
+      controller.kondisi.value = b.kondisi;
+      controller.statusHama.value = b.statusHama;
+      controller.mediaTanamController.text = b.mediaTanam;
+      controller.nutrisiController.text = b.nutrisi;
+      controller.asalBibitController.text = b.asalBibit;
+      controller.produktivitasController.text = b.produktivitas;
+      controller.catatanController.text = b.catatan;
+      controller.urlBibitController.text = b.urlBibit;
+      controller.selectedKPH.value = b.kph;
+      controller.loadBKPHOptions(b.kph);
+      controller.selectedBKPH.value = b.bkph;
+      controller.loadRKPHOptions(b.bkph);
+      controller.selectedRKPH.value = b.rkph;
+      controller.tanggalPembibitan.value = b.tanggalPembibitan;
+      controller.tanggalPembibitanController.text =
+          DateFormat('dd/MM/yyyy').format(b.tanggalPembibitan);
+      // Gambar tidak di-preload karena tidak disimpan sebagai file lokal
+    }
   }
 
   @override
@@ -28,7 +58,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cetak Barcode Bibit Baru'),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: Container(
@@ -67,12 +97,8 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                         ),
                         child: controller.selectedImages.isEmpty
                             ? Center(
-                                child: Image.asset(
-                                  'assets/placeholder_image.png', // Replace with your placeholder image
-                                  width: 60,
-                                  height: 60,
-                                  color: const Color(0xFF2E7D32),
-                                ),
+                                child: Icon(Icons.forest_rounded,
+                                    size: 100, color: const Color(0xFF2E7D32)),
                               )
                             : ClipRRect(
                                 borderRadius: BorderRadius.circular(34),
@@ -915,31 +941,43 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                     const SizedBox(height: 24),
 
                     // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            controller.submitBibit();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2E7D32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    Obx(() {
+                      return SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: controller.isLoading.value
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    controller.submitBibit(
+                                        isUpdate: isEditMode);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
+                          child: controller.isLoading.value
+                              ? const CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                )
+                              : Text(
+                                  isEditMode
+                                      ? 'SIMPAN PERUBAHAN'
+                                      : 'CETAK BARCODE',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
-                        child: const Text(
-                          'CETAK BARCODE',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
+                      );
+                    }),
                   ],
                 );
               }),

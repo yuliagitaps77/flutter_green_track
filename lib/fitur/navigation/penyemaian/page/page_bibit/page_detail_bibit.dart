@@ -1,6 +1,24 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_cetak_bibit.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:ui' as ui;
+import 'dart:io';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter/services.dart';
 
 class BibitDetailPage extends StatefulWidget {
   static String routeName = "/BibitDetailPage";
@@ -13,6 +31,7 @@ class BibitDetailPage extends StatefulWidget {
 
 class _BibitDetailPageState extends State<BibitDetailPage> {
   late Bibit bibit;
+  final GlobalKey qrKey = GlobalKey();
 
   @override
   void initState() {
@@ -25,9 +44,8 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -39,208 +57,210 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
               ),
             ),
           ),
-          // Content
           CustomScrollView(
             slivers: [
-              // App Bar
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 250,
                 pinned: true,
-                backgroundColor: Colors.transparent,
+                backgroundColor: Colors.white,
                 elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    color: Colors.green.withOpacity(0.1),
-                    child: Center(
-                      child: Icon(
-                        bibit.icon,
-                        size: 100,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
-                ),
-                leading: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.green),
-                    onPressed: () => Get.back(),
-                  ),
-                ),
-                actions: [
-                  Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
+                  background: bibit.gambarImage.isNotEmpty
+                      ? Image.network(
+                          bibit.gambarImage.first,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
+                      : Container(
+                          color: Colors.green.withOpacity(0.1),
+                          child: const Icon(
+                            Icons.park,
+                            size: 100,
+                            color: Colors.green,
+                          ),
                         ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.favorite_border,
-                          color: Colors.green),
-                      onPressed: () {
-                        // Add to favorites functionality
-                      },
-                    ),
-                  ),
-                ],
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.green),
+                  onPressed: () => Get.back(),
+                ),
               ),
-              // Content
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title and Category
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  bibit.nama,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  bibit.kategori,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              "${bibit.masaPanen} hari",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Care Info
-                      const Text(
-                        "Informasi Perawatan",
-                        style: TextStyle(
-                          fontSize: 18,
+                      Text(
+                        bibit.namaBibit,
+                        style: const TextStyle(
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-                      // Care metrics
+                      const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildCareMetric(
-                            Icons.water_drop_outlined,
-                            "Air",
-                            bibit.kebutuhanAir,
-                            Colors.blue[300]!,
-                          ),
-                          _buildCareMetric(
-                            Icons.wb_sunny_outlined,
-                            "Sinar",
-                            bibit.kebutuhanSinar,
-                            Colors.orange[300]!,
-                          ),
-                          _buildCareMetric(
-                            Icons.thermostat_outlined,
-                            "Suhu",
-                            "${bibit.suhuIdeal}°C",
-                            Colors.red[300]!,
-                          ),
+                          const Icon(Icons.tag, size: 16, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text("Varietas: ${bibit.varietas}"),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.height,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text("Tinggi: ${bibit.tinggi} cm"),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today,
+                              size: 16, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Text("Usia: ${bibit.usia} hari"),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle,
+                              size: 16, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Text("Kondisi: ${bibit.kondisi}"),
+                        ],
+                      ),
+                      const Divider(height: 32, thickness: 1),
 
-                      const SizedBox(height: 24),
-
-                      // Description
+                      // Lokasi Tanam
                       const Text(
-                        "Deskripsi",
+                        "Lokasi Tanam",
                         style: TextStyle(
-                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text("KPH: ${bibit.kph}"),
+                      Text("BKPH: ${bibit.bkph}"),
+                      Text("RKPH: ${bibit.rkph}"),
+                      const Divider(height: 32, thickness: 1),
+
+                      // Catatan
+                      const Text(
+                        "Catatan",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
+                      const Text(
+                        "QR Code",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: RepaintBoundary(
+                          key: qrKey,
+                          child: QrImageView(
+                            data: bibit.id,
+                            version: QrVersions.auto,
+                            size: 200.0,
+                            gapless: false,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _exportQR(bibit.id),
+                          icon: const Icon(Icons.download),
+                          label: const Text("Export QR"),
+                        ),
+                      ),
+
+                      Text(
+                        bibit.catatan.isNotEmpty
+                            ? bibit.catatan
+                            : "Tidak ada catatan khusus.",
+                        style: TextStyle(color: Colors.grey[800]),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Produktivitas
+                      const Text(
+                        "Produktivitas",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        bibit.deskripsi,
-                        style: TextStyle(
-                          color: Colors.grey[800],
-                          height: 1.5,
-                        ),
+                        bibit.produktivitas.isNotEmpty
+                            ? bibit.produktivitas
+                            : "Belum ada informasi produktivitas.",
+                        style: TextStyle(color: Colors.grey[800]),
                       ),
-
-                      const SizedBox(height: 24),
-
-                      // Planting steps
-                      const Text(
-                        "Langkah Penanaman",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ...bibit.langkahPenanaman.asMap().entries.map((entry) {
-                        int idx = entry.key;
-                        String step = entry.value;
-                        return _buildStep(idx + 1, step);
-                      }).toList(),
-
-                      const SizedBox(height: 24),
-
-                      // Benefits
-                      const Text(
-                        "Manfaat",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ...bibit.manfaat
-                          .map((benefit) => _buildBenefit(benefit))
-                          .toList(),
 
                       const SizedBox(height: 32),
+                      // Tombol Edit & Hapus
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.edit, color: Colors.green),
+                            label: const Text("Edit"),
+                            onPressed: () {
+                              Get.toNamed(
+                                CetakBarcodeBibitPage.routeName,
+                                arguments:
+                                    bibit, // kirim data Bibit sebagai argumen
+                              );
+                            },
+                          ),
+                          OutlinedButton.icon(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              label: const Text("Hapus"),
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text("Konfirmasi"),
+                                    content: const Text(
+                                        "Yakin ingin menghapus bibit ini?"),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text("Batal")),
+                                      ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text("Hapus")),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  final controller =
+                                      Get.find<BibitController>();
+                                  await controller
+                                      .hapusBibitFromDatabase(bibit.id);
+                                  Get.back();
+                                  Get.snackbar(
+                                      "Sukses", "Bibit berhasil dihapus.");
+                                }
+                              }),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -249,172 +269,33 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  // Add to cart functionality
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.green),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Tambah ke Keranjang",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Buy now functionality
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Beli Sekarang",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildCareMetric(
-      IconData icon, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 28,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _exportQR(String name) async {
+    final status = await Permission.storage.request();
+    if (!status.isGranted) {
+      Get.snackbar("Akses ditolak", "Tidak bisa menyimpan QR tanpa izin.");
+      return;
+    }
 
-  Widget _buildStep(int number, String step) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: Colors.green,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              step,
-              style: TextStyle(
-                color: Colors.grey[800],
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    try {
+      RenderRepaintBoundary boundary =
+          qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-  Widget _buildBenefit(String benefit) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: Colors.green,
-            size: 18,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              benefit,
-              style: TextStyle(
-                color: Colors.grey[800],
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      final directory = await getTemporaryDirectory();
+      final filePath = '${directory.path}/qr_$name.png';
+      final file = File(filePath);
+      await file.writeAsBytes(pngBytes);
+
+      await ImageGallerySaver.saveFile(file.path);
+      Get.snackbar("Sukses", "QR disimpan ke galeri.");
+    } catch (e) {
+      Get.snackbar("Error", "Gagal menyimpan QR: $e");
+    }
   }
 }

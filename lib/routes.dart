@@ -58,6 +58,11 @@ class AppRoutes {
       transition: Transition.fadeIn,
     ),
     GetPage(
+      name: BibitDetailPage.routeName,
+      page: () => BibitDetailPage(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
       name: splash,
       page: () => SplashScreen(),
       transition: Transition.fadeIn,
@@ -79,11 +84,6 @@ class AppRoutes {
       name: daftarBibit,
       page: () => const DaftarBibitPage(),
       transition: Transition.fadeIn,
-    ),
-    GetPage(
-      name: bibitDetail,
-      page: () => const BibitDetailPage(),
-      transition: Transition.rightToLeft,
     ),
     GetPage(
       name: navigation,
