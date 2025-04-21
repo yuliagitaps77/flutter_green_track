@@ -322,8 +322,8 @@ class BarcodeController extends GetxController {
       // Refresh daftar bibit dan kembali
       await Get.find<BibitController>().fetchBibitFromFirestore();
       await Get.find<BibitController>().fetchJenisList();
-      Get.back();
       navigationController.navigateToInventory();
+      Get.back();
 
       // Opsional: reset form setelah sukses
 
