@@ -9,7 +9,7 @@ import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_cetak_bibit.
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:typed_data';
 import 'package:flutter/rendering.dart';
@@ -295,7 +295,7 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
 
-      final result = await ImageGallerySaver.saveFile(file.path);
+      final result = await ImageGallerySaverPlus.saveFile(file.path);
 
       if (result['isSuccess'] == true) {
         Get.snackbar("Sukses", "QR berhasil disimpan ke galeri.");
