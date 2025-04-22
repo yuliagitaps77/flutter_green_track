@@ -61,6 +61,8 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
         textScaleFactor: 1.0, // Lock text scale factor for consistency
       ),
       child: Scaffold(
+        floatingActionButton: buildSpeedDial(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: Stack(
           children: [
             // Background with gradient as per style guide
@@ -88,54 +90,16 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                   elevation: 2,
                   shadowColor: shadowColor,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 300),
-                      opacity: 1.0,
-                      child: bibit.gambarImage.isNotEmpty
-                          ? Image.network(
-                              bibit.gambarImage.first,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: selectedBackgroundColor,
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      color: primaryGreen,
-                                      value:
-                                          loadingProgress.expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
-                                    ),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: selectedBackgroundColor,
-                                  child: Icon(
-                                    Icons.park,
-                                    size: 100,
-                                    color: primaryGreen,
-                                  ),
-                                );
-                              },
-                            )
-                          : Container(
-                              color: selectedBackgroundColor,
-                              child: Icon(
-                                Icons.park,
-                                size: 100,
-                                color: primaryGreen,
-                              ),
+                    background: bibit.gambarImage.isNotEmpty
+                        ? _buildImageSlider(bibit.gambarImage, screenWidth)
+                        : Container(
+                            color: selectedBackgroundColor,
+                            child: Icon(
+                              Icons.park,
+                              size: 100,
+                              color: primaryGreen,
                             ),
-                    ),
+                          ),
                   ),
                   leading: Material(
                     color: Colors.transparent,
@@ -327,81 +291,36 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: screenWidth * 0.5,
-                                    child: ElevatedButton.icon(
-                                      onPressed: () => _exportQR(bibit.id),
-                                      icon: const Icon(Icons.download),
-                                      label: const Text("Export QR"),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryGreen,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 12),
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  Text(bibit.id,
+                                      style: TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
                           ),
                         ),
-
-                        const SizedBox(height: 32),
-
-                        // Action buttons
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  icon: Icon(Icons.edit, color: primaryGreen),
-                                  label: const Text("Edit"),
-                                  onPressed: () {
-                                    Get.toNamed(
-                                      CetakBarcodeBibitPage.routeName,
-                                      arguments: bibit,
-                                    );
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: primaryGreen,
-                                    side: BorderSide(color: primaryGreen),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
+                        Center(
+                          child: SizedBox(
+                            width: screenWidth * 0.5,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _exportQR(bibit.id),
+                              icon: const Icon(Icons.download),
+                              label: const Text("Export QR"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryGreen,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  label: const Text("Hapus"),
-                                  onPressed: () => _showDeleteConfirmation(),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 32),
 
                         const SizedBox(height: 32),
                       ],
@@ -413,6 +332,112 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget buildSpeedDial() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Edit button
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: FloatingActionButton.extended(
+            heroTag: "editButton",
+            backgroundColor: primaryGreen.withOpacity(0.9),
+            foregroundColor: Colors.white,
+            elevation: 4,
+            icon: const Icon(Icons.edit),
+            label: const Text("Edit"),
+            onPressed: () {
+              Get.toNamed(
+                CetakBarcodeBibitPage.routeName,
+                arguments: bibit,
+              );
+            },
+          ),
+        ),
+
+        // Delete button
+        FloatingActionButton.extended(
+          heroTag: "deleteButton",
+          backgroundColor: Colors.red.withOpacity(0.9),
+          foregroundColor: Colors.white,
+          elevation: 4,
+          icon: const Icon(Icons.delete),
+          label: const Text("Hapus"),
+          onPressed: () => _showDeleteConfirmation(),
+        ),
+      ],
+    );
+  }
+
+// Alternative implementation using a single FAB with speed dial
+  Widget buildSpeedDialAlternative() {
+    return FloatingActionButton(
+      backgroundColor: primaryGreen,
+      child: const Icon(Icons.menu),
+      elevation: 4,
+      onPressed: () {
+        // Show a modal bottom sheet with options
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          builder: (context) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: primaryGreen.withOpacity(0.1),
+                        child: Icon(Icons.edit, color: primaryGreen),
+                      ),
+                      title: Text(
+                        "Edit Bibit",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Get.toNamed(
+                          CetakBarcodeBibitPage.routeName,
+                          arguments: bibit,
+                        );
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFFEE8E6), // Light red
+                        child: Icon(Icons.delete, color: Colors.red),
+                      ),
+                      title: const Text(
+                        "Hapus Bibit",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDeleteConfirmation();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -640,5 +665,166 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
         borderRadius: 8,
       );
     }
+  }
+
+// Add these variables to your state class
+  int _currentImageIndex = 0;
+  final PageController _imagePageController = PageController();
+
+// Add this method to build the image slider
+  Widget _buildImageSlider(List<String> images, double screenWidth) {
+    return Stack(
+      children: [
+        // PageView for images
+        PageView.builder(
+          controller: _imagePageController,
+          itemCount: images.length,
+          onPageChanged: (index) {
+            setState(() {
+              _currentImageIndex = index;
+            });
+          },
+          itemBuilder: (context, index) {
+            return Image.network(
+              images[index],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: selectedBackgroundColor,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: primaryGreen,
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: selectedBackgroundColor,
+                  child: Icon(
+                    Icons.broken_image,
+                    size: 100,
+                    color: primaryGreen,
+                  ),
+                );
+              },
+            );
+          },
+        ),
+
+        // Show pagination indicators if we have multiple images
+        if (images.length > 1)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                images.length,
+                (index) => Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentImageIndex == index
+                        ? primaryGreen
+                        : Colors.white.withOpacity(0.7),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // Add navigation arrows if we have multiple images
+        if (images.length > 1) ...[
+          // Left arrow
+          Positioned(
+            left: 8,
+            top: 0,
+            bottom: 0,
+            child: _buildNavigationArrow(
+              Icons.arrow_back_ios_new,
+              () {
+                if (_currentImageIndex > 0) {
+                  _imagePageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                } else {
+                  // Loop to the last image
+                  _imagePageController.animateToPage(
+                    images.length - 1,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+            ),
+          ),
+
+          // Right arrow
+          Positioned(
+            right: 8,
+            top: 0,
+            bottom: 0,
+            child: _buildNavigationArrow(
+              Icons.arrow_forward_ios,
+              () {
+                if (_currentImageIndex < images.length - 1) {
+                  _imagePageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                } else {
+                  // Loop to the first image
+                  _imagePageController.animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                }
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+// Helper method to build the navigation arrows
+  Widget _buildNavigationArrow(IconData icon, VoidCallback onTap) {
+    return Center(
+      child: Material(
+        color: Colors.black.withOpacity(0.3),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+// Don't forget to dispose the controller
+  @override
+  void dispose() {
+    _imagePageController.dispose();
+    super.dispose();
   }
 }
