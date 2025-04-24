@@ -4,12 +4,13 @@ import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_pengisian.dart';
 import 'package:flutter_green_track/fitur/intro/intro_page.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_detail_bibit.dart';
-import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_inventory_kayu.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
 import 'package:get/get.dart';
 
@@ -35,6 +36,10 @@ class AppRoutes {
       page: () => AdminAccountCreatorScreen(),
     ),
     GetPage(
+      name: halamanBuatAkun,
+      page: () => AdminAccountCreatorScreen(),
+    ),
+    GetPage(
         name: CetakBarcodeBibitPage.routeName,
         page: () => CetakBarcodeBibitPage()),
     GetPage(
@@ -46,6 +51,12 @@ class AppRoutes {
       name: InventoryKayuPage.routeName,
       page: () => InventoryKayuPage(),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: TambahPersediaanKayuPage.routeName,
+      page: () => const TambahPersediaanKayuPage(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
     ),
     GetPage(
       name: HistoryPengisianPage.routeName,

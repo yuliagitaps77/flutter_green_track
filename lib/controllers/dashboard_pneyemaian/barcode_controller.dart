@@ -30,7 +30,6 @@ class BarcodeController extends GetxController {
   final produktivitasController = TextEditingController();
   final catatanController = TextEditingController();
   final tanggalPembibitanController = TextEditingController();
-  final urlBibitController = TextEditingController();
   void updateSelectedImage() {
     if (selectedImages.isNotEmpty) {
       // Ensure the selected image is always the first image in the list
@@ -70,8 +69,6 @@ class BarcodeController extends GetxController {
     asalBibitController.text = 'Kebun Induk Wilangan';
     produktivitasController.text = 'Tinggi';
     catatanController.text = 'Auto-generated untuk testing cepat.';
-    urlBibitController.text =
-        'https://example.com/bibit/${idBibitController.text}';
 
     // Lokasi tanam dummy
     // selectedKPH.value = 'KPH Wilangan';
@@ -99,12 +96,14 @@ class BarcodeController extends GetxController {
   var selectedImages = <String>[].obs;
 
   // Dummy data for dropdown cascading
-  final kphList =
-      ['KPH Wilangan', 'KPH Saradan', 'KPH Bojonegoro', 'KPH Parengan'].obs;
   var bkphOptions = <String>[].obs;
   var rkphOptions = <String>[].obs;
 
-  // Map of BKPH options based on KPH
+  // KPH List
+  final kphList =
+      ['KPH Wilangan', 'KPH Saradan', 'KPH Bojonegoro', 'KPH Parengan'].obs;
+
+// Map of BKPH options based on KPH
   final Map<String, List<String>> bkphMap = {
     'KPH Wilangan': ['BKPH Wilangan Utara', 'BKPH Wilangan Selatan'],
     'KPH Saradan': ['BKPH Saradan Timur', 'BKPH Saradan Barat'],
@@ -112,18 +111,72 @@ class BarcodeController extends GetxController {
     'KPH Parengan': ['BKPH Parengan 1', 'BKPH Parengan 2'],
   };
 
-  // Map of RKPH options based on BKPH
+// Map of RKPH options based on BKPH
   final Map<String, List<String>> rkphMap = {
-    'BKPH Wilangan Utara': ['80 x 10', '30 x 30', '40 x 40'],
-    'BKPH Wilangan Selatan': ['50 x 20', '25 x 25'],
-    'BKPH Saradan Timur': ['60 x 15', '35 x 35'],
-    'BKPH Saradan Barat': ['45 x 25', '55 x 15'],
-    'BKPH Bojonegoro A': ['70 x 20', '40 x 30'],
-    'BKPH Bojonegoro B': ['65 x 25', '35 x 25'],
-    'BKPH Parengan 1': ['55 x 30', '40 x 20'],
-    'BKPH Parengan 2': ['50 x 40', '30 x 25'],
+    'BKPH Wilangan Utara': [
+      'RKPH Wilangan A',
+      'RKPH Wilangan B',
+      'RKPH Wilangan C'
+    ],
+    'BKPH Wilangan Selatan': ['RKPH Wilangan D', 'RKPH Wilangan E'],
+    'BKPH Saradan Timur': [
+      'RKPH Saradan A',
+      'RKPH Saradan B',
+      'RKPH Saradan C'
+    ],
+    'BKPH Saradan Barat': [
+      'RKPH Saradan D',
+      'RKPH Saradan E',
+      'RKPH Saradan F'
+    ],
+    'BKPH Bojonegoro A': [
+      'RKPH Bojonegoro A1',
+      'RKPH Bojonegoro A2',
+      'RKPH Bojonegoro A3'
+    ],
+    'BKPH Bojonegoro B': [
+      'RKPH Bojonegoro B1',
+      'RKPH Bojonegoro B2',
+      'RKPH Bojonegoro B3'
+    ],
+    'BKPH Parengan 1': [
+      'RKPH Parengan 1A',
+      'RKPH Parengan 1B',
+      'RKPH Parengan 1C'
+    ],
+    'BKPH Parengan 2': [
+      'RKPH Parengan 2A',
+      'RKPH Parengan 2B',
+      'RKPH Parengan 2C'
+    ],
   };
 
+// Map of Luas Petak options based on RKPH
+  final Map<String, List<String>> luasPetakMap = {
+    'RKPH Wilangan A': ['10 x 10', '20 x 30', '30 x 30'],
+    'RKPH Wilangan B': ['20 x 30', '40 x 40', '50 x 50'],
+    'RKPH Wilangan C': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Wilangan D': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Wilangan E': ['25 x 25', '35 x 35', '45 x 45'],
+    'RKPH Saradan A': ['10 x 10', '20 x 20', '30 x 30'],
+    'RKPH Saradan B': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Saradan C': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Saradan D': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Saradan E': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Saradan F': ['25 x 25', '35 x 35', '45 x 45'],
+    'RKPH Bojonegoro A1': ['10 x 10', '20 x 20', '30 x 30'],
+    'RKPH Bojonegoro A2': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Bojonegoro A3': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Bojonegoro B1': ['10 x 10', '20 x 20', '30 x 30'],
+    'RKPH Bojonegoro B2': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Bojonegoro B3': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Parengan 1A': ['10 x 10', '20 x 20', '30 x 30'],
+    'RKPH Parengan 1B': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Parengan 1C': ['20 x 20', '30 x 30', '40 x 40'],
+    'RKPH Parengan 2A': ['10 x 10', '20 x 20', '30 x 30'],
+    'RKPH Parengan 2B': ['15 x 15', '25 x 25', '35 x 35'],
+    'RKPH Parengan 2C': ['20 x 20', '30 x 30', '40 x 40'],
+  };
   @override
   void onInit() {
     super.onInit();
@@ -148,7 +201,6 @@ class BarcodeController extends GetxController {
     produktivitasController.dispose();
     catatanController.dispose();
     tanggalPembibitanController.dispose();
-    urlBibitController.dispose();
     super.onClose();
   }
 
@@ -273,7 +325,6 @@ class BarcodeController extends GetxController {
       'produktivitas': produktivitasController.text,
       'catatan': catatanController.text,
       'gambar_image': selectedImages, // URL ya, kalau upload
-      'url_bibit': urlBibitController.text,
       'lokasi_tanam': {
         'kph': selectedKPH.value,
         'bkph': selectedBKPH.value,
@@ -340,14 +391,40 @@ class BarcodeController extends GetxController {
     }
   }
 
+  var selectedLuasPetak = ''.obs; // Add this new observable
+  // Available options for dropdowns
+  var luasPetakOptions = <String>[].obs; // Add this new observable
+
   final navigationController = Get.find<NavigationController>();
+// Before setting the options, remove duplicates
+  void loadLuasPetakOptions(String rkph) {
+    var options = luasPetakMap[rkph] ?? [];
+    // Remove duplicates by converting to Set and back to List
+    options = options.toSet().toList();
+    luasPetakOptions.assignAll(options);
+  }
+
+  // Update the RKPH selection method to reset the Luas Petak selection
+  void onRKPHSelected(String rkph) {
+    selectedRKPH.value = rkph;
+    selectedLuasPetak.value = '';
+    loadLuasPetakOptions(rkph);
+  }
+
+  // Add method for Luas Petak selection
+  void onLuasPetakSelected(String luasPetak) {
+    selectedLuasPetak.value = luasPetak;
+  }
+
   // Submit form data
   Future<void> submitBibit({bool isUpdate = false}) async {
     isLoading.value = true;
 
     // Validasi field wajib
     List<String> errors = [];
-
+    if (selectedLuasPetak.value.isEmpty) {
+      errors.add("Luas Petak");
+    }
     if (namaBibitController.text.isEmpty) errors.add("Nama Bibit");
     if (jenisBibitController.text.isEmpty) errors.add("Jenis Bibit");
     if (kondisi.value.isEmpty) errors.add("Kondisi");
@@ -405,11 +482,11 @@ class BarcodeController extends GetxController {
         'catatan': catatanController.text,
         'tanggal_pembibitan': tanggalPembibitan.value,
         'gambar_image': uploadedUrls,
-        'url_bibit': urlBibitController.text,
         'lokasi_tanam': {
           'kph': selectedKPH.value,
           'bkph': selectedBKPH.value,
           'rkph': selectedRKPH.value,
+          'luas_petak': selectedLuasPetak.value, // Add this field
         },
         'updated_at': DateTime.now(),
         if (!isUpdate) 'created_at': DateTime.now(),
@@ -432,6 +509,8 @@ class BarcodeController extends GetxController {
 
   // Reset form values
   void resetForm() {
+    selectedLuasPetak.value = '';
+    luasPetakOptions.clear();
     generateIdBibit(); // Generate new ID
     namaBibitController.clear();
     varietasController.clear();
@@ -445,7 +524,6 @@ class BarcodeController extends GetxController {
     asalBibitController.clear();
     produktivitasController.clear();
     catatanController.clear();
-    urlBibitController.clear();
     selectedKPH.value = '';
     selectedBKPH.value = '';
     selectedRKPH.value = '';

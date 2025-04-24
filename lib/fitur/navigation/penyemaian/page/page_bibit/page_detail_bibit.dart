@@ -261,20 +261,20 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                         _buildSectionTitle("QR Code", sectionTitleSize),
                         const SizedBox(height: 16),
                         Center(
-                          child: Card(
-                            elevation: 0,
-                            color: backgroundColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: shadowColor, width: 1),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  RepaintBoundary(
-                                    key: qrKey,
-                                    child: QrImageView(
+                          child: RepaintBoundary(
+                            key: qrKey,
+                            child: Card(
+                              elevation: 0,
+                              color: backgroundColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: shadowColor, width: 1),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    QrImageView(
                                       data: bibit.id,
                                       version: QrVersions.auto,
                                       size:
@@ -289,13 +289,18 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                                         );
                                       },
                                     ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(bibit.id,
-                                      style: TextStyle(
-                                          color: Colors.black87,
-                                          fontWeight: FontWeight.bold)),
-                                ],
+                                    const SizedBox(height: 16),
+                                    Text("ID Bibit",
+                                        style: TextStyle(
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 5),
+                                    Text(bibit.id,
+                                        style: TextStyle(
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

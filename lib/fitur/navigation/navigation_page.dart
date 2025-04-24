@@ -6,6 +6,7 @@ import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
 import 'package:get/get.dart';
 import '../../controllers/navigation/navigation_controller.dart';
@@ -635,78 +636,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
   // Placeholder for Inventory/Bibit screen
   Widget _buildInventoryScreen() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pageTransitionAnimation.value,
-                child: FadeTransition(
-                  opacity: _pageTransitionAnimation,
-                  child: Icon(
-                    widget.userRole == UserRole.adminPenyemaian
-                        ? Icons.forest_rounded
-                        : Icons.inventory_2_rounded,
-                    size: 100,
-                    color: Color(0xFF4CAF50).withOpacity(0.5),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 20),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Text(
-                    widget.userRole == UserRole.adminPenyemaian
-                        ? "Daftar Bibit"
-                        : "Inventory Kayu",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 10),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 30 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      widget.userRole == UserRole.adminPenyemaian
-                          ? "Kelola dan pantau perkembangan bibit tanaman"
-                          : "Kelola dan pantau ketersediaan kayu",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+    return Center(child: InventoryKayuPage());
   }
 
   void _toggleFlashlight() {

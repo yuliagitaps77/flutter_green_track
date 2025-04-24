@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -237,6 +238,7 @@ class TPKDashboardController extends GetxController {
   void navigateToInventory() {
     print('Navigating to Inventory page');
     // Get.toNamed('/inventory');
+    Get.toNamed(InventoryKayuPage.routeName);
   }
 
   void navigateToScanHistory() {

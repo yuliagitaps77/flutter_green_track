@@ -40,7 +40,6 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
       controller.asalBibitController.text = b.asalBibit;
       controller.produktivitasController.text = b.produktivitas;
       controller.catatanController.text = b.catatan;
-      controller.urlBibitController.text = b.urlBibit;
       controller.selectedKPH.value = b.kph;
       controller.loadBKPHOptions(b.kph);
       controller.selectedBKPH.value = b.bkph;
@@ -677,42 +676,6 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
 
                     const SizedBox(height: 16),
 
-                    // URL Bibit Section
-                    const Text(
-                      'URL Bibit',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.3),
-                        ),
-                      ),
-                      child: TextFormField(
-                        controller: controller.urlBibitController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF4A4A4A),
-                        ),
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 16),
-                          border: InputBorder.none,
-                          hintText: 'URL untuk informasi bibit',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
                     // Lokasi Tanam (KPH)
                     const Text(
                       'Lokasi Tanam',
@@ -851,13 +814,64 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                               onChanged: (value) {
                                 if (value != null) {
                                   controller.selectedRKPH.value = value;
+                                  controller.selectedLuasPetak.value =
+                                      ''; // Reset the value
+                                  controller.loadLuasPetakOptions(value);
                                 }
                               },
                             ),
                           ),
                         ],
                       ),
-
+// Add this after the RKPH dropdown in the UI
+// Luas Petak (depends on RKPH)
+                    if (controller.selectedRKPH.value.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.grey.withOpacity(0.3),
+                                ),
+                              ),
+                              child: DropdownButtonFormField<String>(
+                                value: controller
+                                            .selectedLuasPetak.value.isEmpty ||
+                                        !controller.luasPetakOptions.contains(
+                                            controller.selectedLuasPetak.value)
+                                    ? null // Use null if the value is empty or not in the list
+                                    : controller.selectedLuasPetak.value,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  border: InputBorder.none,
+                                  hintText: 'Pilih Luas Petak',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF4A4A4A),
+                                ),
+                                items: controller.luasPetakOptions
+                                    .map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    controller.selectedLuasPetak.value = value;
+                                  }
+                                },
+                              )),
+                        ],
+                      ),
                     const SizedBox(height: 16),
 
                     // Tanggal Pembibitan
