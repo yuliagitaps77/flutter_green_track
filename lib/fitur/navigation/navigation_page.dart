@@ -1,19 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
-import 'package:flutter_green_track/data/models/user_model.dart';
+import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
-import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
 import 'package:get/get.dart';
+
 import '../../controllers/navigation/navigation_controller.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'dart:ui';
-import 'dart:math' as math;
 
 class MainNavigationContainer extends StatefulWidget {
   static String routeName = "/mainnavigation";
@@ -103,6 +102,12 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
   Future<void> _scanBarcode() async {
     try {
+      // Cek user role terlebih dahulu
+      print('🔥 [SCAN] User Role: ${widget.userRole}');
+      final bool isAdminTPK = widget.userRole == UserRole.adminTPK;
+      final bool isAdminPenyemaian =
+          widget.userRole == UserRole.adminPenyemaian;
+
       ScanOptions options = const ScanOptions(
         android: AndroidOptions(
           aspectTolerance: 0.5,
@@ -114,18 +119,44 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
       var result = await BarcodeScanner.scan(options: options);
 
       if (result.rawContent.isNotEmpty) {
-        // Tutup bottom sheet dan kembalikan hasil scan
+        // Tutup bottom sheet jika ada
         Get.back(result: result.rawContent);
 
-        // Tampilkan hasil scan
+        // Tampilkan hasil scan dengan warna berbeda berdasarkan role
+        Color bgColor = isAdminTPK ? Colors.brown : Colors.green;
+
         Get.snackbar(
           'Hasil Scan',
           'Kode barcode: ${result.rawContent}',
-          backgroundColor: Colors.green,
+          backgroundColor: bgColor,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
           snackPosition: SnackPosition.BOTTOM,
         );
+
+        // Penanganan hasil scan berdasarkan user role
+        if (isAdminTPK) {
+          // Admin TPK -> menangani kayu
+          print('🔥 [SCAN] Admin TPK: Navigasi ke detail kayu');
+          final kayuController = Get.find<InventoryKayuController>();
+          kayuController.navigateToDetailAfterScan(
+              result.rawContent, widget.userRole);
+        } else if (isAdminPenyemaian) {
+          // Admin Penyemaian -> menangani bibit
+          print('🔥 [SCAN] Admin Penyemaian: Navigasi ke detail bibit');
+          final bibitController = Get.find<BibitController>();
+          bibitController.navigateToDetailAfterScan(result.rawContent);
+        } else {
+          // Default jika role tidak teridentifikasi
+          print(
+              '⚠️ [SCAN] User role tidak teridentifikasi: ${widget.userRole}');
+          Get.snackbar(
+            'Perhatian',
+            'Peran pengguna tidak teridentifikasi',
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        }
       }
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.cameraAccessDenied) {
@@ -136,6 +167,8 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
+        // Tampilkan dialog input manual jika kamera tidak tersedia
+        _showManualInputDialog();
       } else {
         Get.snackbar(
           'Error',
@@ -144,6 +177,8 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
+        // Tampilkan dialog input manual jika terjadi error pada scanner
+        _showManualInputDialog();
       }
     } on Exception catch (e) {
       Get.snackbar(
@@ -153,22 +188,36 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
+      // Tampilkan dialog input manual jika terjadi error
+      _showManualInputDialog();
     }
   }
 
   void _showManualInputDialog() {
     final TextEditingController codeController = TextEditingController();
 
+    // Cek user role
+    final bool isAdminTPK = widget.userRole == UserRole.adminTPK;
+    final bool isAdminPenyemaian = widget.userRole == UserRole.adminPenyemaian;
+
+    // Sesuaikan judul dialog berdasarkan role
+    final String dialogTitle =
+        isAdminTPK ? 'Input ID Kayu Manual' : 'Input Kode Bibit Manual';
+    final String labelText = isAdminTPK ? 'ID Kayu' : 'Kode Bibit';
+    final Color buttonColor = isAdminTPK ? Colors.brown : Colors.green;
+
     Get.dialog(
       AlertDialog(
-        title: const Text('Input Kode Manual'),
+        title: Text(dialogTitle),
         content: TextField(
           controller: codeController,
-          decoration: const InputDecoration(
-            labelText: 'Kode Barcode',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: labelText,
+            border: const OutlineInputBorder(),
+            hintText: isAdminTPK ? 'Masukkan ID kayu' : 'Masukkan kode bibit',
           ),
           keyboardType: TextInputType.text,
+          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -179,23 +228,48 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
             onPressed: () {
               if (codeController.text.isNotEmpty) {
                 Get.back();
-                Get.back(result: codeController.text);
 
                 // Tampilkan hasil input manual
                 Get.snackbar(
-                  'Kode Manual',
+                  'Input Manual',
                   'Kode: ${codeController.text}',
-                  backgroundColor: Colors.green,
+                  backgroundColor: buttonColor,
                   colorText: Colors.white,
                   duration: const Duration(seconds: 3),
                   snackPosition: SnackPosition.BOTTOM,
                 );
+
+                // Penanganan hasil input manual berdasarkan user role
+                if (isAdminTPK) {
+                  // Admin TPK -> menangani kayu
+                  print('🔥 [MANUAL INPUT] Admin TPK: Navigasi ke detail kayu');
+                  final kayuController = Get.find<InventoryKayuController>();
+                  kayuController.navigateToDetailAfterScan(
+                      codeController.text, widget.userRole);
+                } else if (isAdminPenyemaian) {
+                  // Admin Penyemaian -> menangani bibit
+                  print(
+                      '🔥 [MANUAL INPUT] Admin Penyemaian: Navigasi ke detail bibit');
+                  final bibitController = Get.find<BibitController>();
+                  bibitController
+                      .navigateToDetailAfterScan(codeController.text);
+                } else {
+                  // Default jika role tidak teridentifikasi
+                  print(
+                      '⚠️ [MANUAL INPUT] User role tidak teridentifikasi: ${widget.userRole}');
+                  Get.snackbar(
+                    'Perhatian',
+                    'Peran pengguna tidak teridentifikasi',
+                    backgroundColor: Colors.orange,
+                    colorText: Colors.white,
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
+              backgroundColor: buttonColor,
             ),
-            child: const Text('Simpan'),
+            child: const Text('Cari'),
           ),
         ],
       ),

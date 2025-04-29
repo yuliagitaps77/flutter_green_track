@@ -1,8 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
-import 'package:get/get.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_green_track/fitur/scan_penyemaian/detail_halaman_scan.dart';
 import 'package:get/get.dart';
 
 class BibitController extends GetxController {
@@ -11,6 +10,85 @@ class BibitController extends GetxController {
   final RxString _selectedJenis = 'Semua'.obs;
   final RxString _searchQuery = ''.obs;
   var jenisList = <String>[].obs;
+// Tambahkan fungsi berikut ke BibitController Anda:
+
+  Future<Bibit?> getBibitByBarcode(String barcodeId) async {
+    try {
+      // Coba cari di cache terlebih dahulu
+      final cachedBibit =
+          _bibitList.firstWhereOrNull((bibit) => bibit.id == barcodeId);
+
+      if (cachedBibit != null) {
+        return cachedBibit;
+      }
+
+      // Jika tidak ada di cache, cari di Firestore
+      final snapshot = await FirebaseFirestore.instance
+          .collection('bibit')
+          .doc(barcodeId)
+          .get();
+
+      if (snapshot.exists) {
+        final bibit = Bibit.fromFirestore(snapshot);
+        return bibit;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error mendapatkan data bibit: $e');
+      Get.snackbar(
+        'Error',
+        'Gagal mendapatkan detail bibit',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+  }
+
+  // Fungsi untuk navigasi ke halaman detail setelah scan berhasil
+  void navigateToDetailAfterScan(String barcodeResult) async {
+    try {
+      final bibit = await getBibitByBarcode(barcodeResult);
+
+      Get.back(); // Tutup loading dialog
+
+      if (bibit != null) {
+        Get.to(() => DetailPage(barcodeId: barcodeResult));
+      } else {
+        Get.snackbar(
+          'Informasi',
+          'Bibit dengan kode $barcodeResult tidak ditemukan',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.back(); // Tutup loading dialog jika terjadi error
+      Get.snackbar(
+        'Error',
+        'Terjadi kesalahan: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Getters
+  List<Bibit> get bibitList => _bibitList;
+  List<Bibit> get filteredBibitList => _filteredBibitList;
+  String get selectedJenis => _selectedJenis.value;
+  String get searchQuery => _searchQuery.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchBibitFromFirestore();
+    fetchJenisList(); // ambil semua jenis unik dari Firestore
+  }
+
   Future<void> fetchJenisList() async {
     try {
       final snapshot =
@@ -26,19 +104,6 @@ class BibitController extends GetxController {
     } catch (e) {
       print('Gagal mengambil jenis bibit: $e');
     }
-  }
-
-  // Getters
-  List<Bibit> get bibitList => _bibitList;
-  List<Bibit> get filteredBibitList => _filteredBibitList;
-  String get selectedJenis => _selectedJenis.value;
-  String get searchQuery => _searchQuery.value;
-
-  @override
-  void onInit() {
-    super.onInit();
-    fetchBibitFromFirestore();
-    fetchJenisList(); // ambil semua jenis unik dari Firestore
   }
 
   /// Fetch data dari Firestore

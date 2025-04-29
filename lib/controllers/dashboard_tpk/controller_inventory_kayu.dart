@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/detail_bibit.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+
+import '../dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 
 // PART 1: Enhanced InventoryItem class
 class InventoryItem {
@@ -507,6 +510,501 @@ class InventoryKayuController extends GetxController {
         ],
       ),
     );
+  }
+// Tambahkan fungsi berikut ke dalam InventoryKayuController
+
+  // Mengambil data kayu berdasarkan ID
+
+  // Fungsi untuk navigasi ke halaman detail setelah scan berhasil
+  // Tambahkan fungsi berikut ke dalam InventoryKayuController
+
+  // Mengambil data kayu berdasarkan ID
+  Future<InventoryItem?> getKayuById(String kayuId) async {
+    try {
+      print('🔥 [GET KAYU] Mencari kayu dengan ID: $kayuId');
+      isLoading.value = true;
+
+      // Coba cari di cache terlebih dahulu
+      final cachedItem =
+          inventoryItems.firstWhereOrNull((item) => item.id == kayuId);
+
+      if (cachedItem != null) {
+        print('✅ [GET KAYU] Kayu ditemukan di cache: ${cachedItem.batch}');
+        return cachedItem;
+      }
+
+      // Jika tidak ada di cache, cari di Firestore
+      print(
+          '🔥 [GET KAYU] Kayu tidak ditemukan di cache, mencari di Firestore');
+      final snapshot = await _firestore
+          .collection('kayu')
+          .doc(kayuId)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      if (snapshot.exists) {
+        print('✅ [GET KAYU] Kayu ditemukan di Firestore: ${snapshot.id}');
+        final item = InventoryItem.fromFirestore(snapshot);
+        return item;
+      }
+
+      print('⚠️ [GET KAYU] Kayu tidak ditemukan: $kayuId');
+      return null;
+    } catch (e) {
+      print('❌ [GET KAYU] Error saat mencari kayu: $e');
+      errorMessage.value = 'Gagal mendapatkan detail kayu';
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Fungsi untuk navigasi ke halaman detail setelah scan berhasil
+  void navigateToDetailAfterScan(
+      String barcodeResult, UserRole? userRole) async {
+    try {
+      Get.dialog(
+        Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Ambil data kayu dari Firestore
+      final snapshot = await _firestore
+          .collection('kayu')
+          .doc(barcodeResult)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      Get.back(); // Tutup loading dialog
+
+      if (snapshot.exists) {
+        print('✅ [NAVIGATE DETAIL] Kayu ditemukan, navigasi ke halaman detail');
+
+        // Navigasi ke halaman detail
+        Get.to(() => KayuDetailPage(
+              kayuId: barcodeResult,
+              userRole: userRole,
+            ));
+      } else {
+        print('⚠️ [NAVIGATE DETAIL] Kayu tidak ditemukan: $barcodeResult');
+        Get.snackbar(
+          'Informasi',
+          'Kayu dengan ID $barcodeResult tidak ditemukan',
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.back(); // Tutup loading dialog jika terjadi error
+      print('❌ [NAVIGATE DETAIL] Error saat navigasi: $e');
+      Get.snackbar(
+        'Error',
+        'Terjadi kesalahan: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Melihat detail kayu setelah scan (full access)
+  void viewKayuDetailAfterScan(InventoryItem item) async {
+    try {
+      print('🔥 [FIRESTORE VIEW] Fetching full document data: ${item.id}');
+      final docSnapshot =
+          await _firestore.collection('kayu').doc(item.id).get();
+
+      if (!docSnapshot.exists) {
+        print('❌ [FIRESTORE VIEW] Document not found');
+        throw Exception('Data tidak ditemukan di database');
+      }
+
+      print('✅ [FIRESTORE VIEW] Document retrieved successfully');
+      final data = docSnapshot.data() ?? {};
+
+      // Extract data
+      final imageUrls = (data['gambar_image'] as List<dynamic>?) ?? [];
+      final lokasi = data['lokasi_tanam'] as Map<String, dynamic>? ?? {};
+      final tanggalLahir = data['tanggal_lahir_pohon'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              data['tanggal_lahir_pohon'] as int)
+          : null;
+
+      // Format dates for display
+      final createdAt =
+          data['created_at'] != null && data['created_at'] is Timestamp
+              ? (data['created_at'] as Timestamp).toDate()
+              : null;
+      final updatedAt =
+          data['updated_at'] != null && data['updated_at'] is Timestamp
+              ? (data['updated_at'] as Timestamp).toDate()
+              : null;
+
+      final formatter = DateFormat('dd MMM yyyy, HH:mm');
+
+      Get.dialog(
+        Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: Get.height * 0.8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with title and close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Detail Inventory: ${item.namaKayu}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+                const Divider(),
+
+                // Scrollable content
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Images carousel
+                      if (imageUrls.isNotEmpty)
+                        Container(
+                          height: 200,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: PageView.builder(
+                            itemCount: imageUrls.length,
+                            itemBuilder: (context, imageIndex) {
+                              return Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                        imageUrls[imageIndex].toString()),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                      // Basic info
+                      _buildInfoSection('Informasi Dasar', [
+                        _buildInfoRow(
+                            'ID Kayu', data['id_kayu']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Barcode', data['barcode']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Nama Kayu', data['nama_kayu']?.toString() ?? '-'),
+                        _buildInfoRow('Jenis Kayu',
+                            data['jenis_kayu']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Varietas', data['varietas']?.toString() ?? '-'),
+                        _buildInfoRow('Batch Panen',
+                            data['batch_panen']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Jumlah Stok', '${data['jumlah_stok'] ?? 0} Unit'),
+                      ]),
+
+                      // Physical attributes
+                      _buildInfoSection('Karakteristik Fisik', [
+                        _buildInfoRow('Usia', '${data['usia'] ?? 0} tahun'),
+                        _buildInfoRow('Tinggi', '${data['tinggi'] ?? 0} meter'),
+                        if (tanggalLahir != null)
+                          _buildInfoRow('Tanggal Lahir Pohon',
+                              DateFormat('dd MMM yyyy').format(tanggalLahir)),
+                      ]),
+
+                      // Location info
+                      _buildInfoSection('Informasi Lokasi', [
+                        _buildInfoRow('KPH', lokasi['kph']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'BKPH', lokasi['bkph']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'RKPH', lokasi['rkph']?.toString() ?? '-'),
+                        _buildInfoRow('Luas Petak',
+                            lokasi['luas_petak']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Alamat', lokasi['alamat']?.toString() ?? '-'),
+                      ]),
+
+                      // Additional info
+                      _buildInfoSection('Informasi Tambahan', [
+                        _buildInfoRow(
+                            'Catatan', data['catatan']?.toString() ?? '-'),
+                        if (createdAt != null)
+                          _buildInfoRow(
+                              'Tanggal Dibuat', formatter.format(createdAt)),
+                        if (updatedAt != null)
+                          _buildInfoRow('Terakhir Diperbarui',
+                              formatter.format(updatedAt)),
+                      ]),
+                    ],
+                  ),
+                ),
+
+                // Action buttons - untuk admin TPK, bisa edit dan hapus
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Get.back();
+                        // Cari index item di inventoryItems
+                        final index = inventoryItems
+                            .indexWhere((element) => element.id == item.id);
+                        if (index != -1) {
+                          editItem(index);
+                        } else {
+                          Get.snackbar(
+                            'Peringatan',
+                            'Item tidak ditemukan dalam daftar',
+                            backgroundColor: Colors.orange,
+                            colorText: Colors.white,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Edit'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Get.back();
+                        // Tampilkan dialog konfirmasi hapus
+                        Get.dialog(
+                          AlertDialog(
+                            title: const Text('Konfirmasi'),
+                            content: Text(
+                                'Apakah Anda yakin ingin menghapus ${item.namaKayu}?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Get.back(),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Get.back();
+                                  // Cari index item di inventoryItems
+                                  final index = inventoryItems.indexWhere(
+                                      (element) => element.id == item.id);
+                                  if (index != -1) {
+                                    deleteItem(index);
+                                  } else {
+                                    Get.snackbar(
+                                      'Peringatan',
+                                      'Item tidak ditemukan dalam daftar',
+                                      backgroundColor: Colors.orange,
+                                      colorText: Colors.white,
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.delete, size: 16),
+                      label: const Text('Hapus'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      print('❌ [FIRESTORE VIEW] Error viewing document details: $e');
+
+      Get.snackbar(
+        'Error',
+        'Gagal mengakses detail data: $e',
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+    }
+  }
+
+  // Melihat detail kayu setelah scan (limited access untuk admin penyemaian)
+  void viewKayuDetailLimitedAfterScan(InventoryItem item) async {
+    try {
+      print('🔥 [FIRESTORE VIEW] Fetching limited document data: ${item.id}');
+      final docSnapshot =
+          await _firestore.collection('kayu').doc(item.id).get();
+
+      if (!docSnapshot.exists) {
+        print('❌ [FIRESTORE VIEW] Document not found');
+        throw Exception('Data tidak ditemukan di database');
+      }
+
+      print('✅ [FIRESTORE VIEW] Document retrieved successfully');
+      final data = docSnapshot.data() ?? {};
+
+      // Extract data
+      final imageUrls = (data['gambar_image'] as List<dynamic>?) ?? [];
+      final lokasi = data['lokasi_tanam'] as Map<String, dynamic>? ?? {};
+
+      // Format dates for display
+      final createdAt =
+          data['created_at'] != null && data['created_at'] is Timestamp
+              ? (data['created_at'] as Timestamp).toDate()
+              : null;
+
+      final formatter = DateFormat('dd MMM yyyy, HH:mm');
+
+      Get.dialog(
+        Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: Get.height * 0.8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with title and close button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Detail Inventory: ${item.namaKayu}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Hanya Lihat',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+                const Divider(),
+
+                // Scrollable content
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Images carousel
+                      if (imageUrls.isNotEmpty)
+                        Container(
+                          height: 200,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: PageView.builder(
+                            itemCount: imageUrls.length,
+                            itemBuilder: (context, imageIndex) {
+                              return Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                        imageUrls[imageIndex].toString()),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                      // Basic info - hanya informasi dasar
+                      _buildInfoSection('Informasi Dasar', [
+                        _buildInfoRow(
+                            'Nama Kayu', data['nama_kayu']?.toString() ?? '-'),
+                        _buildInfoRow('Jenis Kayu',
+                            data['jenis_kayu']?.toString() ?? '-'),
+                        _buildInfoRow('Batch Panen',
+                            data['batch_panen']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'Jumlah Stok', '${data['jumlah_stok'] ?? 0} Unit'),
+                      ]),
+
+                      // Location info
+                      _buildInfoSection('Informasi Lokasi', [
+                        _buildInfoRow('KPH', lokasi['kph']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'BKPH', lokasi['bkph']?.toString() ?? '-'),
+                        _buildInfoRow(
+                            'RKPH', lokasi['rkph']?.toString() ?? '-'),
+                      ]),
+
+                      // Additional info - hanya sebagian
+                      if (createdAt != null)
+                        _buildInfoSection('Informasi Tambahan', [
+                          _buildInfoRow(
+                              'Tanggal Dibuat', formatter.format(createdAt)),
+                        ]),
+                    ],
+                  ),
+                ),
+
+                // Tanpa action buttons untuk admin penyemaian
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      print('❌ [FIRESTORE VIEW] Error viewing document details: $e');
+
+      Get.snackbar(
+        'Error',
+        'Gagal mengakses detail data: $e',
+        backgroundColor: Colors.red.withOpacity(0.1),
+        colorText: Colors.red,
+      );
+    }
   }
 
   Future<void> viewItemDetails(int index) async {

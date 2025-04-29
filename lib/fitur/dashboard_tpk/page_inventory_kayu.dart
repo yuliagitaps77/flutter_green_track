@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
-import 'package:get/get.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/detail_bibit.dart';
 import 'package:get/get.dart';
 
 // PART 3: Enhanced UI for the Inventory Page
@@ -307,107 +305,145 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                     }
 
                     return RefreshIndicator(
-                      onRefresh: () => controller.fetchInventoryFromFirestore(),
-                      color: Colors.green,
-                      child: ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 1,
-                            child: InkWell(
-                              onTap: () => controller.viewItemDetails(
-                                  controller.inventoryItems.indexOf(item)),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: ListTile(
-                                  // Display an image if available
-                                  leading: item.imageUrl.isNotEmpty
-                                      ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: Image.network(
-                                            item.imageUrl,
-                                            width: 50,
-                                            height: 50,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return Container(
-                                                width: 50,
-                                                height: 50,
-                                                color: Colors.grey
-                                                    .withOpacity(0.2),
-                                                child: const Icon(
-                                                    Icons.image_not_supported,
-                                                    color: Colors.grey),
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.green.withOpacity(0.1),
+                        onRefresh: () =>
+                            controller.fetchInventoryFromFirestore(),
+                        color: Colors.green,
+                        child: ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 1,
+                              child: InkWell(
+                                // Ubah onTap untuk navigasi ke KayuDetailPage alih-alih dialog
+                                onTap: () {
+                                  print(
+                                      '🔥 [ITEM CLICK] Navigasi ke halaman detail: ${item.id}');
+                                  // Langsung akses dan gunakan userRole yang ada di controller
+                                  UserRole? userRole;
+                                  // Cek apakah userRole tersedia di scope tertentu, sesuaikan dengan struktur app Anda
+                                  if (controller is InventoryKayuController) {
+                                    // Asumsi controller memiliki akses ke userRole
+                                    // Atau gunakan cara lain untuk mendapatkan userRole sesuai dengan struktur aplikasi Anda
+                                    userRole = UserRole
+                                        .adminTPK; // Ini contoh default, sesuaikan dengan kebutuhan
+                                  }
+
+                                  Get.to(() => KayuDetailPage(
+                                        kayuId: item.id,
+                                        userRole: userRole,
+                                      ));
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: ListTile(
+                                    // Display an image if available
+                                    leading: item.imageUrl.isNotEmpty
+                                        ? ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(8),
+                                            child: Image.network(
+                                              item.imageUrl,
+                                              width: 50,
+                                              height: 50,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  color: Colors.grey
+                                                      .withOpacity(0.2),
+                                                  child: const Icon(
+                                                      Icons.image_not_supported,
+                                                      color: Colors.grey),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 50,
+                                            height: 50,
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.brown.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(Icons.forest,
+                                                color: Colors.brown),
                                           ),
-                                          child: const Icon(Icons.eco,
+                                    title: Text(
+                                      item.batch,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Jumlah Stok: ${item.stock}'),
+                                        if (item.namaKayu.isNotEmpty)
+                                          Text(
+                                            item.namaKayu,
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Icon button untuk langsung ke halaman detail
+                                        IconButton(
+                                          icon: const Icon(Icons.info_outline,
+                                              color: Colors.blue),
+                                          onPressed: () {
+                                            UserRole? userRole;
+                                            if (controller
+                                                is InventoryKayuController) {
+                                              userRole = UserRole
+                                                  .adminTPK; // Sesuaikan dengan kebutuhan
+                                            }
+
+                                            Get.to(() => KayuDetailPage(
+                                                  kayuId: item.id,
+                                                  userRole: userRole,
+                                                ));
+                                          },
+                                        ),
+                                        // Edit button
+                                        IconButton(
+                                          icon: const Icon(Icons.edit,
                                               color: Colors.green),
+                                          onPressed: () => controller.editItem(
+                                              controller.inventoryItems
+                                                  .indexOf(item)),
                                         ),
-                                  title: Text(
-                                    item.batch,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w500),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Jumlah Stok: ${item.stock}'),
-                                      if (item.namaKayu.isNotEmpty)
-                                        Text(
-                                          item.namaKayu,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 12,
-                                          ),
+                                        // Delete button
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.red),
+                                          onPressed: () =>
+                                              controller.deleteItem(controller
+                                                  .inventoryItems
+                                                  .indexOf(item)),
                                         ),
-                                    ],
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            color: Colors.green),
-                                        onPressed: () => controller.editItem(
-                                            controller.inventoryItems
-                                                .indexOf(item)),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.green),
-                                        onPressed: () => controller.deleteItem(
-                                            controller.inventoryItems
-                                                .indexOf(item)),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
+                            );
+                          },
+                        ));
                   }
                 }),
               ),
