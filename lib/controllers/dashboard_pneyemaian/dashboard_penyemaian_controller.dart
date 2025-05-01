@@ -1,11 +1,9 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
-import 'package:flutter_green_track/fitur/jadwal_perawatan/jadwal_perawatan_page.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
 
@@ -250,7 +248,7 @@ class PenyemaianDashboardController extends GetxController {
   void navigateToJadwalRawat() {
     print('Navigating to Care Schedule page');
     // Get.toNamed('/jadwal-rawat');
-    Get.to(PlantCareScheduleScreen());
+    Get.to(JadwalPerawatanPage());
   }
 
   void navigateToRiwayatScan() {
