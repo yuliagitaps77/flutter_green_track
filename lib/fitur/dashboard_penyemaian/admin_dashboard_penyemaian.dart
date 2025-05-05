@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
+import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
+
+import 'package:intl/intl.dart';
 
 class PenyemaianDashboardScreen extends StatefulWidget {
   static String? routeName = "/PagePenyemaianDashboardScreen";
@@ -70,6 +74,9 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appController.syncActivitiesFromFirestore();
+    });
     return Scaffold(
       body: Stack(
         children: [
@@ -169,12 +176,25 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              "Aksi Cepat",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E7D32),
+            GestureDetector(
+              onTap: () {
+                AppController.to.recordActivity(
+                  activityType: ActivityTypes.scanBarcode,
+                  description: 'Scan barcode bibit: asdd',
+                  targetId: "12313",
+                  metadata: {
+                    'barcode': "hello world",
+                    'timestamp': DateTime.now().toString(),
+                  },
+                );
+              },
+              child: Text(
+                "Aksi Cepat",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32),
+                ),
               ),
             ),
             // Button to view all actions
@@ -389,6 +409,20 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
   }
 
   // Recent activities section
+  final appController = Get.find<AppController>();
+
+  // The rest of the screen implementation...
+
+  // Modified recent activities section to use AppController
+  bool _isHighlightActivity(String activityType) {
+    // Highlight aktivitas yang dianggap penting
+    return [
+      ActivityTypes.scanBarcode,
+      ActivityTypes.printBarcode,
+    ].contains(activityType);
+  }
+
+  // Recent activities section
   Widget _buildRecentActivities() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,22 +437,43 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         ),
         SizedBox(height: 15),
 
-        // Activity items with Obx for reactivity
-        Obx(() => Column(
-              children: controller.recentActivities
-                  .map((activity) => ActivityItemWidget(
-                        icon: activity.icon!,
-                        title: activity.namaAktivitas,
-                        time: activity.tanggalWaktu.toString(),
-                        highlight: activity.highlight,
-                      ))
-                  .toList(),
-            )),
+        // Use AppController's recentActivities with Obx for reactivity
+        Obx(() {
+          // Get activities relevant to Penyemaian admin
+          final activities = appController.getPenyemaianActivities(limit: 5);
+
+          if (activities.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Belum ada aktivitas terbaru",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return Column(
+            children: activities.map((activity) {
+              // Convert UserActivity to format expected by ActivityItemWidget
+              return ActivityItemWidget(
+                icon: _getIconData(activity.icon),
+                title: activity.description,
+                time: _formatTimestamp(activity.timestamp),
+                highlight: _isHighlightActivity(activity.activityType),
+              );
+            }).toList(),
+          );
+        }),
 
         // View all button
         Center(
           child: TextButton(
-            onPressed: () => controller.viewAllActivities(),
+            onPressed: () => Get.to(() => ActivityHistoryScreen()),
             child: Text(
               "Lihat Semua",
               style: TextStyle(
@@ -430,6 +485,81 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         ),
       ],
     );
+  }
+
+  // Helper method to convert icon string to IconData
+  IconData _getIconData(String? iconString) {
+    if (iconString == null) return Icons.history;
+
+    switch (iconString) {
+      case 'Icons.qr_code_scanner_rounded':
+        return Icons.qr_code_scanner_rounded;
+      case 'Icons.print_rounded':
+        return Icons.print_rounded;
+      case 'Icons.edit':
+        return Icons.edit;
+      case 'Icons.delete':
+        return Icons.delete;
+      case 'Icons.calendar_month_rounded':
+        return Icons.calendar_month_rounded;
+      case 'Icons.forest_rounded':
+        return Icons.forest_rounded;
+      case 'Icons.local_shipping_rounded':
+        return Icons.local_shipping_rounded;
+      default:
+        return Icons.history;
+    }
+  }
+
+  // Helper method to format timestamp
+  String _formatTimestamp(DateTime timestamp) {
+    // For today's activities, show only time
+    final now = DateTime.now();
+    if (timestamp.year == now.year &&
+        timestamp.month == now.month &&
+        timestamp.day == now.day) {
+      return DateFormat('HH:mm').format(timestamp);
+    }
+    // For older activities, show date
+    return DateFormat('dd MMM, HH:mm').format(timestamp);
+  }
+}
+
+extension DashboardIntegration on AppController {
+  // Get activities relevant to Penyemaian dashboard
+  List<UserActivity> getPenyemaianActivities({int limit = 5}) {
+    final penyemaianActivityTypes = [
+      ActivityTypes.scanBarcode,
+      ActivityTypes.printBarcode,
+      ActivityTypes.updateBibit,
+      ActivityTypes.deleteBibit,
+      ActivityTypes.addJadwalRawat,
+    ];
+
+    // Filter activities by types relevant to Penyemaian
+    final filteredActivities = recentActivities
+        .where((activity) =>
+            penyemaianActivityTypes.contains(activity.activityType))
+        .take(limit)
+        .toList();
+
+    return filteredActivities;
+  }
+
+  // Get activities relevant to TPK dashboard
+  List<UserActivity> getTPKActivities({int limit = 5}) {
+    // Filter for activities relevant to TPK admin
+    final relevantTypes = [
+      ActivityTypes.scanBarcode,
+      ActivityTypes.updateKayu,
+      ActivityTypes.deleteKayu,
+      ActivityTypes.addPengiriman,
+    ];
+
+    return recentActivities
+        .where((activity) => relevantTypes.contains(activity.activityType))
+        .take(limit)
+        .toList();
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:http/http.dart' as http;
@@ -338,17 +339,82 @@ class BarcodeController extends GetxController {
     final id = idBibitController.text;
 
     if (isUpdate) {
+      print("is update yes ${isUpdate}");
+      AppController.to.recordActivity(
+        activityType: ActivityTypes.updateBibit,
+        description: 'Pembaruan Data ${namaBibitController.text}',
+        targetId: idBibitController.text,
+        metadata: {
+          'barcode': idBibitController.text,
+          'id_bibit': idBibitController.text,
+          'nama_bibit': namaBibitController.text,
+          'varietas': varietasController.text,
+          'usia': int.tryParse(usiaController.text) ?? 0,
+          'tinggi': int.tryParse(tinggiController.text) ?? 0,
+          'jenis_bibit': jenisBibitController.text,
+          'kondisi': kondisi.value,
+          'status_hama': statusHama.value,
+          'media_tanam': mediaTanamController.text,
+          'nutrisi': nutrisiController.text,
+          'asal_bibit': asalBibitController.text,
+          'produktivitas': produktivitasController.text,
+          'catatan': catatanController.text,
+          'gambar_image': selectedImages, // URL ya, kalau upload
+          'lokasi_tanam': {
+            'kph': selectedKPH.value,
+            'bkph': selectedBKPH.value,
+            'rkph': selectedRKPH.value,
+          },
+          'tanggal_pembibitan': tanggalPembibitan.value,
+          'updated_at': DateTime.now(),
+          'timestamp': DateTime.now().toString(),
+        },
+      );
       await firestore.collection('bibit').doc(id).update(bibitData);
+
       Get.snackbar("Berhasil", "Data bibit berhasil diperbarui");
     } else {
+      print("is update no ${isUpdate}");
+      AppController.to.recordActivity(
+        activityType: ActivityTypes.printBarcode,
+        description: 'Cetak Barcode Untuk Bibit ${namaBibitController.text}',
+        targetId: idBibitController.text,
+        metadata: {
+          'barcode': idBibitController.text,
+          'id_bibit': idBibitController.text,
+          'nama_bibit': namaBibitController.text,
+          'varietas': varietasController.text,
+          'usia': int.tryParse(usiaController.text) ?? 0,
+          'tinggi': int.tryParse(tinggiController.text) ?? 0,
+          'jenis_bibit': jenisBibitController.text,
+          'kondisi': kondisi.value,
+          'status_hama': statusHama.value,
+          'media_tanam': mediaTanamController.text,
+          'nutrisi': nutrisiController.text,
+          'asal_bibit': asalBibitController.text,
+          'produktivitas': produktivitasController.text,
+          'catatan': catatanController.text,
+          'gambar_image': selectedImages, // URL ya, kalau upload
+          'lokasi_tanam': {
+            'kph': selectedKPH.value,
+            'bkph': selectedBKPH.value,
+            'rkph': selectedRKPH.value,
+          },
+          'tanggal_pembibitan': tanggalPembibitan.value,
+          'updated_at': DateTime.now(),
+          'timestamp': DateTime.now().toString(),
+        },
+      );
       await firestore.collection('bibit').doc(id).set(bibitData);
+
       Get.snackbar("Berhasil", "Data bibit berhasil ditambahkan");
     }
 
     resetForm();
   }
 
-  Future<void> saveBibitToFirestore(Map<String, dynamic> bibitData) async {
+  Future<void> saveBibitToFirestore(
+      Map<String, dynamic> bibitData, bool isUpdate) async {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -357,7 +423,69 @@ class BarcodeController extends GetxController {
       }
 
       bibitData['id_user'] = userId;
-
+      if (isUpdate) {
+        AppController.to.recordActivity(
+          activityType: ActivityTypes.updateBibit,
+          description: 'Pembaruan Data ${namaBibitController.text}',
+          targetId: idBibitController.text,
+          metadata: {
+            'barcode': idBibitController.text,
+            'id_bibit': idBibitController.text,
+            'nama_bibit': namaBibitController.text,
+            'varietas': varietasController.text,
+            'usia': int.tryParse(usiaController.text) ?? 0,
+            'tinggi': int.tryParse(tinggiController.text) ?? 0,
+            'jenis_bibit': jenisBibitController.text,
+            'kondisi': kondisi.value,
+            'status_hama': statusHama.value,
+            'media_tanam': mediaTanamController.text,
+            'nutrisi': nutrisiController.text,
+            'asal_bibit': asalBibitController.text,
+            'produktivitas': produktivitasController.text,
+            'catatan': catatanController.text,
+            'gambar_image': selectedImages, // URL ya, kalau upload
+            'lokasi_tanam': {
+              'kph': selectedKPH.value,
+              'bkph': selectedBKPH.value,
+              'rkph': selectedRKPH.value,
+            },
+            'tanggal_pembibitan': tanggalPembibitan.value,
+            'updated_at': DateTime.now(),
+            'timestamp': DateTime.now().toString(),
+          },
+        );
+      } else {
+        AppController.to.recordActivity(
+          activityType: ActivityTypes.printBarcode,
+          description: 'Cetak Barcode Untuk Bibit ${namaBibitController.text}',
+          targetId: idBibitController.text,
+          metadata: {
+            'barcode': idBibitController.text,
+            'id_bibit': idBibitController.text,
+            'nama_bibit': namaBibitController.text,
+            'varietas': varietasController.text,
+            'usia': int.tryParse(usiaController.text) ?? 0,
+            'tinggi': int.tryParse(tinggiController.text) ?? 0,
+            'jenis_bibit': jenisBibitController.text,
+            'kondisi': kondisi.value,
+            'status_hama': statusHama.value,
+            'media_tanam': mediaTanamController.text,
+            'nutrisi': nutrisiController.text,
+            'asal_bibit': asalBibitController.text,
+            'produktivitas': produktivitasController.text,
+            'catatan': catatanController.text,
+            'gambar_image': selectedImages, // URL ya, kalau upload
+            'lokasi_tanam': {
+              'kph': selectedKPH.value,
+              'bkph': selectedBKPH.value,
+              'rkph': selectedRKPH.value,
+            },
+            'tanggal_pembibitan': tanggalPembibitan.value,
+            'updated_at': DateTime.now(),
+            'timestamp': DateTime.now().toString(),
+          },
+        );
+      }
       await FirebaseFirestore.instance
           .collection('bibit')
           .doc(bibitData['id_bibit'])
@@ -492,7 +620,7 @@ class BarcodeController extends GetxController {
         if (!isUpdate) 'created_at': DateTime.now(),
       };
 
-      await saveBibitToFirestore(bibitData);
+      await saveBibitToFirestore(bibitData, isUpdate);
     } catch (e) {
       print("Error saat simpan bibit: $e");
       Get.snackbar(
