@@ -175,12 +175,6 @@ class PenyemaianDashboardController extends GetxController {
         'onTap': () => handleAction(3),
         'highlight': false,
       },
-      {
-        'icon': Icons.history,
-        'title': 'Riwayat\nScan',
-        'onTap': () => handleAction(4),
-        'highlight': false,
-      },
     ]);
   }
 
@@ -502,14 +496,6 @@ class PenyemaianDashboardController extends GetxController {
         'isActive': true,
         'onTap': () {
           closeMenu();
-        },
-      },
-      {
-        'icon': Icons.edit_note_rounded,
-        'title': "Update Informasi Bibit",
-        'onTap': () {
-          closeMenu();
-          navigateToUpdateBibit();
         },
       },
       {

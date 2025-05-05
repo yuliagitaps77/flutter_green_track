@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/routes.dart';
 import 'package:get/get.dart';
 
@@ -8,9 +9,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
+  // Register services
+  Get.put(FirestoreActivityService());
+
   // Register global controllers
   Get.put(AuthenticationController());
-
+  Get.put(AppController());
   runApp(MyApp());
 }
 

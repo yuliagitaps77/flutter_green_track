@@ -6,8 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
+import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
+import 'package:flutter_green_track/fitur/lacak_history/barcode_history_screen.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_nav_bibit.dart';
 import 'package:get/get.dart';
@@ -436,8 +439,8 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
             Icons.home_rounded,
             Icons.forest_rounded,
             Icons.qr_code_scanner_rounded,
+            Icons.calendar_month_rounded,
             Icons.history_rounded,
-            Icons.menu_rounded,
           ]
         : [
             Icons.home_rounded,
@@ -725,145 +728,12 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
   // Placeholder for History screen
   Widget _buildHistoryScreen() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pageTransitionAnimation.value,
-                child: FadeTransition(
-                  opacity: _pageTransitionAnimation,
-                  child: Icon(
-                    Icons.history_rounded,
-                    size: 100,
-                    color: Color(0xFF4CAF50).withOpacity(0.5),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 20),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Text(
-                    "Riwayat Scan",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 10),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 30 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      "Lihat riwayat pemindaian barcode yang telah dilakukan",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+    return JadwalPerawatanPage();
   }
 
   // Placeholder for Settings screen
   Widget _buildSettingsScreen() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: (1 - _pageTransitionAnimation.value) * math.pi / 10,
-                child: Transform.scale(
-                  scale: _pageTransitionAnimation.value,
-                  child: FadeTransition(
-                    opacity: _pageTransitionAnimation,
-                    child: Icon(
-                      Icons.settings_rounded,
-                      size: 100,
-                      color: Color(0xFF4CAF50).withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 20),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 20 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Text(
-                    "Pengaturan",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          SizedBox(height: 10),
-          AnimatedBuilder(
-            animation: _pageTransitionAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, 30 * (1 - _pageTransitionAnimation.value)),
-                child: Opacity(
-                  opacity: _pageTransitionAnimation.value,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      "Konfigurasi aplikasi dan pengelolaan akun",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+    return ActivityHistoryScreen();
   }
 }
 

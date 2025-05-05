@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
@@ -357,6 +358,23 @@ class JadwalPerawatanController extends GetxController {
       final docRef = await _firestore
           .collection('jadwal_perawatan')
           .add(newJadwal.toMap());
+
+      // PERBAIKAN: Konversi DateTime ke string untuk mencegah error
+      AppController.to.recordActivity(
+        activityType: ActivityTypes.addJadwalRawat,
+        description:
+            'Menambahkan Jadwal Rawat ${selectedBibitForJadwal.value!.namaBibit}',
+        targetId: selectedBibitForJadwal.value!.id,
+        metadata: {
+          'jenisPerawatan': selectedJenisPerawatan.value,
+          'tanggal':
+              selectedDay.value.toString(), // Pastikan tanggal sebagai string
+          'waktu': selectedTime.value,
+          'catatan': catatanController.text.trim(),
+          'timestamp':
+              DateTime.now().toString(), // Gunakan toString() untuk DateTime
+        },
+      );
 
       // Create jadwal with actual ID from Firestore
       final jadwalWithId = JadwalPerawatan(

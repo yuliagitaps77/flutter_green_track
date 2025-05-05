@@ -149,11 +149,13 @@ class GreetingWidget extends StatelessWidget {
         ),
         if (description != null) ...[
           SizedBox(height: 10),
-          Text(
-            description!,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+          GestureDetector(
+            child: Text(
+              description!,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
           ),
         ],
@@ -446,40 +448,32 @@ class ActivityItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 15),
-      padding: EdgeInsets.all(15),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: highlight ? Color(0xFF4CAF50).withOpacity(0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        color: highlight ? Color(0xFFE8F5E9) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: highlight
-              ? Color(0xFF4CAF50).withOpacity(0.3)
-              : Colors.grey.withOpacity(0.1),
+          color: highlight ? Color(0xFF81C784) : Colors.grey.withOpacity(0.3),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(10),
+            padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Color(0xFF4CAF50).withOpacity(0.1),
-              shape: BoxShape.circle,
+              color:
+                  highlight ? Color(0xFF81C784) : Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: Color(0xFF4CAF50),
+              color: highlight ? Colors.white : Colors.grey.shade700,
               size: 20,
             ),
           ),
-          SizedBox(width: 15),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,25 +481,21 @@ class ActivityItemWidget extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
+                    fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[800],
+                    color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: 3),
+                SizedBox(height: 4),
                 Text(
                   time,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: Colors.grey.shade600,
                   ),
                 ),
               ],
             ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.grey[400],
           ),
         ],
       ),
