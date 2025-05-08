@@ -167,21 +167,9 @@ class TPKDashboardController extends GetxController {
         'highlight': false,
       },
       {
-        'icon': Icons.local_shipping_rounded,
-        'title': 'Jadwal\nPengiriman',
+        'icon': Icons.bar_chart,
+        'title': 'Data\nStatistik',
         'onTap': () => handleAction(3),
-        'highlight': false,
-      },
-      {
-        'icon': Icons.assessment_rounded,
-        'title': 'Laporan\nTPK',
-        'onTap': () => handleAction(4),
-        'highlight': false,
-      },
-      {
-        'icon': Icons.settings_rounded,
-        'title': 'Pengaturan\nTPK',
-        'onTap': () => handleAction(5),
         'highlight': false,
       },
     ]);
