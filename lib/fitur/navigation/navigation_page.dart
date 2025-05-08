@@ -447,7 +447,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
             Icons.home_rounded,
             Icons.inventory_2_rounded,
             Icons.qr_code_scanner_rounded,
-            Icons.history_rounded,
+            Icons.bar_chart,
             Icons.menu_rounded,
           ];
 

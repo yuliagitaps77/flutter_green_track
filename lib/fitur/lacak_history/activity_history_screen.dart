@@ -229,10 +229,6 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
       pinned: true,
       stretch: true,
       backgroundColor: primaryColor,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Get.back(),
-      ),
       actions: [
         IconButton(
           icon: Icon(Icons.refresh_rounded, color: Colors.white),

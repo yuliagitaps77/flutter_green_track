@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/detail_bibit.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
 import 'package:get/get.dart';
 
 // PART 3: Enhanced UI for the Inventory Page
@@ -22,54 +23,6 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Obx(() => isSearching.value
-            ? TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Cari inventory...',
-                  hintStyle: TextStyle(color: Colors.green.withOpacity(0.5)),
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(color: Colors.green),
-                onChanged: (value) => searchQuery.value = value,
-                autofocus: true,
-              )
-            : const Text('Green Track',
-                style: TextStyle(
-                    color: Colors.green, fontWeight: FontWeight.bold))),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.green),
-          onPressed: () {},
-        ),
-        actions: [
-          // Search toggle button
-          IconButton(
-            icon: Obx(() => Icon(isSearching.value ? Icons.close : Icons.search,
-                color: Colors.green)),
-            onPressed: () {
-              isSearching.value = !isSearching.value;
-              if (!isSearching.value) {
-                searchController.clear();
-                searchQuery.value = '';
-              }
-            },
-          ),
-          // Refresh button
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.green),
-            onPressed: () => controller.refreshInventory(),
-          ),
-          // User profile button
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.green),
-            onPressed: () {},
-          ),
-        ],
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
