@@ -371,12 +371,12 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                             height: 50,
                                             decoration: BoxDecoration(
                                               color:
-                                                  Colors.brown.withOpacity(0.1),
+                                                  Colors.green.withOpacity(0.1),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
                                             child: const Icon(Icons.forest,
-                                                color: Colors.brown),
+                                                color: Colors.green),
                                           ),
                                     title: Text(
                                       item.batch,
@@ -430,7 +430,7 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                         // Delete button
                                         IconButton(
                                           icon: const Icon(Icons.delete,
-                                              color: Colors.red),
+                                              color: Colors.green),
                                           onPressed: () =>
                                               controller.deleteItem(controller
                                                   .inventoryItems

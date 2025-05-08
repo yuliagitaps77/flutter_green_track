@@ -453,6 +453,12 @@ class JadwalPerawatanController extends GetxController {
           jadwal.selesai
               ? 'Jadwal ditandai belum selesai'
               : 'Jadwal ditandai selesai');
+      AppController.to.recordActivity(
+          activityType: ActivityTypes.addJadwalRawat,
+          description: "Selesai Melakukan Penyiraman Pada ${jadwal.namaBibit}",
+          metadata: {
+            'timestamp': DateTime.now().toString(),
+          });
     } catch (e) {
       print('Error toggling jadwal status: ${e}');
       Get.snackbar('Error', 'Gagal mengubah status jadwal');
@@ -486,7 +492,12 @@ class JadwalPerawatanController extends GetxController {
       }
 
       updateSelectedDateEvents();
-
+      AppController.to.recordActivity(
+          activityType: ActivityTypes.addJadwalRawat,
+          description: "MEnghapus Jadwal Perawatan ${jadwal.namaBibit}",
+          metadata: {
+            'timestamp': DateTime.now().toString(),
+          });
       Get.snackbar('Berhasil', 'Jadwal perawatan berhasil dihapus');
     } catch (e) {
       print('Error deleting jadwal perawatan: ${e}');
@@ -1953,7 +1964,7 @@ class JadwalPerawatanPage extends StatelessWidget {
                       ),
                       SizedBox(height: 10),
                       Container(
-                        height: 120,
+                        height: 200,
                         child: GridView.count(
                           crossAxisCount: 3,
                           mainAxisSpacing: 10,

@@ -9,6 +9,7 @@ import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_p
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/statistik_page.dart';
 import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
 import 'package:flutter_green_track/fitur/lacak_history/barcode_history_screen.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
@@ -728,7 +729,14 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
   // Placeholder for History screen
   Widget _buildHistoryScreen() {
-    return JadwalPerawatanPage();
+    final bool isAdminTPK = widget.userRole == UserRole.adminTPK;
+    final bool isAdminPenyemaian = widget.userRole == UserRole.adminPenyemaian;
+
+    if (isAdminPenyemaian) {
+      return JadwalPerawatanPage();
+    } else {
+      return StatistikPage();
+    }
   }
 
   // Placeholder for Settings screen

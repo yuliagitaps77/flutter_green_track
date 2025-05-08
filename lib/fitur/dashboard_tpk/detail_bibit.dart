@@ -6,6 +6,14 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
+import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
 class KayuDetailPage extends StatefulWidget {
   final String kayuId;
   final UserRole? userRole;
@@ -30,10 +38,10 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
   List<dynamic> imageUrls = [];
   Map<String, dynamic> lokasiData = {};
 
-  // Colors
-  final Color primaryBrown = Color(0xFF8B4513);
-  final Color secondaryBrown = Color(0xFFCD853F);
-  final Color accentColor = Color(0xFFD2B48C);
+  // Colors - Diganti menjadi hijau
+  final Color primaryGreen = Color(0xFF2E7D32); // Hijau tua
+  final Color secondaryGreen = Color(0xFF66BB6A); // Hijau medium
+  final Color accentColor = Color(0xFFC8E6C9); // Hijau muda
 
   @override
   void initState() {
@@ -89,7 +97,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Detail Kayu'),
-        backgroundColor: primaryBrown,
+        backgroundColor: primaryGreen,
         elevation: 0,
         actions: isAdminTPK
             ? [
@@ -111,7 +119,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
       body: isLoading
           ? Center(
               child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(primaryBrown)))
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryGreen)))
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +158,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
               },
               label: Text('Ubah Stok'),
               icon: Icon(Icons.edit_note),
-              backgroundColor: primaryBrown,
+              backgroundColor: primaryGreen,
             )
           : null,
     );
@@ -188,7 +196,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                     ? loadingProgress.cumulativeBytesLoaded /
                         loadingProgress.expectedTotalBytes!
                     : null,
-                valueColor: AlwaysStoppedAnimation<Color>(primaryBrown),
+                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
               ));
             },
           );
@@ -211,7 +219,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: primaryBrown,
+                color: primaryGreen,
               ),
             ),
             SizedBox(height: 8),
@@ -267,7 +275,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             ),
             child: Icon(
               Icons.forest,
-              color: primaryBrown,
+              color: primaryGreen,
               size: 36,
             ),
           ),
@@ -289,7 +297,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 ),
               ],
               border: Border.all(
-                color: secondaryBrown.withOpacity(0.3),
+                color: secondaryGreen.withOpacity(0.3),
                 width: 1.5,
               ),
             ),
@@ -300,11 +308,11 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
               backgroundColor: Colors.white,
               eyeStyle: QrEyeStyle(
                 eyeShape: QrEyeShape.square,
-                color: primaryBrown,
+                color: primaryGreen,
               ),
               dataModuleStyle: QrDataModuleStyle(
                 dataModuleShape: QrDataModuleShape.square,
-                color: primaryBrown,
+                color: primaryGreen,
               ),
               errorStateBuilder: (cxt, err) {
                 return Center(
@@ -324,10 +332,10 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: secondaryBrown.withOpacity(0.1),
+              color: secondaryGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: secondaryBrown.withOpacity(0.3),
+                color: secondaryGreen.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -337,7 +345,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 Icon(
                   Icons.qr_code,
                   size: 16,
-                  color: primaryBrown,
+                  color: primaryGreen,
                 ),
                 SizedBox(width: 8),
                 Text(
@@ -382,7 +390,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             child: TabBar(
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(50),
-                color: primaryBrown,
+                color: primaryGreen,
               ),
               labelColor: Colors.white,
               unselectedLabelColor: Colors.black54,
@@ -413,7 +421,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                               style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: primaryBrown)),
+                                  color: primaryGreen)),
                           Divider(),
                           _buildInfoRow(
                               'Usia', '${kayuData['usia'] ?? 0} tahun'),
@@ -451,7 +459,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                               style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: primaryBrown)),
+                                  color: primaryGreen)),
                           Divider(),
                           _buildInfoRow(
                               'KPH', lokasiData['kph']?.toString() ?? '-'),
@@ -484,7 +492,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                               style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: primaryBrown)),
+                                  color: primaryGreen)),
                           Divider(),
                           _buildInfoRow('Catatan',
                               kayuData['catatan']?.toString() ?? '-'),
@@ -599,7 +607,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                   Get.dialog(
                     Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                       ),
                     ),
                     barrierDismissible: false,
@@ -635,7 +643,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.green,
               ),
               child: Text('Hapus'),
             ),
@@ -724,7 +732,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                         Center(
                           child: CircularProgressIndicator(
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.brown),
+                                AlwaysStoppedAnimation<Color>(Colors.green),
                           ),
                         ),
                         barrierDismissible: false,
@@ -801,7 +809,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                         'Sukses',
                         '$amount unit berhasil $action stok',
                         backgroundColor:
-                            isAddition ? Colors.green : Colors.orange,
+                            isAddition ? Colors.green : Colors.green,
                         colorText: Colors.white,
                       );
 
@@ -819,7 +827,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                     Get.snackbar(
                       'Validasi',
                       'Jumlah harus lebih dari 0',
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Colors.green,
                       colorText: Colors.white,
                     );
                   }
@@ -827,13 +835,13 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                   Get.snackbar(
                     'Validasi',
                     'Jumlah tidak boleh kosong',
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Colors.green,
                     colorText: Colors.white,
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: isAddition ? Colors.green : Colors.orange,
+                backgroundColor: isAddition ? Colors.green : Colors.green,
               ),
               child: Text('Konfirmasi'),
             ),
