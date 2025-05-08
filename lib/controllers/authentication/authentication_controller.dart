@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/data/repositories/authentication_repository.dart';
+import 'package:flutter_green_track/fitur/authentication/reset_password_screen.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
@@ -83,6 +84,35 @@ class AuthenticationController extends GetxController {
     passwordController.clear();
     errorMessage.value = '';
     loginStatus.value = LoginStatus.initial;
+  }
+// Tambahkan method ini ke AuthenticationController
+
+// Improved reset password method
+  Future<void> resetPassword(String email) async {
+    if (email.isEmpty) {
+      throw Exception('Email tidak boleh kosong');
+    }
+
+    try {
+      // Send password reset email via Firebase
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      // Return success (no exception means success)
+      return;
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase Auth errors
+      switch (e.code) {
+        case 'user-not-found':
+          throw Exception('Email tidak terdaftar');
+        case 'invalid-email':
+          throw Exception('Format email tidak valid');
+        default:
+          throw Exception(e.message ?? 'Terjadi kesalahan saat reset password');
+      }
+    } catch (e) {
+      // Handle other errors
+      throw Exception('Terjadi kesalahanforgotPassword: ${e.toString()}');
+    }
   }
 
   // Handle login
@@ -175,39 +205,12 @@ class AuthenticationController extends GetxController {
     }
   }
 
-  // Handle forgot password
+// Modify the existing forgotPassword method
   void forgotPassword() {
+    // Navigate to Reset Password screen instead of immediately sending email
     final email = emailController.text.trim();
-    if (email.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Masukkan email Anda terlebih dahulu',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
-      );
-      return;
-    }
-
-    // Send password reset email
-    FirebaseAuth.instance.sendPasswordResetEmail(email: email).then((_) {
-      Get.snackbar(
-        'Lupa Password',
-        'Link reset password telah dikirim ke email Anda',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[800],
-        duration: Duration(seconds: 3),
-      );
-    }).catchError((error) {
-      Get.snackbar(
-        'Error',
-        'Gagal mengirim link reset password: ${error.message}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
-      );
-    });
+    // Optionally pre-fill the email on the reset password screen
+    Get.toNamed(ResetPasswordScreen.routeName);
   }
 
   // Navigate based on user role

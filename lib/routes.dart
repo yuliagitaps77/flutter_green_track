@@ -2,6 +2,7 @@ import 'package:flutter_green_track/admin_generator.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
+import 'package:flutter_green_track/fitur/authentication/reset_password_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
@@ -31,6 +32,10 @@ class AppRoutes {
 
   // List of GetX route definitions
   static final List<GetPage> routes = [
+    GetPage(
+      name: ResetPasswordScreen.routeName,
+      page: () => ResetPasswordScreen(),
+    ),
     GetPage(
       name: halamanBuatAkun,
       page: () => AdminAccountCreatorScreen(),
