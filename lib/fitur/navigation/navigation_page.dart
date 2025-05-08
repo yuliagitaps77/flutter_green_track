@@ -430,7 +430,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
   Widget _buildCustomBottomNavBar() {
     // Get labels based on user role with shorter text
     final List<String> labels = widget.userRole == UserRole.adminPenyemaian
-        ? ['Beranda', 'Bibit', '', 'Riwayat', 'Aktivitas']
+        ? ['Beranda', 'Bibit', '', 'Jadwal', 'Riwayat']
         : ['Beranda', 'Inventory Kayu', '', 'Riwayat', 'Aktivitas'];
 
     // Get icons based on user role
