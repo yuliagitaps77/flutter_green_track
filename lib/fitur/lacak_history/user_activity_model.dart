@@ -189,6 +189,12 @@ class UserActivity {
 
 // Activity types enum for consistency
 class ActivityTypes {
+  // Global activities
+  static const String userLogin = 'USER_LOGIN';
+  static const String userLogout = 'USER_LOGOUT';
+  static const String updateUserProfile = 'UPDATE_USER_PROFILE';
+  static const String changePassword = 'CHANGE_PASSWORD';
+
   // Admin Penyemaian activities
   static const String scanBarcode = 'SCAN_BARCODE';
   static const String printBarcode = 'PRINT_BARCODE';
@@ -196,7 +202,20 @@ class ActivityTypes {
   static const String deleteBibit = 'DELETE_BIBIT';
   static const String addJadwalRawat = 'ADD_JADWAL_RAWAT';
 
+  // Expanded Jadwal Rawat types
+  static const String addJadwalPenyiraman = 'ADD_JADWAL_PENYIRAMAN';
+  static const String addJadwalPemupukan = 'ADD_JADWAL_PEMUPUKAN';
+  static const String addJadwalPengecekan = 'ADD_JADWAL_PENGECEKAN';
+  static const String addJadwalPenyiangan = 'ADD_JADWAL_PENYIANGAN';
+  static const String addJadwalPenyemprotan = 'ADD_JADWAL_PENYEMPROTAN';
+  static const String addJadwalPemangkasan = 'ADD_JADWAL_PEMANGKASAN';
+  static const String updateJadwalRawat = 'UPDATE_JADWAL_RAWAT';
+  static const String completeJadwalRawat = 'COMPLETE_JADWAL_RAWAT';
+  static const String deleteJadwalRawat = 'DELETE_JADWAL_RAWAT';
+
   // Admin TPK activities
+  static const String scanPohon = 'SCAN_POHON';
+  static const String addKayu = 'ADD_KAYU';
   static const String updateKayu = 'UPDATE_KAYU';
   static const String deleteKayu = 'DELETE_KAYU';
   static const String addPengiriman = 'ADD_PENGIRIMAN';
@@ -220,6 +239,48 @@ class AppController extends GetxController {
   // Firestore Activity Service
   final FirestoreActivityService _firestoreActivityService =
       FirestoreActivityService();
+
+  // Map of description templates by activity type
+  final Map<String, String> _activityDescriptions = {
+    // Global activities
+    ActivityTypes.userLogin: 'User {name} berhasil login',
+    ActivityTypes.userLogout: 'User {name} berhasil logout',
+    ActivityTypes.updateUserProfile:
+        'User {name} Melakukan Update Data Diri berhasil',
+    ActivityTypes.changePassword: 'User {name} mengubah password',
+
+    // Admin Penyemaian activities
+    ActivityTypes.scanBarcode: 'Scan Barcode Pada Bibit {name}',
+    ActivityTypes.printBarcode: 'Mencetak Barcode Untuk Bibit {name}',
+    ActivityTypes.updateBibit: 'Mengupdate Bibit {name}',
+    ActivityTypes.deleteBibit: 'Menghapus Bibit {name}',
+
+    // Jadwal activities
+    ActivityTypes.addJadwalRawat: 'Membuat Jadwal Perawatan Untuk Bibit {name}',
+    ActivityTypes.addJadwalPenyiraman:
+        'Membuat Jadwal Perawatan Penyiraman Untuk Bibit {name}',
+    ActivityTypes.addJadwalPemupukan:
+        'Membuat Jadwal Perawatan Pemupukan Untuk Bibit {name}',
+    ActivityTypes.addJadwalPengecekan:
+        'Membuat Jadwal Perawatan Pengecekan Untuk Bibit {name}',
+    ActivityTypes.addJadwalPenyiangan:
+        'Membuat Jadwal Perawatan Penyiangan Untuk Bibit {name}',
+    ActivityTypes.addJadwalPenyemprotan:
+        'Membuat Jadwal Perawatan Penyemprotan Untuk Bibit {name}',
+    ActivityTypes.addJadwalPemangkasan:
+        'Membuat Jadwal Perawatan Pemangkasan Untuk Bibit {name}',
+    ActivityTypes.updateJadwalRawat: 'Mengupdate Jadwal Perawatan Bibit {name}',
+    ActivityTypes.completeJadwalRawat:
+        'Mengupdate Jadwal Perawatan {name} Menjadi Selesai',
+    ActivityTypes.deleteJadwalRawat: 'Menghapus Jadwal Perawatan x {name}',
+
+    // Admin TPK activities
+    ActivityTypes.scanPohon: 'Scan Pohon {name}',
+    ActivityTypes.addKayu: 'Menambahkan Kayu {name}',
+    ActivityTypes.updateKayu: 'Mengupdate Kayu {name}',
+    ActivityTypes.deleteKayu: 'Menghapus Kayu {name}',
+    ActivityTypes.addPengiriman: 'Menambahkan Pengiriman {name}'
+  };
 
   @override
   void onInit() {
@@ -278,13 +339,17 @@ class AppController extends GetxController {
 
   // Record a new activity
   Future<void> recordActivity({
-    required String activityType,
-    required String description,
+    required String activityType, // didapatkan dari enum ActivityTypes
+    required String name, // Nama objek (bibit, pohon, kayu) atau user
     String? targetId,
     Map<String, dynamic>? metadata,
   }) async {
     // Ensure user is logged in
     if (currentUser.value == null) return;
+
+    // Generate description from template
+    final template = _activityDescriptions[activityType] ?? 'Activity: {name}';
+    final description = template.replaceAll('{name}', name);
 
     // Create activity record
     final activity = UserActivity(
@@ -322,11 +387,33 @@ class AppController extends GetxController {
   // Helper method to get icon for activity type
   String? _getIconForActivityType(String activityType) {
     final Map<String, String> activityIcons = {
+      // Global activities
+      ActivityTypes.userLogin: 'Icons.login_rounded',
+      ActivityTypes.userLogout: 'Icons.logout_rounded',
+      ActivityTypes.updateUserProfile: 'Icons.person_rounded',
+      ActivityTypes.changePassword: 'Icons.password_rounded',
+
+      // Admin Penyemaian activities
       ActivityTypes.scanBarcode: 'Icons.qr_code_scanner_rounded',
       ActivityTypes.printBarcode: 'Icons.print_rounded',
       ActivityTypes.updateBibit: 'Icons.edit',
       ActivityTypes.deleteBibit: 'Icons.delete',
       ActivityTypes.addJadwalRawat: 'Icons.calendar_month_rounded',
+
+      // Expanded Jadwal Rawat types
+      ActivityTypes.addJadwalPenyiraman: 'Icons.water_drop_rounded',
+      ActivityTypes.addJadwalPemupukan: 'Icons.compost_rounded',
+      ActivityTypes.addJadwalPengecekan: 'Icons.fact_check_rounded',
+      ActivityTypes.addJadwalPenyiangan: 'Icons.grass_rounded',
+      ActivityTypes.addJadwalPenyemprotan: 'Icons.sanitizer_rounded',
+      ActivityTypes.addJadwalPemangkasan: 'Icons.content_cut_rounded',
+      ActivityTypes.updateJadwalRawat: 'Icons.edit_calendar_rounded',
+      ActivityTypes.completeJadwalRawat: 'Icons.task_alt_rounded',
+      ActivityTypes.deleteJadwalRawat: 'Icons.event_busy_rounded',
+
+      // Admin TPK activities
+      ActivityTypes.scanPohon: 'Icons.qr_code_scanner_rounded',
+      ActivityTypes.addKayu: 'Icons.add_circle_outline_rounded',
       ActivityTypes.updateKayu: 'Icons.edit',
       ActivityTypes.deleteKayu: 'Icons.delete',
       ActivityTypes.addPengiriman: 'Icons.local_shipping_rounded',

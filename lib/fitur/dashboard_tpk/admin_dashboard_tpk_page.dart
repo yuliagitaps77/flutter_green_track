@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_controller.dart';
+import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
 import 'package:get/get.dart';
@@ -27,6 +28,7 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
 
   // Controller for TPK Dashboard
   final TPKDashboardController controller = Get.put(TPKDashboardController());
+  final navigationController = Get.find<NavigationController>();
 
   @override
   void initState() {
@@ -159,13 +161,14 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
               ),
 
               // Menu overlay using controller's menu items
-              SideMenuWidget(
-                name: controller.userProfile.value.name,
-                role: controller.userProfile.value.role,
-                menuItems: controller.getMenuItems(),
-                menuAnimation: _menuAnimation,
-                onClose: () => controller.closeMenu(),
-              ),
+              Obx(() => SideMenuWidget(
+                    name: controller.userProfile.value.name,
+                    role: controller.userProfile.value.role,
+                    photoProfile: controller.userProfile.value.photoUrl,
+                    menuItems: controller.getMenuItems(),
+                    menuAnimation: _menuAnimation,
+                    onClose: () => _menuAnimController.reverse(),
+                  )),
             ],
           )),
     );
@@ -437,7 +440,8 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
         // View all button
         Center(
           child: TextButton(
-            onPressed: () => controller.viewAllActivities(),
+            onPressed: () =>
+                {controller.navigationController.navigateToAktivitasTPK()},
             child: Text(
               "Lihat Semua",
               style: const TextStyle(

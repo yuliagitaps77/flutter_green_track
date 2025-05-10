@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/controller_inventory_kayu.dart';
@@ -542,7 +543,10 @@ class TambahPersediaanController extends GetxController {
       };
       print('✅ Data structure created successfully');
       print('🔵 Data to be saved: $kayuData');
-
+      AppController.to.recordActivity(
+        activityType: ActivityTypes.addKayu,
+        name: "${namaController.text} | ${jenisController.text}",
+      );
       // Save to Firestore
       print(
           '🔵 Attempting to save to Firestore collection "kayu" with document ID: ${idController.text}');

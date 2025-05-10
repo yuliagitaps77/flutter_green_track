@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
+import 'package:flutter_green_track/fitur/authentication/update_profile_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
 import 'package:get/get.dart';
@@ -194,10 +196,10 @@ class TPKDashboardController extends GetxController {
         navigateToInventory();
         break;
       case 2:
-        navigateToScanHistory();
+        navigationController.navigateToStatistikInventoryTPK();
         break;
       case 3:
-        navigateToDeliverySchedule();
+        navigationController.navigateToAktivitasTPK();
         break;
       case 4:
         navigateToReports();
@@ -207,6 +209,8 @@ class TPKDashboardController extends GetxController {
         break;
     }
   }
+
+  final navigationController = Get.find<NavigationController>();
 
   // Method to handle hovering on action card (will be called from UI)
   void handleHover(int index, bool isHovered) {
@@ -220,13 +224,15 @@ class TPKDashboardController extends GetxController {
   // Navigation methods
   void navigateToScanBarcode() {
     print('Navigating to Scan Barcode page');
+    navigationController.goToScan();
+
     // Get.toNamed('/scan-barcode');
   }
 
   void navigateToInventory() {
     print('Navigating to Inventory page');
     // Get.toNamed('/inventory');
-    Get.toNamed(InventoryKayuPage.routeName);
+    navigationController.navigateToInventory();
   }
 
   void navigateToScanHistory() {
@@ -246,6 +252,7 @@ class TPKDashboardController extends GetxController {
 
   void navigateToSettings() {
     print('Navigating to Settings page');
+    Get.toNamed(ProfileUpdateScreen.routeName);
     // Get.toNamed('/settings');
   }
 
@@ -510,7 +517,7 @@ class TPKDashboardController extends GetxController {
       },
       {
         'icon': Icons.settings_rounded,
-        'title': "Pengaturan",
+        'title': "Update Profile Akun",
         'onTap': () {
           closeMenu();
           navigateToSettings();
@@ -543,88 +550,6 @@ class TPKDashboardController extends GetxController {
     // Implementation for change password dialog
     // Can use FirebaseAuth.instance.currentUser?.updatePassword()
   }
-// Tambahkan fungsi-fungsi CRUD ini ke TPKDashboardController
-
-// ====== STATISTIK DASHBOARD ======
-
-// Update statistik dashboard berdasarkan data kayu terbaru
-  Future<void> updateKayuStatistics() async {
-    if (currentUserId == null) return;
-
-    try {
-      // Hitung langsung dari koleksi kayu
-      final dashboardData = await _calculateTPKDashboardData(currentUserId!);
-
-      // Update dashboard di UI
-      totalWood.value = _formatNumber(dashboardData['total_kayu'] ?? 0);
-      scannedWood.value =
-          _formatNumber(dashboardData['total_kayu_dipindai'] ?? 0);
-      totalBatch.value = _formatNumber(dashboardData['total_batch'] ?? 0);
-    } catch (e) {
-      print('Error updating kayu statistics: $e');
-    }
-  }
-
-// ====== KAYU CRUD ======
-
-// Mendapatkan daftar kayu dengan paginasi
-  Future<List<KayuModel>> getKayuList({
-    int limit = 10,
-    DocumentSnapshot? startAfter,
-    String? searchQuery,
-    String? filterBatch,
-  }) async {
-    try {
-      if (currentUserId == null) return [];
-
-      Query query = FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUserId)
-          .limit(limit);
-
-      // Terapkan filter jika ada
-      if (filterBatch != null && filterBatch.isNotEmpty) {
-        query = query.where('batch_panen', isEqualTo: filterBatch);
-      }
-
-      // Terapkan sorting
-      query = query.orderBy('created_at', descending: true);
-
-      // Terapkan pagination
-      if (startAfter != null) {
-        query = query.startAfterDocument(startAfter);
-      }
-
-      // Eksekusi query
-      final QuerySnapshot snapshot = await query.get();
-
-      // Jika ada query pencarian, filter hasil secara manual
-      List<KayuModel> kayuList = snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final KayuModel kayu = KayuModel.fromMap(doc.id, data);
-
-            // Filter berdasarkan pencarian jika ada
-            if (searchQuery != null && searchQuery.isNotEmpty) {
-              final String namaKayu = kayu.namaKayu.toLowerCase();
-              final String varietas = kayu.varietas.toLowerCase();
-              final search = searchQuery.toLowerCase();
-
-              if (!namaKayu.contains(search) && !varietas.contains(search)) {
-                return null;
-              }
-            }
-            return kayu;
-          })
-          .whereType<KayuModel>()
-          .toList();
-
-      return kayuList;
-    } catch (e) {
-      print('Error getting kayu list: $e');
-      return [];
-    }
-  }
 
 // Mendapatkan detail kayu berdasarkan ID
   Future<KayuModel?> getKayuDetail(String kayuId) async {
@@ -643,539 +568,8 @@ class TPKDashboardController extends GetxController {
   }
 
 // Menambahkan kayu baru
-  Future<String?> addKayu(Map<String, dynamic> kayuData) async {
-    try {
-      if (currentUserId == null) return null;
-
-      // Buat ID kayu baru
-      final DocumentReference kayuRef =
-          FirebaseFirestore.instance.collection('kayu').doc();
-
-      // Tambahkan data kayu
-      await kayuRef.set({
-        'id_user': currentUserId,
-        'nama_kayu': kayuData['nama_kayu'] ?? '',
-        'varietas': kayuData['varietas'] ?? '',
-        'usia': kayuData['usia'] ?? 0,
-        'tinggi': kayuData['tinggi'] ?? 0.0,
-        'jenis_kayu': kayuData['jenis_kayu'] ?? '',
-        'catatan': kayuData['catatan'] ?? '',
-        'created_at': FieldValue.serverTimestamp(),
-        'tanggal_lahir_pohon':
-            kayuData['tanggal_lahir_pohon'] ?? Timestamp.now(),
-        'gambar_image': kayuData['gambar_image'] ?? [],
-        'barcode':
-            'KY${DateTime.now().millisecondsSinceEpoch}${Random().nextInt(10000)}',
-        'url_bibit': 'https://yourapp.com/kayu/${kayuRef.id}',
-        'lokasi_tanam': kayuData['lokasi_tanam'] ?? '',
-        'batch_panen': kayuData['batch_panen'] ?? '',
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      // Rekam aktivitas
-      await recordActivity(
-          'Pendaftaran Kayu ${kayuData['nama_kayu']}', 'kayu', kayuRef.id);
-
-      // Update statistik dashboard
-      await updateKayuStatistics();
-
-      return kayuRef.id;
-    } catch (e) {
-      print('Error adding kayu: $e');
-      return null;
-    }
-  }
-
-// Memperbarui data kayu
-  Future<bool> updateKayu(String kayuId, Map<String, dynamic> kayuData) async {
-    try {
-      await FirebaseFirestore.instance.collection('kayu').doc(kayuId).update({
-        'nama_kayu': kayuData['nama_kayu'],
-        'varietas': kayuData['varietas'],
-        'usia': kayuData['usia'],
-        'tinggi': kayuData['tinggi'],
-        'jenis_kayu': kayuData['jenis_kayu'],
-        'catatan': kayuData['catatan'],
-        'tanggal_lahir_pohon': kayuData['tanggal_lahir_pohon'],
-        'gambar_image': kayuData['gambar_image'],
-        'lokasi_tanam': kayuData['lokasi_tanam'],
-        'batch_panen': kayuData['batch_panen'],
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      // Rekam aktivitas
-      await recordActivity(
-          'Pembaruan Data Kayu ${kayuData['nama_kayu']}', 'kayu', kayuId);
-
-      // Update statistik dashboard
-      await updateKayuStatistics();
-
-      return true;
-    } catch (e) {
-      print('Error updating kayu: $e');
-      return false;
-    }
-  }
-
-// Menghapus kayu
-  Future<bool> deleteKayu(String kayuId, String namaKayu) async {
-    try {
-      // Dapatkan riwayat scan dan hapus
-      QuerySnapshot scanHistories = await FirebaseFirestore.instance
-          .collection('kayu')
-          .doc(kayuId)
-          .collection('riwayat_scan')
-          .get();
-
-      // Hapus semua riwayat scan
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-      for (var doc in scanHistories.docs) {
-        batch.delete(doc.reference);
-      }
-
-      // Hapus dokumen kayu
-      batch.delete(FirebaseFirestore.instance.collection('kayu').doc(kayuId));
-
-      // Commit batch delete
-      await batch.commit();
-
-      // Rekam aktivitas
-      await recordActivity('Penghapusan Kayu $namaKayu', 'kayu', kayuId);
-
-      // Update statistik dashboard
-      await updateKayuStatistics();
-
-      return true;
-    } catch (e) {
-      print('Error deleting kayu: $e');
-      return false;
-    }
-  }
-
-// Memindai barcode kayu
-  Future<bool> scanKayu(String kayuId) async {
-    try {
-      if (currentUserId == null) return false;
-
-      // Tambahkan riwayat pemindaian
-      await FirebaseFirestore.instance
-          .collection('kayu')
-          .doc(kayuId)
-          .collection('riwayat_scan')
-          .add({
-        'id_user': currentUserId,
-        'tanggal': Timestamp.now(),
-        'created_at': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      // Ambil data kayu untuk aktivitas
-      DocumentSnapshot kayuDoc =
-          await FirebaseFirestore.instance.collection('kayu').doc(kayuId).get();
-
-      if (kayuDoc.exists) {
-        Map<String, dynamic> kayuData = kayuDoc.data() as Map<String, dynamic>;
-        String namaKayu = kayuData['nama_kayu'] ?? 'Kayu';
-
-        // Rekam aktivitas
-        await recordActivity('Scan Barcode $namaKayu', 'kayu', kayuId);
-
-        // Update statistik dashboard
-        await updateKayuStatistics();
-
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      print('Error scanning kayu: $e');
-      return false;
-    }
-  }
 
 // ====== BATCH CRUD ======
-
-// Mendapatkan semua batch yang tersedia
-  Future<List<String>> getAllBatches() async {
-    try {
-      if (currentUserId == null) return [];
-
-      QuerySnapshot kayuSnapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUserId)
-          .get();
-
-      Set<String> uniqueBatches = {};
-
-      for (var doc in kayuSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        String batchPanen = data['batch_panen'] as String? ?? '';
-        if (batchPanen.isNotEmpty) {
-          uniqueBatches.add(batchPanen);
-        }
-      }
-
-      return uniqueBatches.toList()..sort();
-    } catch (e) {
-      print('Error getting batch list: $e');
-      return [];
-    }
-  }
-
-// Mendapatkan detail batch
-  Future<Map<String, dynamic>> getBatchDetails(String batchId) async {
-    try {
-      if (currentUserId == null) return {};
-
-      QuerySnapshot kayuSnapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUserId)
-          .where('batch_panen', isEqualTo: batchId)
-          .get();
-
-      // Hitung statistik batch
-      int totalKayu = kayuSnapshot.docs.length;
-      int totalKayuDipindai = 0;
-
-      // Jenis kayu dalam batch ini
-      Map<String, int> jenisKayu = {};
-
-      for (var doc in kayuSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        String kayuId = doc.id;
-
-        // Hitung jenis kayu
-        String namaKayu = data['nama_kayu'] as String? ?? 'Tidak diketahui';
-        jenisKayu[namaKayu] = (jenisKayu[namaKayu] ?? 0) + 1;
-
-        // Periksa apakah kayu telah dipindai
-        QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
-            .collection('kayu')
-            .doc(kayuId)
-            .collection('riwayat_scan')
-            .limit(1)
-            .get();
-
-        if (scanSnapshot.docs.isNotEmpty) {
-          totalKayuDipindai++;
-        }
-      }
-
-      return {
-        'batch_id': batchId,
-        'total_kayu': totalKayu,
-        'total_kayu_dipindai': totalKayuDipindai,
-        'jenis_kayu': jenisKayu,
-        'persentase_dipindai': totalKayu > 0
-            ? (totalKayuDipindai / totalKayu * 100).toStringAsFixed(1) + '%'
-            : '0%',
-      };
-    } catch (e) {
-      print('Error getting batch details: $e');
-      return {};
-    }
-  }
-
-// Menambahkan batch baru
-  Future<bool> addBatch(String batchId, List<String> kayuIds) async {
-    try {
-      if (currentUserId == null) return false;
-
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-
-      // Update setiap kayu dengan batch baru
-      for (String kayuId in kayuIds) {
-        DocumentReference kayuRef =
-            FirebaseFirestore.instance.collection('kayu').doc(kayuId);
-        batch.update(kayuRef, {
-          'batch_panen': batchId,
-          'updated_at': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-
-      // Rekam aktivitas
-      await recordActivity(
-          'Membuat Batch Baru: $batchId (${kayuIds.length} kayu)',
-          'batch',
-          batchId);
-
-      // Update statistik
-      await updateKayuStatistics();
-
-      return true;
-    } catch (e) {
-      print('Error adding batch: $e');
-      return false;
-    }
-  }
-
-// Memperbarui batch
-  Future<bool> updateBatch(String oldBatchId, String newBatchId) async {
-    try {
-      if (currentUserId == null) return false;
-      if (oldBatchId == newBatchId) return true; // Tidak ada perubahan
-
-      // Ambil semua kayu dengan batch lama
-      QuerySnapshot kayuSnapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUserId)
-          .where('batch_panen', isEqualTo: oldBatchId)
-          .get();
-
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-
-      // Update setiap kayu dengan batch baru
-      for (var doc in kayuSnapshot.docs) {
-        batch.update(doc.reference, {
-          'batch_panen': newBatchId,
-          'updated_at': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-
-      // Rekam aktivitas
-      await recordActivity('Memperbarui Batch $oldBatchId menjadi $newBatchId',
-          'batch', newBatchId);
-
-      // Update statistik
-      await updateKayuStatistics();
-
-      return true;
-    } catch (e) {
-      print('Error updating batch: $e');
-      return false;
-    }
-  }
-
-// ====== RIWAYAT SCAN CRUD ======
-
-// Mendapatkan riwayat scan untuk kayu tertentu
-  Future<List<ScanHistoryModel>> getKayuScanHistory(String kayuId) async {
-    try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .doc(kayuId)
-          .collection('riwayat_scan')
-          .orderBy('tanggal', descending: true)
-          .get();
-
-      return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return ScanHistoryModel.fromMap(doc.id, data);
-      }).toList();
-    } catch (e) {
-      print('Error getting scan history: $e');
-      return [];
-    }
-  }
-
-// Mendapatkan semua riwayat scan
-  Future<List<Map<String, dynamic>>> getAllScanHistory({int limit = 50}) async {
-    try {
-      if (currentUserId == null) return [];
-
-      // Dapatkan semua kayu milik user ini
-      QuerySnapshot kayuSnapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUserId)
-          .get();
-
-      List<Map<String, dynamic>> allScans = [];
-
-      // Untuk setiap kayu, dapatkan riwayat pemindaian
-      for (var kayuDoc in kayuSnapshot.docs) {
-        final String kayuId = kayuDoc.id;
-        final Map<String, dynamic> kayuData =
-            kayuDoc.data() as Map<String, dynamic>;
-        final String namaKayu = kayuData['nama_kayu'] ?? 'Kayu';
-        final String varietas = kayuData['varietas'] ?? '';
-        final String batchPanen = kayuData['batch_panen'] ?? '';
-
-        QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
-            .collection('kayu')
-            .doc(kayuId)
-            .collection('riwayat_scan')
-            .orderBy('tanggal', descending: true)
-            .get();
-
-        for (var scanDoc in scanSnapshot.docs) {
-          Map<String, dynamic> scanData =
-              scanDoc.data() as Map<String, dynamic>;
-          allScans.add({
-            'scanId': scanDoc.id,
-            'kayuId': kayuId,
-            'namaKayu': namaKayu,
-            'varietas': varietas,
-            'batchPanen': batchPanen,
-            'tanggal': scanData['tanggal'],
-            'id_user': scanData['id_user'],
-            'created_at': scanData['created_at'],
-          });
-        }
-      }
-
-      // Urutkan semua riwayat berdasarkan tanggal
-      allScans.sort((a, b) {
-        Timestamp? timeA = a['tanggal'] as Timestamp?;
-        Timestamp? timeB = b['tanggal'] as Timestamp?;
-
-        if (timeA == null && timeB == null) return 0;
-        if (timeA == null) return 1;
-        if (timeB == null) return -1;
-
-        return timeB.compareTo(timeA); // Descending order (terbaru dulu)
-      });
-
-      // Batasi jumlah hasil
-      if (allScans.length > limit) {
-        allScans = allScans.sublist(0, limit);
-      }
-
-      return allScans;
-    } catch (e) {
-      print('Error getting all scan history: $e');
-      return [];
-    }
-  }
-
-// ====== AKTIVITAS ======
-
-// Fungsi untuk mencatat aktivitas
-  Future<void> recordActivity(
-      String namaAktivitas, String tipeObjek, String idObjek) async {
-    try {
-      if (currentUserId == null) return;
-
-      await FirebaseFirestore.instance.collection('aktivitas').add({
-        'id_user': currentUserId,
-        'nama_aktivitas': namaAktivitas,
-        'tipe_objek': tipeObjek,
-        'id_objek': idObjek,
-        'tanggal_waktu': Timestamp.now(),
-        'created_at': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      // Refresh aktivitas di UI
-      await fetchRecentActivities();
-    } catch (e) {
-      print('Error recording activity: $e');
-    }
-  }
-
-// Mendapatkan semua aktivitas
-  Future<List<ActivityModel>> getAllActivities({int limit = 20}) async {
-    try {
-      if (currentUserId == null) return [];
-
-      // Get activities without ordering in the query (to avoid needing index)
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('aktivitas')
-          .where('id_user', isEqualTo: currentUserId)
-          .get();
-
-      if (snapshot.docs.isEmpty) return [];
-
-      // Sort manually in app instead of in query
-      List<DocumentSnapshot> sortedDocs = snapshot.docs.toList()
-        ..sort((a, b) {
-          Timestamp? timeA =
-              (a.data() as Map<String, dynamic>)['tanggal_waktu'] as Timestamp?;
-          Timestamp? timeB =
-              (b.data() as Map<String, dynamic>)['tanggal_waktu'] as Timestamp?;
-
-          if (timeA == null && timeB == null) return 0;
-          if (timeA == null) return 1;
-          if (timeB == null) return -1;
-
-          // Sort in descending order (newest first)
-          return timeB.compareTo(timeA);
-        });
-
-      // Limit to requested number
-      if (sortedDocs.length > limit) {
-        sortedDocs = sortedDocs.sublist(0, limit);
-      }
-
-      // Convert to activity models
-      List<ActivityModel> activities = [];
-
-      for (var doc in sortedDocs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-
-        // Determine icon based on activity type
-        IconData icon;
-        String activityName = data['nama_aktivitas'] ?? '';
-
-        if (activityName.toLowerCase().contains('scan')) {
-          icon = Icons.qr_code_scanner_rounded;
-        } else if (activityName.toLowerCase().contains('update') ||
-            activityName.toLowerCase().contains('perbarui')) {
-          icon = Icons.edit_rounded;
-        } else if (activityName.toLowerCase().contains('cetak') ||
-            activityName.toLowerCase().contains('print')) {
-          icon = Icons.print_rounded;
-        } else if (activityName.toLowerCase().contains('tambah') ||
-            activityName.toLowerCase().contains('daftar')) {
-          icon = Icons.add_circle_outline_rounded;
-        } else if (activityName.toLowerCase().contains('hapus')) {
-          icon = Icons.delete_outline_rounded;
-        } else if (activityName.toLowerCase().contains('kirim')) {
-          icon = Icons.local_shipping_rounded;
-        } else if (activityName.toLowerCase().contains('batch')) {
-          icon = Icons.inventory_2_rounded;
-        } else {
-          icon = Icons.article_rounded;
-        }
-
-        // Format time for display
-        final timestamp = data['tanggal_waktu'] as Timestamp?;
-        String timeString = 'Waktu tidak tersedia';
-
-        if (timestamp != null) {
-          final now = DateTime.now();
-          final activityTime = timestamp.toDate();
-          final difference = now.difference(activityTime);
-
-          if (difference.inMinutes < 5) {
-            timeString = 'Baru saja';
-          } else if (difference.inHours < 1) {
-            timeString = '${difference.inMinutes} menit yang lalu';
-          } else if (difference.inHours < 24) {
-            timeString = '${difference.inHours} jam yang lalu';
-          } else if (difference.inDays < 2) {
-            timeString =
-                'Kemarin, ${activityTime.hour}:${activityTime.minute.toString().padLeft(2, '0')}';
-          } else {
-            timeString =
-                '${activityTime.day}/${activityTime.month}/${activityTime.year}';
-          }
-        }
-
-        activities.add(ActivityModel(
-          id: doc.id,
-          idUser: data['id_user'] ?? '',
-          namaAktivitas: activityName,
-          tipeObjek: data['tipe_objek'],
-          idObjek: data['id_objek'],
-          tanggalWaktu: timestamp ?? Timestamp.now(),
-          createdAt: data['created_at'] as Timestamp? ?? Timestamp.now(),
-          updatedAt: data['updated_at'] as Timestamp? ?? Timestamp.now(),
-          icon: icon,
-          time: timeString,
-          highlight: sortedDocs.indexOf(doc) == 0, // Highlight first item
-        ));
-      }
-
-      return activities;
-    } catch (e) {
-      print('Error getting all activities: $e');
-      return [];
-    }
-  }
 
 // Perbaikan untuk fetchRecentActivities yang sesuai dengan model ActivityModel
   @override

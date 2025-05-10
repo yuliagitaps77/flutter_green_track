@@ -96,19 +96,20 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detail Kayu'),
+        title: Text('Detail Kayu', style: TextStyle(color: Colors.white)),
         backgroundColor: primaryGreen,
         elevation: 0,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: isAdminTPK
             ? [
                 IconButton(
-                  icon: Icon(Icons.edit),
+                  icon: Icon(Icons.edit, color: Colors.white),
                   onPressed: () {
                     _showEditDialog();
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete),
+                  icon: Icon(Icons.delete, color: Colors.white),
                   onPressed: () {
                     _showDeleteConfirmation();
                   },

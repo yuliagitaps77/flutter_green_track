@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/detail_bibit.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
@@ -335,7 +336,10 @@ class InventoryKayuController extends GetxController {
                       .doc(item.id)
                       .update(updates);
                   print('✅ [FIRESTORE EDIT] Document updated successfully');
-
+                  AppController.to.recordActivity(
+                    activityType: ActivityTypes.updateKayu,
+                    name: "${item.namaKayu} | ${item.jenisKayu}",
+                  );
                   // Update local item immediately for UI responsiveness
                   inventoryItems[index] = InventoryItem(
                     id: item.id,
@@ -371,7 +375,10 @@ class InventoryKayuController extends GetxController {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text('Simpan'),
+              child: const Text(
+                'Simpan',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -441,7 +448,10 @@ class InventoryKayuController extends GetxController {
                         try {
                           // Set deleting state
                           isDeleting.value = true;
-
+                          AppController.to.recordActivity(
+                            activityType: ActivityTypes.deleteKayu,
+                            name: "${item.namaKayu} | ${item.jenisKayu}",
+                          );
                           // Close dialog first
                           Get.back();
 
@@ -583,7 +593,11 @@ class InventoryKayuController extends GetxController {
 
       if (snapshot.exists) {
         print('✅ [NAVIGATE DETAIL] Kayu ditemukan, navigasi ke halaman detail');
-
+        AppController.to.recordActivity(
+          activityType: ActivityTypes.scanPohon,
+          name:
+              "${snapshot.data()?['nama_kayu']} | ${snapshot.data()?['jenis_kayu']}",
+        );
         // Navigasi ke halaman detail
         Get.to(() => KayuDetailPage(
               kayuId: barcodeResult,

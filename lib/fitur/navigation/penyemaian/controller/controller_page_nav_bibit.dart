@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:flutter_green_track/fitur/scan_penyemaian/detail_halaman_scan.dart';
 import 'package:get/get.dart';
@@ -30,6 +31,10 @@ class BibitController extends GetxController {
 
       if (snapshot.exists) {
         final bibit = Bibit.fromFirestore(snapshot);
+        AppController.to.recordActivity(
+          activityType: ActivityTypes.scanBarcode,
+          name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
+        );
         return bibit;
       }
 

@@ -342,7 +342,7 @@ class BarcodeController extends GetxController {
       print("is update yes ${isUpdate}");
       AppController.to.recordActivity(
         activityType: ActivityTypes.updateBibit,
-        description: 'Pembaruan Data ${namaBibitController.text}',
+        name: 'Pembaruan Data ${namaBibitController.text}',
         targetId: idBibitController.text,
         metadata: {
           'barcode': idBibitController.text,
@@ -377,7 +377,7 @@ class BarcodeController extends GetxController {
       print("is update no ${isUpdate}");
       AppController.to.recordActivity(
         activityType: ActivityTypes.printBarcode,
-        description: 'Cetak Barcode Untuk Bibit ${namaBibitController.text}',
+        name: '${namaBibitController.text}',
         targetId: idBibitController.text,
         metadata: {
           'barcode': idBibitController.text,
@@ -426,7 +426,7 @@ class BarcodeController extends GetxController {
       if (isUpdate) {
         AppController.to.recordActivity(
           activityType: ActivityTypes.updateBibit,
-          description: 'Pembaruan Data ${namaBibitController.text}',
+          name: '${namaBibitController.text}',
           targetId: idBibitController.text,
           metadata: {
             'barcode': idBibitController.text,
@@ -457,7 +457,7 @@ class BarcodeController extends GetxController {
       } else {
         AppController.to.recordActivity(
           activityType: ActivityTypes.printBarcode,
-          description: 'Cetak Barcode Untuk Bibit ${namaBibitController.text}',
+          name: '${namaBibitController.text}',
           targetId: idBibitController.text,
           metadata: {
             'barcode': idBibitController.text,

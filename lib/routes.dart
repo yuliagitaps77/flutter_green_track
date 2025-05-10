@@ -3,6 +3,7 @@ import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
 import 'package:flutter_green_track/fitur/authentication/UbahKataSandi.dart';
 import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/authentication/reset_password_screen.dart';
+import 'package:flutter_green_track/fitur/authentication/update_profile_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
@@ -114,6 +115,11 @@ class AppRoutes {
     GetPage(
       name: tpkDashboard,
       page: () => TPKDashboardScreen(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: ProfileUpdateScreen.routeName,
+      page: () => ProfileUpdateScreen(),
       transition: Transition.fadeIn,
     ),
   ];

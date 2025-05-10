@@ -159,6 +159,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           Obx(() => SideMenuWidget(
                 name: controller.userProfile.value.name,
                 role: controller.userProfile.value.role,
+                photoProfile: controller.userProfile.value.photoUrl,
                 menuItems: controller.getMenuItems(),
                 menuAnimation: _menuAnimation,
                 onClose: () => _menuAnimController.reverse(),
@@ -177,17 +178,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
-              onTap: () {
-                AppController.to.recordActivity(
-                  activityType: ActivityTypes.scanBarcode,
-                  description: 'Scan barcode bibit: asdd',
-                  targetId: "12313",
-                  metadata: {
-                    'barcode': "hello world",
-                    'timestamp': DateTime.now().toString(),
-                  },
-                );
-              },
+              onTap: () {},
               child: Text(
                 "Aksi Cepat",
                 style: TextStyle(
@@ -473,7 +464,8 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
         // View all button
         Center(
           child: TextButton(
-            onPressed: () => Get.to(() => ActivityHistoryScreen()),
+            onPressed: () =>
+                {controller.navigationController.navigateToSettings()},
             child: Text(
               "Lihat Semua",
               style: TextStyle(

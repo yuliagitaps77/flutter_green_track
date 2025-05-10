@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
+import 'package:flutter_green_track/fitur/authentication/update_profile_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
@@ -242,7 +243,7 @@ class PenyemaianDashboardController extends GetxController {
   void navigateToJadwalRawat() {
     print('Navigating to Care Schedule page');
     // Get.toNamed('/jadwal-rawat');
-    Get.to(JadwalPerawatanPage());
+    navigationController.navigateToHistory();
   }
 
   void navigateToRiwayatScan() {
@@ -259,6 +260,7 @@ class PenyemaianDashboardController extends GetxController {
 
   void navigateToSettings() {
     print('Navigating to Settings page');
+    Get.toNamed(ProfileUpdateScreen.routeName);
     // Get.toNamed('/settings');
   }
 
@@ -275,10 +277,41 @@ class PenyemaianDashboardController extends GetxController {
     isMenuOpen.value = false;
   }
 
-  // Profile methods
-  void handleProfileTap() {
-    print('Profile tapped');
-    // Get.toNamed('/profile');
+  Future<void> refreshUserProfileData() async {
+    try {
+      print('Refreshing user profile data...');
+
+      // Get fresh user data from Firestore
+      if (currentUserId != null) {
+        final userData = await _firebaseService.getUserData(currentUserId!);
+
+        if (userData != null) {
+          print(
+              'Fresh user data retrieved: ${userData.name}, Photo: ${userData.photoUrl}');
+
+          // Update the userProfile value with new data
+          userProfile.value = UserProfileModel(
+            name: userData.name,
+            role: userData.role == UserRole.adminPenyemaian
+                ? "Admin Penyemaian"
+                : "Admin TPK",
+            photoUrl: userData.photoUrl ?? '',
+          );
+        }
+      } else {
+        print('Cannot refresh user data: currentUserId is null');
+      }
+    } catch (e) {
+      print('Error refreshing user profile data: $e');
+    }
+  }
+
+  void handleProfileTap() async {
+    // Navigate to profile page
+    await Get.toNamed(ProfileUpdateScreen.routeName);
+
+    // When user returns from the profile page, refresh the profile data
+    refreshUserProfileData();
   }
 
   void logout() {
@@ -500,7 +533,7 @@ class PenyemaianDashboardController extends GetxController {
       },
       {
         'icon': Icons.settings_rounded,
-        'title': "Pengaturan",
+        'title': "Update Akun",
         'onTap': () {
           closeMenu();
           navigateToSettings();

@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
@@ -8,11 +12,126 @@ import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:http/http.dart' as http;
 
 enum LoginStatus { initial, loading, success, failure }
 
 class AuthenticationController extends GetxController {
   final FirebaseService _firebaseService = FirebaseService();
+  Future<String?> uploadImageToFreeImageHost(String imagePath) async {
+    try {
+      final apiKey = '6d207e02198a847aa98d0a2a901485a5';
+      final url = Uri.parse('https://freeimage.host/api/1/upload');
+
+      final imageBytes = await File(imagePath).readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
+      final response = await http.post(
+        url,
+        body: {
+          'key': apiKey,
+          'source': base64Image,
+          'format': 'json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final imageUrl = jsonResponse['image']['url'];
+        return imageUrl;
+      } else {
+        print('Upload failed: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+// Update user profile
+  final RxBool _userProfileUpdated = false.obs;
+
+// Add this update to your updateUserProfile method
+  Future<void> updateUserProfile({
+    required String name,
+    String? photoUrl,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Prepare update data
+      final Map<String, dynamic> updateData = {
+        'nama_lengkap': name,
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+
+      // Add photo URL if provided
+      if (photoUrl != null) {
+        updateData['photo_url'] = photoUrl;
+      }
+
+      // Update user data in Firestore
+      await FirebaseFirestore.instance
+          .collection('akun')
+          .doc(user.uid)
+          .update(updateData);
+
+      // Update local user model
+      final updatedUser = currentUser.value!;
+      currentUser.value = UserModel(
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: name,
+        role: updatedUser.role,
+        photoUrl: photoUrl ?? updatedUser.photoUrl,
+        lastLogin: updatedUser.lastLogin,
+        kodeOtp: updatedUser.kodeOtp,
+        createdAt: updatedUser.createdAt,
+        updatedAt: Timestamp.now(),
+      );
+
+      // Save updated user to local storage
+      await _firebaseService.saveUserLocally(currentUser.value!);
+
+      // Notify other controllers that user profile has been updated
+      // This is the key change to enable real-time updates
+      _userProfileUpdated.toggle();
+
+      print('User profile updated successfully. Name: $name, Photo: $photoUrl');
+    } catch (e) {
+      print('Error updating profile: $e');
+      throw Exception('Failed to update profile: ${e.toString()}');
+    }
+  }
+
+// 2. Add a method that other controllers can call to check if they need to refresh
+  bool hasUserProfileBeenUpdated(DateTime since) {
+    // Called by other controllers to check if they need to refresh their user data
+    return _userProfileUpdated.value;
+  }
+
+// 3. Add method to refresh the current user from Firestore
+  Future<void> refreshCurrentUserFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userData = await _firebaseService.getUserData(user.uid);
+        if (userData != null) {
+          // Update current user
+          currentUser.value = userData;
+          // Save to local storage
+          await _firebaseService.saveUserLocally(userData);
+          print('User profile refreshed from Firestore');
+        }
+      }
+    } catch (e) {
+      print('Error refreshing user profile: $e');
+    }
+  }
 
   // Observable variables for form fields
   final emailController = TextEditingController();

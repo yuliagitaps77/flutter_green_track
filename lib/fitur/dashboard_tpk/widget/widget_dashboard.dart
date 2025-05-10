@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
@@ -97,70 +99,87 @@ class GreetingWidget extends StatelessWidget {
   final String name;
   final String role;
   final String? description;
+  final AuthenticationController _authController =
+      Get.find<AuthenticationController>();
 
-  const GreetingWidget(
+  GreetingWidget(
       {Key? key, required this.name, required this.role, this.description})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Selamat Datang,",
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
+    // Use Obx here to listen to changes in the AuthenticationController
+    return Obx(() {
+      // Get the latest user data from the central AuthenticationController
+      final currentUser = _authController.currentUser.value;
+
+      // Use the provided name/role as fallbacks, but prefer the latest data from AuthController if available
+      final userName = currentUser?.name ?? name;
+      final userRole = currentUser != null
+          ? (currentUser.role == UserRole.adminPenyemaian
+              ? "Admin Penyemaian"
+              : "Admin TPK")
+          : role;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Selamat Datang,",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
           ),
-        ),
-        SizedBox(height: 5),
-        Row(
-          children: [
+          SizedBox(height: 5),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  userName,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E7D32),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(width: 10),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Color(0xFF4CAF50).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  userRole,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (description != null) ...[
+            SizedBox(height: 10),
             Text(
-              name,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E7D32),
-              ),
-            ),
-            SizedBox(width: 10),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Color(0xFF4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Color(0xFF4CAF50).withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                role,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF4CAF50),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (description != null) ...[
-          SizedBox(height: 10),
-          GestureDetector(
-            child: Text(
               description!,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
               ),
             ),
-          ),
+          ],
         ],
-      ],
-    );
+      );
+    });
   }
 }
 
@@ -561,14 +580,18 @@ class ScanFABWidget extends StatelessWidget {
 class SideMenuWidget extends StatelessWidget {
   final String name;
   final String role;
+  final String? photoProfile;
   final List<Map<String, dynamic>> menuItems;
   final Animation<double> menuAnimation;
   final VoidCallback onClose;
+  final AuthenticationController authController =
+      Get.find<AuthenticationController>();
 
-  const SideMenuWidget({
+  SideMenuWidget({
     Key? key,
     required this.name,
     required this.role,
+    this.photoProfile,
     required this.menuItems,
     required this.menuAnimation,
     required this.onClose,
@@ -602,112 +625,161 @@ class SideMenuWidget extends StatelessWidget {
   }
 
   Widget _buildMenuContent(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.75,
-      height: MediaQuery.of(context).size.height,
-      color: Colors.white,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Profile section
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF4CAF50).withOpacity(0.9),
-                    Color(0xFF2E7D32),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+    // Use Obx to listen to changes in currentUser from the AuthenticationController
+    return Obx(() {
+      // This will rebuild whenever the AuthenticationController's currentUser changes
+      final currentUser = authController.currentUser.value;
+      final userName = currentUser?.name ?? name;
+      final userRole = currentUser?.role == UserRole.adminPenyemaian
+          ? "Admin Penyemaian"
+          : "Admin TPK";
+      final userPhoto = currentUser?.photoUrl ?? photoProfile;
+
+      return Container(
+        width: MediaQuery.of(context).size.width * 0.75,
+        height: MediaQuery.of(context).size.height,
+        color: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Profile section
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF4CAF50).withOpacity(0.9),
+                      Color(0xFF2E7D32),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  // Profile picture
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 50,
-                      color: Color(0xFF4CAF50),
+                child: Column(
+                  children: [
+                    // Profile picture with real-time updates
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.white,
+                      child: userPhoto != null && userPhoto.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                userPhoto,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                      color: Color(0xFF4CAF50),
+                                    ),
+                                  );
+                                },
+                                // Add cache-busting parameter to force refresh of the image
+                                // This ensures the image is reloaded after updates
+                                cacheWidth: 160,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print("Error loading profile image: $error");
+                                  return Icon(
+                                    Icons.person_rounded,
+                                    size: 50,
+                                    color: Color(0xFF4CAF50),
+                                  );
+                                },
+                              ),
+                            )
+                          : Icon(
+                              Icons.person_rounded,
+                              size: 50,
+                              color: Color(0xFF4CAF50),
+                            ),
                     ),
-                  ),
-                  SizedBox(height: 15),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      role,
+                    SizedBox(height: 15),
+                    Text(
+                      userName, // Use the updated userName value
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 5),
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        userRole, // Use the updated userRole value
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Menu items
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                physics: BouncingScrollPhysics(),
-                itemCount: menuItems.length,
-                itemBuilder: (context, index) {
-                  final item = menuItems[index];
-                  return _buildMenuItem(
-                    icon: item['icon'],
-                    title: item['title'],
-                    isActive: item['isActive'] ?? false,
-                    isDestructive: item['isDestructive'] ?? false,
-                    onTap: item['onTap'],
-                  );
-                },
+              // Menu items
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  physics: BouncingScrollPhysics(),
+                  itemCount: menuItems.length,
+                  itemBuilder: (context, index) {
+                    final item = menuItems[index];
+                    return _buildMenuItem(
+                      icon: item['icon'],
+                      title: item['title'],
+                      isActive: item['isActive'] ?? false,
+                      isDestructive: item['isDestructive'] ?? false,
+                      onTap: item['onTap'],
+                    );
+                  },
+                ),
               ),
-            ),
 
-            // App version
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.eco_outlined,
-                    size: 14,
-                    color: Colors.grey[400],
-                  ),
-                  SizedBox(width: 5),
-                  Text(
-                    "Green Track v1.0.0",
-                    style: TextStyle(
-                      fontSize: 12,
+              // App version
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.eco_outlined,
+                      size: 14,
                       color: Colors.grey[400],
                     ),
-                  ),
-                ],
+                    SizedBox(width: 5),
+                    Text(
+                      "Green Track v1.0.0",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildMenuItem({

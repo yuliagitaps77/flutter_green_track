@@ -358,23 +358,115 @@ class JadwalPerawatanController extends GetxController {
       final docRef = await _firestore
           .collection('jadwal_perawatan')
           .add(newJadwal.toMap());
-
+      // Record specific activity based on jenis perawatan
+      String activityDescription;
+      switch (selectedJenisPerawatan.value) {
+        case "penyiraman":
+          activityDescription = "Jadwal Penyiraman";
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPenyiraman,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          break;
+        case "pemupukan":
+          activityDescription = "Jadwal Pemupukan";
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPemupukan,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          break;
+        case "pengecekan":
+          activityDescription = "Jadwal Pengecekan";
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPengecekan,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          break;
+        case "penyiangan":
+          activityDescription = "Jadwal Penyiangan";
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPenyiangan,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          break;
+        case "penyemprotan":
+          activityDescription = "Jadwal Penyemprotan";
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPenyemprotan,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          break;
+        case "pemangkasan":
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.addJadwalPemangkasan,
+            name: '${selectedBibitForJadwal.value!.namaBibit}',
+            targetId: selectedBibitForJadwal.value!.id,
+            metadata: {
+              'jenisPerawatan': selectedJenisPerawatan.value,
+              'tanggal': selectedDay.value
+                  .toString(), // Pastikan tanggal sebagai string
+              'waktu': selectedTime.value,
+              'catatan': catatanController.text.trim(),
+              'timestamp': DateTime.now()
+                  .toString(), // Gunakan toString() untuk DateTime
+            },
+          );
+          activityDescription = "Jadwal Pemangkasan";
+          break;
+        default:
+          activityDescription = "Jadwal Perawatan";
+      }
       // PERBAIKAN: Konversi DateTime ke string untuk mencegah error
-      AppController.to.recordActivity(
-        activityType: ActivityTypes.addJadwalRawat,
-        description:
-            'Menambahkan Jadwal Rawat ${selectedBibitForJadwal.value!.namaBibit}',
-        targetId: selectedBibitForJadwal.value!.id,
-        metadata: {
-          'jenisPerawatan': selectedJenisPerawatan.value,
-          'tanggal':
-              selectedDay.value.toString(), // Pastikan tanggal sebagai string
-          'waktu': selectedTime.value,
-          'catatan': catatanController.text.trim(),
-          'timestamp':
-              DateTime.now().toString(), // Gunakan toString() untuk DateTime
-        },
-      );
 
       // Create jadwal with actual ID from Firestore
       final jadwalWithId = JadwalPerawatan(
@@ -453,9 +545,10 @@ class JadwalPerawatanController extends GetxController {
           jadwal.selesai
               ? 'Jadwal ditandai belum selesai'
               : 'Jadwal ditandai selesai');
+
       AppController.to.recordActivity(
-          activityType: ActivityTypes.addJadwalRawat,
-          description: "Selesai Melakukan Penyiraman Pada ${jadwal.namaBibit}",
+          activityType: ActivityTypes.completeJadwalRawat,
+          name: "${jadwal.jenisPerawatan} | ${jadwal.namaBibit}",
           metadata: {
             'timestamp': DateTime.now().toString(),
           });
@@ -493,8 +586,8 @@ class JadwalPerawatanController extends GetxController {
 
       updateSelectedDateEvents();
       AppController.to.recordActivity(
-          activityType: ActivityTypes.addJadwalRawat,
-          description: "MEnghapus Jadwal Perawatan ${jadwal.namaBibit}",
+          activityType: ActivityTypes.deleteJadwalRawat,
+          name: "${jadwal.jenisPerawatan} | ${jadwal.namaBibit}",
           metadata: {
             'timestamp': DateTime.now().toString(),
           });
