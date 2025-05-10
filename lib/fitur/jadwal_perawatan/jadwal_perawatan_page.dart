@@ -91,7 +91,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(0),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -102,7 +102,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
               ),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: Color(0xFF4CAF50),
+                color: Color(0xFF2E7D32),
                 size: 20,
               ),
             ),
@@ -113,7 +113,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.eco_outlined,
-                color: Color(0xFF4CAF50),
+                color: Color(0xFF2E7D32),
                 size: 24,
               ),
               SizedBox(width: 8),
@@ -137,7 +137,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(0),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -490,7 +490,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color(0xFF4CAF50),
+                    Color(0xFF2E7D32),
                     Color(0xFF2E7D32),
                   ],
                   begin: Alignment.topLeft,
@@ -594,7 +594,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
                             Icon(
                               Icons.calendar_today_rounded,
                               size: 20,
-                              color: Color(0xFF4CAF50),
+                              color: Color(0xFF2E7D32),
                             ),
                             SizedBox(width: 10),
                             Obx(() => Text(
@@ -629,7 +629,7 @@ class PlantCareScheduleScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: "contoh: 08:00",
                         prefixIcon: Icon(Icons.access_time_rounded,
-                            color: Color(0xFF4CAF50)),
+                            color: Color(0xFF2E7D32)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none,

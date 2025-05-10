@@ -222,7 +222,7 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
         ? 'Riwayat Aktivitas TPK'
         : isAdminPenyemaian
             ? 'Riwayat Aktivitas Penyemaian'
-            : 'Riwayat Semua Aktivitas';
+            : 'Riwayat Aktivitas';
 
     return SliverAppBar(
       expandedHeight: 120,
