@@ -374,9 +374,9 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
               Container(
                 padding: EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: Colors.green.shade50,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: Colors.green.shade200),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,7 +386,7 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
+                        color: Colors.green.shade700,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -394,13 +394,13 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
                       'Klik tombol di bawah untuk mengirim tautan reset password ke email Anda.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.blue.shade700,
+                        color: Colors.green.shade700,
                       ),
                     ),
                     SizedBox(height: 12),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Color(0xFF4CAF50),
                         minimumSize: Size(double.infinity, 45),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

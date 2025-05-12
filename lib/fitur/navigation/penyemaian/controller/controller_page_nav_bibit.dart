@@ -32,9 +32,13 @@ class BibitController extends GetxController {
       if (snapshot.exists) {
         final bibit = Bibit.fromFirestore(snapshot);
         AppController.to.recordActivity(
-          activityType: ActivityTypes.scanBarcode,
-          name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
-        );
+            activityType: ActivityTypes.scanBarcode,
+            name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
+            metadata: {
+              "bibit": {bibit},
+              'updated_at': DateTime.now(),
+              'timestamp': DateTime.now().toString(),
+            });
         return bibit;
       }
 

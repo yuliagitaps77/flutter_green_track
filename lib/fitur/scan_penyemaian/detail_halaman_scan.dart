@@ -14,8 +14,12 @@ class DetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Bibit'),
+        title: const Text(
+          'Detail Bibit',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.green,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<Bibit?>(
         future: bibitController.getBibitByBarcode(barcodeId),
@@ -208,8 +212,9 @@ class DetailPage extends StatelessWidget {
                       colorText: Colors.white,
                     );
                   },
-                  icon: const Icon(Icons.share),
-                  label: const Text('Bagikan', style: TextStyle(fontSize: 16)),
+                  icon: const Icon(Icons.share, color: Colors.white),
+                  label: const Text('Bagikan',
+                      style: TextStyle(fontSize: 16, color: Colors.white)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -238,9 +243,9 @@ class DetailPage extends StatelessWidget {
                       );
                     }
                   },
-                  icon: const Icon(Icons.link),
-                  label:
-                      const Text('Buka Link', style: TextStyle(fontSize: 16)),
+                  icon: const Icon(Icons.link, color: Colors.white),
+                  label: const Text('Buka Link',
+                      style: TextStyle(fontSize: 16, color: Colors.white)),
                 ),
               ),
             ],

@@ -85,22 +85,17 @@ class _StatistikPageState extends State<StatistikPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistik Inventory',
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: primaryGreen,
+        title: const Text(
+          'Statistik Inventory',
+          style: TextStyle(
+            color: Colors.green,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Jenis Kayu'),
-            Tab(text: 'Batch'),
-            Tab(text: 'Stok per Batch'),
-          ],
-        ),
+        iconTheme: const IconThemeData(color: Colors.green),
       ),
       body: Obx(() {
         // Refresh chart data when inventory changes
@@ -393,7 +388,10 @@ class _StatistikPageState extends State<StatistikPage>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGreen,
                     ),
-                    child: const Text('Lihat Detail Lengkap'),
+                    child: const Text(
+                      'Lihat Detail Lengkap',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),

@@ -56,7 +56,8 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cetak Barcode Bibit Baru'),
+        title: Text(
+            isEditMode ? "Update Informasi Bibit" : 'Cetak Barcode Bibit Baru'),
         backgroundColor: Colors.white,
         elevation: 0,
       ),

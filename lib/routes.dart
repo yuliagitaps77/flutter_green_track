@@ -34,7 +34,7 @@ class AppRoutes {
   // List of GetX route definitions
   static final List<GetPage> routes = [
     GetPage(
-      name: ResetPasswordScreen.routeName,
+      name: ResetPasswordScreen.routeName!,
       page: () => ResetPasswordScreen(),
     ),
     GetPage(

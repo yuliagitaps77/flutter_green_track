@@ -8,6 +8,7 @@ import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_p
 import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/data/repositories/authentication_repository.dart';
 import 'package:flutter_green_track/fitur/authentication/reset_password_screen.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
@@ -18,6 +19,10 @@ enum LoginStatus { initial, loading, success, failure }
 
 class AuthenticationController extends GetxController {
   final FirebaseService _firebaseService = FirebaseService();
+
+  // Observable for current user
+  final Rx<UserModel?> currentUser = Rx<UserModel?>(null);
+
   Future<String?> uploadImageToFreeImageHost(String imagePath) async {
     try {
       final apiKey = '6d207e02198a847aa98d0a2a901485a5';
@@ -146,9 +151,6 @@ class AuthenticationController extends GetxController {
   // Observable for error message
   final RxString errorMessage = ''.obs;
 
-  // Observable for current user
-  final Rx<UserModel?> currentUser = Rx<UserModel?>(null);
-
   @override
   void onInit() {
     super.onInit();
@@ -268,6 +270,15 @@ class AuthenticationController extends GetxController {
 
           // Update current user
           currentUser.value = userData;
+          AppController.to.recordActivity(
+            activityType: ActivityTypes.userLogin,
+            name: '${userData.name}',
+            targetId: userData.id,
+            metadata: {
+              'updated_at': DateTime.now(),
+              'timestamp': DateTime.now().toString(),
+            },
+          );
 
           // Login successful
           loginStatus.value = LoginStatus.success;
@@ -312,11 +323,19 @@ class AuthenticationController extends GetxController {
 
       // Clear local storage
       await _firebaseService.removeLocalUser();
+      AppController.to.recordActivity(
+        activityType: ActivityTypes.userLogout,
+        name: '${currentUser.value!.name}',
+        targetId: currentUser.value!.id,
+        metadata: {
+          'updated_at': DateTime.now(),
+          'timestamp': DateTime.now().toString(),
+        },
+      );
 
       // Reset user state
       currentUser.value = null;
       resetForm();
-
       // Navigate back to login screen
       Get.offAllNamed('/login');
     } catch (e) {
@@ -329,7 +348,7 @@ class AuthenticationController extends GetxController {
     // Navigate to Reset Password screen instead of immediately sending email
     final email = emailController.text.trim();
     // Optionally pre-fill the email on the reset password screen
-    Get.toNamed(ResetPasswordScreen.routeName);
+    Get.toNamed(ResetPasswordScreen.routeName!);
   }
 
   // Navigate based on user role

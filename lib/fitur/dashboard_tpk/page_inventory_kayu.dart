@@ -23,6 +23,19 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Jadwal Perawatan',
+          style: TextStyle(
+            color: Colors.green,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.green),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -43,13 +56,6 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Inventory Kayu',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green),
-                  ),
                   Obx(() => controller.isLoading.value
                       ? const SizedBox(
                           width: 20,

@@ -344,12 +344,18 @@ class AppController extends GetxController {
     String? targetId,
     Map<String, dynamic>? metadata,
   }) async {
+    print('🔍 [ACTIVITY] Recording activity: $activityType for $name');
+
     // Ensure user is logged in
-    if (currentUser.value == null) return;
+    if (currentUser.value == null) {
+      print('⚠️ [ACTIVITY] Cannot record activity: User not logged in');
+      return;
+    }
 
     // Generate description from template
     final template = _activityDescriptions[activityType] ?? 'Activity: {name}';
     final description = template.replaceAll('{name}', name);
+    print('📝 [ACTIVITY] Description: $description');
 
     // Create activity record
     final activity = UserActivity(
@@ -364,30 +370,41 @@ class AppController extends GetxController {
       metadata: metadata,
       timestamp: DateTime.now(),
     );
+    print('✅ [ACTIVITY] Created activity record with ID: ${activity.id}');
 
     // Add to list (at the beginning)
     recentActivities.insert(0, activity);
+    print(
+        '📊 [ACTIVITY] Added to recent activities (total: ${recentActivities.length})');
 
     // Trim list if it exceeds maximum
     if (recentActivities.length > maxStoredActivities) {
+      print(
+          '🔄 [ACTIVITY] Trimming activities list to $maxStoredActivities items');
       recentActivities.removeRange(
           maxStoredActivities, recentActivities.length);
     }
 
     // Save to local storage
     await saveActivities();
+    print('💾 [ACTIVITY] Saved activities to local storage');
 
     // Save to Firestore jika user sudah login
     if (currentUser.value != null) {
+      print(
+          '🔥 [ACTIVITY] Saving activity to Firestore for user: ${currentUser.value!.id}');
       await _firestoreActivityService.recordActivityToFirestore(
           activity, currentUser.value!);
+      print('✅ [ACTIVITY] Successfully saved to Firestore');
     }
+
+    print('✅ [ACTIVITY] Activity recording completed');
   }
 
   // Helper method to get icon for activity type
   String? _getIconForActivityType(String activityType) {
     final Map<String, String> activityIcons = {
-      // Global activities
+      // Global activities booth admin penyemaian and admin tpk
       ActivityTypes.userLogin: 'Icons.login_rounded',
       ActivityTypes.userLogout: 'Icons.logout_rounded',
       ActivityTypes.updateUserProfile: 'Icons.person_rounded',
@@ -400,7 +417,7 @@ class AppController extends GetxController {
       ActivityTypes.deleteBibit: 'Icons.delete',
       ActivityTypes.addJadwalRawat: 'Icons.calendar_month_rounded',
 
-      // Expanded Jadwal Rawat types
+      // Admin Penyemaian Activities Jadwal Rawat types
       ActivityTypes.addJadwalPenyiraman: 'Icons.water_drop_rounded',
       ActivityTypes.addJadwalPemupukan: 'Icons.compost_rounded',
       ActivityTypes.addJadwalPengecekan: 'Icons.fact_check_rounded',

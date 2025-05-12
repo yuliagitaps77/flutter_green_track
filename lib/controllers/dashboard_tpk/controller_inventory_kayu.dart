@@ -488,7 +488,7 @@ class InventoryKayuController extends GetxController {
                             'Error',
                             'Gagal menghapus data: $e',
                             backgroundColor: Colors.red.withOpacity(0.1),
-                            colorText: Colors.red,
+                            colorText: Colors.white,
                           );
                         } finally {
                           isDeleting.value = false;
@@ -594,10 +594,17 @@ class InventoryKayuController extends GetxController {
       if (snapshot.exists) {
         print('✅ [NAVIGATE DETAIL] Kayu ditemukan, navigasi ke halaman detail');
         AppController.to.recordActivity(
-          activityType: ActivityTypes.scanPohon,
-          name:
-              "${snapshot.data()?['nama_kayu']} | ${snapshot.data()?['jenis_kayu']}",
-        );
+            activityType: ActivityTypes.scanPohon,
+            name:
+                "${snapshot.data()?['nama_kayu']} | ${snapshot.data()?['jenis_kayu']}",
+            metadata: {
+              "pohon": {
+                "nama_kayu": snapshot.data()?['nama_kayu'],
+                "jenis_kayu": snapshot.data()?['jenis_kayu'],
+              },
+              'updated_at': DateTime.now(),
+              'timestamp': DateTime.now().toString(),
+            });
         // Navigasi ke halaman detail
         Get.to(() => KayuDetailPage(
               kayuId: barcodeResult,

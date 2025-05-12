@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
+import 'package:flutter_green_track/fitur/authentication/update_profile_screen.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
@@ -68,7 +69,9 @@ class AppBarWidget extends StatelessWidget {
 
           // Profile button
           GestureDetector(
-            onTap: onProfileTap,
+            onTap: () {
+              Get.toNamed(ProfileUpdateScreen.routeName);
+            },
             child: Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -470,10 +473,10 @@ class ActivityItemWidget extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: highlight ? Color(0xFFE8F5E9) : Colors.white,
+        color: highlight ? Color(0xFFD2F8D1) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: highlight ? Color(0xFF81C784) : Colors.grey.withOpacity(0.3),
+          color: highlight ? Color(0xFF14AE5C) : Colors.grey.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -482,13 +485,12 @@ class ActivityItemWidget extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color:
-                  highlight ? Color(0xFF81C784) : Colors.grey.withOpacity(0.1),
+              color: highlight ? Color(0xFFA8E8B6) : Color(0xFFA8E8B6),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: highlight ? Colors.white : Colors.grey.shade700,
+              color: highlight ? Color(0xFF14AE5C) : Color(0xFF14AE5C),
               size: 20,
             ),
           ),

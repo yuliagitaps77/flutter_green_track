@@ -611,84 +611,18 @@ class JadwalPerawatanPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8F8F8),
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(120),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Color(0xFF4CAF50),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Jadwal Perawatan',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Bibit Tanaman',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: Icon(Icons.notifications_outlined,
-                              color: Colors.white),
-                          onPressed: () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 16),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'Atur jadwal perawatan untuk mengelola bibit dengan lebih baik',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      appBar: AppBar(
+        title: const Text(
+          'Jadwal Perawatan',
+          style: TextStyle(
+            color: Colors.green,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.green),
       ),
       body: Obx(() => controller.isLoading.value
           ? Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)))
@@ -896,11 +830,10 @@ class JadwalPerawatanPage extends StatelessWidget {
         onPressed: () => _showAddJadwalDialog(),
         backgroundColor: Color(0xFF4CAF50),
         elevation: 3,
-        label: Row(
+        label: Column(
           children: [
             Icon(Icons.add),
             SizedBox(width: 6),
-            Text("Tambah Jadwal"),
           ],
         ),
       ),

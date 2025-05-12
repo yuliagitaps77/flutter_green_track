@@ -163,14 +163,14 @@ class TPKDashboardController extends GetxController {
         'highlight': false,
       },
       {
-        'icon': Icons.history_rounded,
-        'title': 'Riwayat\nScan',
+        'icon': Icons.bar_chart,
+        'title': 'Statistik\nInventory',
         'onTap': () => handleAction(2),
         'highlight': false,
       },
       {
-        'icon': Icons.bar_chart,
-        'title': 'Data\nStatistik',
+        'icon': Icons.history_rounded,
+        'title': 'Aktivitas',
         'onTap': () => handleAction(3),
         'highlight': false,
       },

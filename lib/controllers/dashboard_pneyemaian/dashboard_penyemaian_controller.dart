@@ -540,15 +540,6 @@ class PenyemaianDashboardController extends GetxController {
         },
       },
       {
-        'icon': Icons.lock_outline_rounded,
-        'title': "Ubah Kata Sandi",
-        'onTap': () {
-          closeMenu();
-          // Show change password dialog
-          _showChangePasswordDialog();
-        },
-      },
-      {
         'icon': Icons.logout_rounded,
         'title': "Logout",
         'isDestructive': true,

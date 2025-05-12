@@ -132,7 +132,10 @@ class NavigationController extends GetxController
                       ),
                       SizedBox(height: 20),
                       Text(
-                        "Arahkan kamera ke barcode bibit",
+                        "Arahkan kamera ke barcode " +
+                            (userRole == UserRole.adminPenyemaian
+                                ? "Bibit"
+                                : "Pohon"),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -229,7 +232,7 @@ class NavigationController extends GetxController
         Get.back(result: result.rawContent);
 
         // Tampilkan hasil scan dengan warna berbeda berdasarkan role
-        Color bgColor = isAdminTPK ? Colors.brown : Colors.green;
+        Color bgColor = isAdminTPK ? Colors.green : Colors.green;
 
         Get.snackbar(
           'Hasil Scan',
@@ -373,7 +376,10 @@ class NavigationController extends GetxController
             style: ElevatedButton.styleFrom(
               backgroundColor: buttonColor,
             ),
-            child: const Text('Cari'),
+            child: const Text(
+              'Cari',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
+import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
+import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
+
+import 'package:intl/intl.dart';
 
 // Import shared widgets
 
@@ -190,20 +197,20 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
               ),
             ),
             // Button to view all actions
-            TextButton(
-              onPressed: () {
-                // Show all actions in modal sheet
-                _showAllActions(controller.actions);
-              },
-              child: Text(
-                "Lihat Semua",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF4CAF50),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
+            // TextButton(
+            //   onPressed: () {
+            //     // Show all actions in modal sheet
+            //     _showAllActions(controller.actions);
+            //   },
+            //   child: Text(
+            //     "Lihat Semua",
+            //     style: TextStyle(
+            //       fontSize: 14,
+            //       color: const Color(0xFF4CAF50),
+            //       fontWeight: FontWeight.w500,
+            //     ),
+            //   ),
+            // ),
           ],
         ),
         const SizedBox(height: 15),
@@ -393,7 +400,108 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
   }
 
   // Recent activities section
+// Helper method to convert icon string to IconData
+  IconData _getIconData(String? iconString) {
+    if (iconString == null) return Icons.history;
+
+    switch (iconString) {
+      // Global activities
+      case 'Icons.login_rounded':
+        return Icons.login_rounded;
+      case 'Icons.logout_rounded':
+        return Icons.logout_rounded;
+      case 'Icons.person_rounded':
+        return Icons.person_rounded;
+      case 'Icons.password_rounded':
+        return Icons.password_rounded;
+
+      // Admin Penyemaian activities
+      case 'Icons.qr_code_scanner_rounded':
+        return Icons.qr_code_scanner_rounded;
+      case 'Icons.print_rounded':
+        return Icons.print_rounded;
+      case 'Icons.edit':
+        return Icons.edit;
+      case 'Icons.delete':
+        return Icons.delete;
+      case 'Icons.calendar_month_rounded':
+        return Icons.calendar_month_rounded;
+
+      // Jadwal Rawat icons
+      case 'Icons.water_drop_rounded':
+        return Icons.water_drop_rounded;
+      case 'Icons.compost_rounded':
+        return Icons.compost_rounded;
+      case 'Icons.fact_check_rounded':
+        return Icons.fact_check_rounded;
+      case 'Icons.grass_rounded':
+        return Icons.grass_rounded;
+      case 'Icons.sanitizer_rounded':
+        return Icons.sanitizer_rounded;
+      case 'Icons.content_cut_rounded':
+        return Icons.content_cut_rounded;
+      case 'Icons.edit_calendar_rounded':
+        return Icons.edit_calendar_rounded;
+      case 'Icons.task_alt_rounded':
+        return Icons.task_alt_rounded;
+      case 'Icons.event_busy_rounded':
+        return Icons.event_busy_rounded;
+
+      // Admin TPK activities
+      case 'Icons.forest_rounded':
+        return Icons.forest_rounded;
+      case 'Icons.local_shipping_rounded':
+        return Icons.local_shipping_rounded;
+      case 'Icons.add_circle_outline_rounded':
+        return Icons.add_circle_outline_rounded;
+
+      default:
+        return Icons.history;
+    }
+  }
+
+// Helper method to format timestamp
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(Duration(days: 1));
+    final activityDate =
+        DateTime(timestamp.year, timestamp.month, timestamp.day);
+
+    if (activityDate == today) {
+      return 'Hari ini, ${DateFormat('HH:mm').format(timestamp)}';
+    } else if (activityDate == yesterday) {
+      return 'Kemarin, ${DateFormat('HH:mm').format(timestamp)}';
+    } else {
+      return DateFormat('dd MMM, HH:mm').format(timestamp);
+    }
+  }
+
+// Modified to highlight ONLY scanBarcode for Penyemaian and scanPohon for TPK
+  bool _isHighlightActivity(String activityType, UserRole userRole) {
+    if (userRole == UserRole.adminPenyemaian) {
+      // HANYA highlight scanBarcode untuk Admin Penyemaian
+      return activityType == ActivityTypes.scanBarcode;
+    } else if (userRole == UserRole.adminTPK) {
+      // HANYA highlight scanPohon untuk Admin TPK
+      return activityType == ActivityTypes.scanPohon;
+    }
+    return false;
+  }
+
+  // Recent activities section
+  final appController = Get.find<AppController>();
+
+  final AuthenticationController authController =
+      Get.find<AuthenticationController>();
+
+// Recent activities section - updated to show user's own activities
   Widget _buildRecentActivities() {
+    final userRole =
+        authController.currentUser.value?.role ?? UserRole.adminPenyemaian;
+    // Menggunakan warna hijau untuk kedua role
+    final themeColor = Color(0xFF2E7D32); // Green for both Penyemaian and TPK
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -402,21 +510,52 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2E7D32),
+            color: themeColor,
           ),
         ),
         SizedBox(height: 15),
 
-        // Activity items from controller
+        // Use AppController's recentActivities with Obx for reactivity
         Obx(() {
-          if (controller.recentActivities.isEmpty) {
+          // Get user ID
+          final userId = authController.currentUser.value?.id;
+          if (userId == null) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "Login untuk melihat aktivitas",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // Get activities based on role but filter for current user only
+          List<UserActivity> activities;
+          if (userRole == UserRole.adminPenyemaian) {
+            activities = appController
+                .getPenyemaianActivities(limit: 5)
+                .where((activity) => activity.userId == userId)
+                .toList();
+          } else {
+            activities = appController
+                .getTPKActivities(limit: 5)
+                .where((activity) => activity.userId == userId)
+                .toList();
+          }
+
+          if (activities.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Text(
                   "Belum ada aktivitas terbaru",
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Colors.grey,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -425,27 +564,27 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           }
 
           return Column(
-            children: controller.recentActivities
-                .take(3) // Show only 3 most recent activities
-                .map((activity) => ActivityItemWidget(
-                      icon: activity.icon!,
-                      title: activity.namaAktivitas,
-                      time: activity.time ?? '',
-                      highlight: activity.highlight,
-                    ))
-                .toList(),
+            children: activities.map((activity) {
+              // Convert UserActivity to format expected by ActivityItemWidget
+              return ActivityItemWidget(
+                icon: _getIconData(activity.icon),
+                title: activity.description,
+                time: _formatTimestamp(activity.timestamp),
+                highlight:
+                    _isHighlightActivity(activity.activityType, userRole),
+              );
+            }).toList(),
           );
         }),
 
-        // View all button
+        // View all button - updated to use HistoryNavigator
         Center(
           child: TextButton(
-            onPressed: () =>
-                {controller.navigationController.navigateToAktivitasTPK()},
+            onPressed: () => HistoryNavigator.goToHistoryPage(context),
             child: Text(
               "Lihat Semua",
-              style: const TextStyle(
-                color: Color(0xFF4CAF50),
+              style: TextStyle(
+                color: themeColor,
                 fontWeight: FontWeight.w600,
               ),
             ),

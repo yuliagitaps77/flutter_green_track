@@ -189,6 +189,10 @@ class _DaftarBibitPageState extends State<DaftarBibitPage> {
                     ? Image.network(
                         bibit.gambarImage.first,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.park,
+                              size: 50, color: Colors.green);
+                        },
                       )
                     : const Icon(Icons.park, size: 50, color: Colors.green),
               ),

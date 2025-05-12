@@ -256,7 +256,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
     // Get labels based on user role with shorter text
     final List<String> labels = widget.userRole == UserRole.adminPenyemaian
         ? ['Beranda', 'Bibit', '', 'Jadwal', 'Riwayat']
-        : ['Beranda', 'Inventory Kayu', '', 'Riwayat', 'Aktivitas'];
+        : ['Beranda', 'Inventory Kayu', '', 'Statistik Inventory', 'Aktivitas'];
 
     // Get icons based on user role
     final List<IconData> icons = widget.userRole == UserRole.adminPenyemaian
@@ -409,7 +409,14 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
 
   // Placeholder for Settings screen
   Widget _buildSettingsScreen() {
-    return ActivityHistoryScreen();
+    final bool isAdminTPK = widget.userRole == UserRole.adminTPK;
+    final bool isAdminPenyemaian = widget.userRole == UserRole.adminPenyemaian;
+
+    if (isAdminPenyemaian) {
+      return PenyemaianHistoryPage();
+    } else {
+      return TPKHistoryPage();
+    }
   }
 }
 
