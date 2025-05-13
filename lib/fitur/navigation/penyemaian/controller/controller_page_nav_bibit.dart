@@ -4,6 +4,7 @@ import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:flutter_green_track/fitur/scan_penyemaian/detail_halaman_scan.dart';
 import 'package:get/get.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
 
 class BibitController extends GetxController {
   final RxList<Bibit> _bibitList = <Bibit>[].obs;
@@ -11,7 +12,7 @@ class BibitController extends GetxController {
   final RxString _selectedJenis = 'Semua'.obs;
   final RxString _searchQuery = ''.obs;
   var jenisList = <String>[].obs;
-// Tambahkan fungsi berikut ke BibitController Anda:
+  final barcodeController = Get.find<BarcodeController>();
 
   Future<Bibit?> getBibitByBarcode(String barcodeId) async {
     try {
@@ -31,14 +32,6 @@ class BibitController extends GetxController {
 
       if (snapshot.exists) {
         final bibit = Bibit.fromFirestore(snapshot);
-        AppController.to.recordActivity(
-            activityType: ActivityTypes.scanBarcode,
-            name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
-            metadata: {
-              "bibit": {bibit},
-              'updated_at': DateTime.now(),
-              'timestamp': DateTime.now().toString(),
-            });
 
         return bibit;
       }
@@ -65,6 +58,43 @@ class BibitController extends GetxController {
 
       if (bibit != null) {
         Get.to(() => DetailPage(barcodeId: barcodeResult));
+        AppController.to.recordActivity(
+            activityType: ActivityTypes.scanBarcode,
+            name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
+            metadata: {
+              "bibit": {
+                "id": bibit.id,
+                "nama_bibit": bibit.namaBibit,
+                "jenis_bibit": bibit.jenisBibit,
+                "varietas": bibit.varietas,
+                "usia": bibit.usia,
+                "tinggi": bibit.tinggi,
+                "kondisi": bibit.kondisi,
+                "status_hama": bibit.statusHama,
+                "media_tanam": bibit.mediaTanam,
+                "nutrisi": bibit.nutrisi,
+                "asal_bibit": bibit.asalBibit,
+                "produktivitas": bibit.produktivitas,
+              },
+              "lokasi": {
+                "kph": bibit.kph,
+                "bkph": bibit.bkph,
+                "rph": bibit.rkph,
+                "luas_area": {
+                  "bkph_total":
+                      barcodeController.luasBKPHMap[bibit.bkph] ?? 0.0,
+                  "rph": barcodeController.luasAreaMap[bibit.rkph] ?? 0.0,
+                },
+                "bagian_hutan":
+                    barcodeController.bagianHutanMap[bibit.kph] ?? 0.0,
+              },
+              'scan_info': {
+                'timestamp': DateTime.now().toIso8601String(),
+                'type': 'barcode',
+                'status': 'success',
+                'device': 'mobile',
+              }
+            });
       } else {
         Get.snackbar(
           'Informasi',

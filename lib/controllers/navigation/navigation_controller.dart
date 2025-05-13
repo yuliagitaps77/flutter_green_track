@@ -25,6 +25,9 @@ class NavigationController extends GetxController
   late AnimationController _scanBtnAnimController;
   Animation<double>? _scanBtnAnimation;
 
+  // Add RxBool for flashlight state
+  final RxBool isFlashlightOn = false.obs;
+
   NavigationController({required this.userRole});
 
   @override
@@ -40,6 +43,11 @@ class NavigationController extends GetxController
 
   @override
   void onClose() {
+    // Turn off flashlight when controller is disposed
+    if (isFlashlightOn.value) {
+      TorchLight.disableTorch();
+      isFlashlightOn.value = false;
+    }
     _scanBtnAnimController.dispose();
     super.onClose();
   }
@@ -207,7 +215,9 @@ class NavigationController extends GetxController
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Color(0xFF4CAF50),
+                        color: isFlashlightOn.value
+                            ? Color(0xFF2E7D32)
+                            : Color(0xFF4CAF50),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Material(
@@ -221,20 +231,24 @@ class NavigationController extends GetxController
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.flashlight_on_rounded,
+                                  isFlashlightOn.value
+                                      ? Icons.flashlight_off_rounded
+                                      : Icons.flashlight_on_rounded,
                                   color: Colors.white,
                                   size: 18,
                                 ),
                                 SizedBox(width: 6),
-                                Text(
-                                  "Nyalakan Flash",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                  ),
-                                ),
+                                Obx(() => Text(
+                                      isFlashlightOn.value
+                                          ? "Matikan Flash"
+                                          : "Nyalakan Flash",
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
+                                    )),
                               ],
                             ),
                           ),
@@ -251,58 +265,6 @@ class NavigationController extends GetxController
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
-  }
-
-  bool _isFlashlightOn = false;
-
-  // Toggle flashlight function
-  Future<void> _toggleFlashlight() async {
-    try {
-      if (_isFlashlightOn) {
-        await TorchLight.disableTorch();
-        Get.snackbar(
-          'Flashlight',
-          'Flash dimatikan',
-          backgroundColor: Color(0xFF2E7D32),
-          colorText: Colors.white,
-          duration: Duration(seconds: 1),
-          borderRadius: 15,
-          margin: const EdgeInsets.all(10),
-        );
-      } else {
-        final bool isAvailable = await TorchLight.isTorchAvailable();
-        if (isAvailable) {
-          await TorchLight.enableTorch();
-          Get.snackbar(
-            'Flashlight',
-            'Flash dinyalakan',
-            backgroundColor: Color(0xFF4CAF50),
-            colorText: Colors.white,
-            duration: Duration(seconds: 1),
-            borderRadius: 15,
-            margin: const EdgeInsets.all(10),
-          );
-        } else {
-          Get.snackbar(
-            'Flashlight',
-            'Perangkat tidak memiliki flash',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-            borderRadius: 15,
-            margin: const EdgeInsets.all(10),
-          );
-        }
-      }
-    } on Exception catch (e) {
-      Get.snackbar(
-        'Error',
-        'Tidak dapat mengakses flash: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        borderRadius: 15,
-        margin: const EdgeInsets.all(10),
-      );
-    }
   }
 
   Future<void> scanBarcode() async {
@@ -541,5 +503,58 @@ class NavigationController extends GetxController
 
   void navigateToDashboard() {
     currentIndex.value = 0; // Index 0 is for Dashboard
+  }
+
+  // Toggle flashlight function
+  Future<void> _toggleFlashlight() async {
+    try {
+      if (isFlashlightOn.value) {
+        await TorchLight.disableTorch();
+        isFlashlightOn.value = false;
+        Get.snackbar(
+          'Flashlight',
+          'Flash dimatikan',
+          backgroundColor: Color(0xFF2E7D32),
+          colorText: Colors.white,
+          duration: Duration(seconds: 1),
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
+        );
+      } else {
+        final bool isAvailable = await TorchLight.isTorchAvailable();
+        if (isAvailable) {
+          await TorchLight.enableTorch();
+          isFlashlightOn.value = true;
+          Get.snackbar(
+            'Flashlight',
+            'Flash dinyalakan',
+            backgroundColor: Color(0xFF4CAF50),
+            colorText: Colors.white,
+            duration: Duration(seconds: 1),
+            borderRadius: 15,
+            margin: const EdgeInsets.all(10),
+          );
+        } else {
+          Get.snackbar(
+            'Flashlight',
+            'Perangkat tidak memiliki flash',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            borderRadius: 15,
+            margin: const EdgeInsets.all(10),
+          );
+        }
+      }
+    } on Exception catch (e) {
+      isFlashlightOn.value = false;
+      Get.snackbar(
+        'Error',
+        'Tidak dapat mengakses flash: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        borderRadius: 15,
+        margin: const EdgeInsets.all(10),
+      );
+    }
   }
 }
