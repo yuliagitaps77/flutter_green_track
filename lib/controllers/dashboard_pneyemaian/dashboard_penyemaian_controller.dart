@@ -7,6 +7,7 @@ import 'package:flutter_green_track/fitur/authentication/update_profile_screen.d
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
+import 'dart:math' as math;
 
 import '../../fitur/dashboard_penyemaian/page_cetak_bibit.dart';
 import '../../fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
@@ -32,15 +33,8 @@ class PenyemaianDashboardController extends GetxController {
   RxString scanStatTrend = "Minggu ini".obs;
 
   // Chart data
-  final RxList<FlSpot> growthSpots = <FlSpot>[
-    FlSpot(0, 2.5),
-    FlSpot(1, 3.1),
-    FlSpot(2, 3.6),
-    FlSpot(3, 4.2),
-    FlSpot(4, 4.5),
-    FlSpot(5, 5.3),
-    FlSpot(6, 5.9),
-  ].obs;
+  final RxList<FlSpot> growthSpots = <FlSpot>[].obs;
+  final RxString averageGrowthRate = "0%".obs;
 
   final RxList<FlSpot> scannedSpots = <FlSpot>[
     FlSpot(0, 5),
@@ -72,6 +66,7 @@ class PenyemaianDashboardController extends GetxController {
     super.onInit();
     initActions();
     initUserData();
+    fetchGrowthData();
   }
 
   // Initialize user data
@@ -467,7 +462,7 @@ class PenyemaianDashboardController extends GetxController {
           icon = Icons.print_rounded;
         } else if (activityName.toLowerCase().contains('tambah') ||
             activityName.toLowerCase().contains('daftar') ||
-            activityName.toLowerCase().contains('pendaftaran')) {
+            activityName.contains('pendaftaran')) {
           icon = Icons.add_circle_outline_rounded;
         } else if (activityName.toLowerCase().contains('hapus')) {
           icon = Icons.delete_outline_rounded;
@@ -593,6 +588,169 @@ class PenyemaianDashboardController extends GetxController {
 // Menambahkan bibit baru
 
 // ====== RIWAYAT PEMINDAIAN ======
+
+  // Method untuk mengambil data pertumbuhan bibit
+  Future<void> fetchGrowthData() async {
+    try {
+      print('\n🌱 Memulai fetchGrowthData...');
+
+      print('🔍 Querying Firestore collection: bibit');
+      final QuerySnapshot bibitSnapshot = await FirebaseFirestore.instance
+          .collection('bibit')
+          .orderBy('tanggal_pembibitan')
+          .get();
+
+      print('📊 Query results:');
+      print('- Total documents: ${bibitSnapshot.docs.length}');
+
+      // Print sample of the first document if exists
+      if (bibitSnapshot.docs.isNotEmpty) {
+        final sampleDoc = bibitSnapshot.docs.first;
+        final data = sampleDoc.data() as Map<String, dynamic>;
+        print('\n📄 Sample document structure:');
+        print('Document ID: ${sampleDoc.id}');
+        data.forEach((key, value) {
+          print('$key: $value (${value.runtimeType})');
+        });
+      }
+
+      if (bibitSnapshot.docs.isEmpty) {
+        print('⚠️ Tidak ada data bibit, menggunakan nilai default');
+        growthSpots.assignAll([
+          FlSpot(0, 0),
+          FlSpot(1, 0),
+        ]);
+        averageGrowthRate.value = "0 cm/bulan";
+        return;
+      }
+
+      Map<int, List<double>> heightsByMonth = {};
+      DateTime firstDate = DateTime.now();
+
+      // Debug data bibit
+      print('\n🔍 Analyzing bibit data:');
+      for (var doc in bibitSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        print('\n📝 Document ID: ${doc.id}');
+        print('Tinggi: ${data['tinggi']}');
+        print(
+            'Tanggal Pembibitan: ${(data['tanggal_pembibitan'] as Timestamp?)?.toDate()}');
+
+        final tinggi = (data['tinggi'] ?? 0).toDouble();
+        final tanggalPembibitan = data['tanggal_pembibitan'] as Timestamp?;
+
+        if (tanggalPembibitan == null) {
+          print('⚠️ Tanggal pembibitan null untuk bibit ${doc.id}');
+          continue;
+        }
+
+        final tanggalPembibitanDate = tanggalPembibitan.toDate();
+
+        if (tanggalPembibitanDate.isBefore(firstDate)) {
+          firstDate = tanggalPembibitanDate;
+        }
+
+        // Hitung selisih bulan dari tanggal pertama
+        int monthDiff = (tanggalPembibitanDate.year - firstDate.year) * 12 +
+            tanggalPembibitanDate.month -
+            firstDate.month;
+
+        print(
+            '📅 Month diff: $monthDiff (${tanggalPembibitanDate.toString()} - ${firstDate.toString()})');
+        print('📏 Tinggi: $tinggi cm');
+
+        if (!heightsByMonth.containsKey(monthDiff)) {
+          heightsByMonth[monthDiff] = [];
+        }
+        heightsByMonth[monthDiff]!.add(tinggi);
+      }
+
+      print('\n📊 Data tinggi per bulan:');
+      heightsByMonth.forEach((month, heights) {
+        print('Bulan $month: ${heights.length} data, heights: $heights');
+      });
+
+      // Pastikan ada data untuk setiap bulan
+      if (heightsByMonth.isNotEmpty) {
+        int maxMonth = heightsByMonth.keys.reduce(math.max);
+        print('\n🔄 Interpolating missing months from 0 to $maxMonth');
+
+        for (int i = 0; i <= maxMonth; i++) {
+          if (!heightsByMonth.containsKey(i)) {
+            int prevMonth = i - 1;
+            int nextMonth = i + 1;
+            while (!heightsByMonth.containsKey(prevMonth) && prevMonth >= 0)
+              prevMonth--;
+            while (!heightsByMonth.containsKey(nextMonth) &&
+                nextMonth <= maxMonth) nextMonth++;
+
+            if (prevMonth >= 0 && nextMonth <= maxMonth) {
+              double prevHeight =
+                  heightsByMonth[prevMonth]!.reduce((a, b) => a + b) /
+                      heightsByMonth[prevMonth]!.length;
+              double nextHeight =
+                  heightsByMonth[nextMonth]!.reduce((a, b) => a + b) /
+                      heightsByMonth[nextMonth]!.length;
+              double interpolatedHeight = prevHeight +
+                  (nextHeight - prevHeight) *
+                      (i - prevMonth) /
+                      (nextMonth - prevMonth);
+              heightsByMonth[i] = [interpolatedHeight];
+              print(
+                  '📈 Interpolated month $i: $interpolatedHeight (between $prevMonth and $nextMonth)');
+            }
+          }
+        }
+      }
+
+      // Buat spots untuk grafik
+      List<FlSpot> spots = [];
+      heightsByMonth.forEach((month, heights) {
+        if (heights.isNotEmpty) {
+          double averageHeight =
+              heights.reduce((a, b) => a + b) / heights.length;
+          spots.add(FlSpot(month.toDouble(), averageHeight));
+        }
+      });
+
+      // Urutkan berdasarkan bulan
+      spots.sort((a, b) => a.x.compareTo(b.x));
+
+      print('\n📊 Final spots data:');
+      spots.forEach((spot) => print('Month: ${spot.x}, Height: ${spot.y}'));
+
+      // Pastikan minimal ada 2 titik
+      if (spots.length < 2) {
+        print('⚠️ Kurang dari 2 titik data, menambahkan titik tambahan');
+        if (spots.isEmpty) {
+          spots = [FlSpot(0, 0), FlSpot(1, 0)];
+        } else {
+          spots.add(FlSpot(spots[0].x + 1, spots[0].y));
+        }
+      }
+
+      // Hitung pertumbuhan rata-rata
+      if (spots.length > 1) {
+        double totalGrowth = spots.last.y - spots.first.y;
+        double monthsPassed = spots.last.x - spots.first.x;
+        double averageGrowthPerMonth =
+            monthsPassed > 0 ? totalGrowth / monthsPassed : 0;
+        averageGrowthRate.value =
+            "${averageGrowthPerMonth.toStringAsFixed(1)} cm/bulan";
+        print('\n📈 Pertumbuhan rata-rata: ${averageGrowthRate.value}');
+      } else {
+        averageGrowthRate.value = "0 cm/bulan";
+      }
+
+      print('\n✅ Assigning ${spots.length} spots to growthSpots');
+      growthSpots.assignAll(spots);
+    } catch (e, stackTrace) {
+      print('❌ Error in fetchGrowthData: $e');
+      print('Stack trace: $stackTrace');
+      growthSpots.assignAll([FlSpot(0, 0), FlSpot(1, 0)]);
+      averageGrowthRate.value = "0 cm/bulan";
+    }
+  }
 }
 
 // Model untuk jadwal perawatan bibit

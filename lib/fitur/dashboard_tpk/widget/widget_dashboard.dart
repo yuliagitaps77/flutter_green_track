@@ -5,6 +5,7 @@ import 'package:flutter_green_track/fitur/authentication/update_profile_screen.d
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_green_track/fitur/authentication/LoginScreen.dart';
+import 'dart:math' as math;
 
 // Common widgets shared between both dashboard types
 
@@ -312,88 +313,307 @@ class StatCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filter options untuk periode
+    final List<String> filterOptions = [
+      '1 Bulan',
+      '3 Bulan',
+      '6 Bulan',
+      '1 Tahun'
+    ];
+    String selectedFilter = '6 Bulan';
+
     return AnimatedBuilder(
       animation: breathingAnimation,
       builder: (context, child) {
-        return Container(
-          padding: EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.15 * breathingAnimation.value),
-                blurRadius: 10 * breathingAnimation.value,
-                offset: Offset(0, 3),
-                spreadRadius: 1 * (breathingAnimation.value - 0.92) * 10,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              SizedBox(height: 5),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                  SizedBox(width: 5),
-                  Icon(
-                    icon,
-                    size: 16,
-                    color: color,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 400;
+            final cardPadding = isSmallScreen ? 12.0 : 15.0;
+
+            return Container(
+              padding: EdgeInsets.all(cardPadding),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.15 * breathingAnimation.value),
+                    blurRadius: 10 * breathingAnimation.value,
+                    offset: Offset(0, 3),
+                    spreadRadius: 1 * (breathingAnimation.value - 0.92) * 10,
                   ),
                 ],
               ),
-              Text(
-                trend,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-              ),
-              SizedBox(height: 10),
-              // Mini chart
-              Container(
-                height: 50,
-                child: LineChart(
-                  LineChartData(
-                    gridData: FlGridData(show: false),
-                    titlesData: FlTitlesData(show: false),
-                    borderData: FlBorderData(show: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: spots,
-                        isCurved: true,
-                        color: color,
-                        barWidth: 3,
-                        isStrokeCapRound: true,
-                        dotData: FlDotData(show: false),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          color: color.withOpacity(0.1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Section
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title and Value Section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title with icon
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    icon,
+                                    size: isSmallScreen ? 14 : 16,
+                                    color: color,
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 13 : 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[800],
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12),
+                            // Value
+                            Text(
+                              value,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 18 : 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            // Trend
+                            Text(
+                              trend,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 11 : 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      // Filter Dropdown (if applicable)
+                      if (title == "Pertumbuhan Bibit")
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            return Container(
+                              height: 32,
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 0),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedFilter,
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: color,
+                                    size: 16,
+                                  ),
+                                  isDense: true,
+                                  items: filterOptions.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today,
+                                            size: 12,
+                                            color: color,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            value,
+                                            style: TextStyle(
+                                              fontSize: isSmallScreen ? 11 : 12,
+                                              color: color,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        selectedFilter = newValue;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                     ],
-                    lineTouchData: LineTouchData(enabled: false),
                   ),
-                ),
+                  // Chart Section
+                  if (spots.isNotEmpty) ...[
+                    SizedBox(height: isSmallScreen ? 12 : 15),
+                    Container(
+                      height: isSmallScreen ? 100 : 120,
+                      child: LayoutBuilder(
+                        builder: (context, chartConstraints) {
+                          return LineChart(
+                            LineChartData(
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                horizontalInterval: 20,
+                                getDrawingHorizontalLine: (value) {
+                                  return FlLine(
+                                    color: Colors.grey[200],
+                                    strokeWidth: 1,
+                                  );
+                                },
+                              ),
+                              titlesData: FlTitlesData(
+                                show: true,
+                                rightTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: isSmallScreen ? 16 : 22,
+                                    interval:
+                                        chartConstraints.maxWidth > 300 ? 2 : 3,
+                                    getTitlesWidget: (value, meta) {
+                                      if (value % 1 != 0)
+                                        return const SizedBox.shrink();
+                                      return Padding(
+                                        padding: EdgeInsets.only(top: 5),
+                                        child: Text(
+                                          'B${value.toInt() + 1}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: isSmallScreen ? 9 : 10,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    interval: 20,
+                                    reservedSize: isSmallScreen ? 24 : 28,
+                                    getTitlesWidget: (value, meta) {
+                                      return Text(
+                                        '${value.toInt()}',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: isSmallScreen ? 9 : 10,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              minY: math.max(
+                                  0,
+                                  spots.map((spot) => spot.y).reduce(math.min) -
+                                      10),
+                              maxY:
+                                  spots.map((spot) => spot.y).reduce(math.max) +
+                                      10,
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  color: color,
+                                  barWidth: isSmallScreen ? 2.0 : 2.5,
+                                  isStrokeCapRound: true,
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter:
+                                        (spot, percent, barData, index) {
+                                      return FlDotCirclePainter(
+                                        radius: isSmallScreen ? 2.5 : 3,
+                                        color: Colors.white,
+                                        strokeWidth: isSmallScreen ? 1.5 : 2,
+                                        strokeColor: color,
+                                      );
+                                    },
+                                  ),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        color.withOpacity(0.3),
+                                        color.withOpacity(0.0),
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              lineTouchData: LineTouchData(
+                                enabled: true,
+                                touchTooltipData: LineTouchTooltipData(
+                                  fitInsideHorizontally: true,
+                                  fitInsideVertically: true,
+                                  tooltipRoundedRadius: 8,
+                                  tooltipBorder: BorderSide(
+                                    color: color.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                  tooltipPadding: EdgeInsets.symmetric(
+                                    horizontal: isSmallScreen ? 8 : 12,
+                                    vertical: isSmallScreen ? 6 : 8,
+                                  ),
+                                  tooltipMargin: 6,
+                                  getTooltipItems:
+                                      (List<LineBarSpot> touchedSpots) {
+                                    return touchedSpots
+                                        .map((LineBarSpot touchedSpot) {
+                                      return LineTooltipItem(
+                                        'Bulan ${touchedSpot.x.toInt() + 1}\n${touchedSpot.y.toStringAsFixed(1)} cm',
+                                        TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: isSmallScreen ? 10 : 12,
+                                        ),
+                                      );
+                                    }).toList();
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

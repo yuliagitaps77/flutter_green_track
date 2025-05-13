@@ -333,8 +333,8 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
             Expanded(
               child: Obx(() => StatCardWidget(
                     title: "Pertumbuhan Bibit",
-                    value: controller.pertumbuhanBibit.value,
-                    trend: controller.growthStatTrend.value,
+                    value: controller.averageGrowthRate.value,
+                    trend: "Rata-rata pertumbuhan per bulan",
                     icon: Icons.trending_up_rounded,
                     spots: controller.growthSpots,
                     color: Color(0xFF4CAF50),
