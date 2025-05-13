@@ -24,10 +24,24 @@ class _StatistikPageState extends State<StatistikPage>
   final Map<String, int> _batchData = {};
   final Map<String, int> _stockByMonthData = {};
 
-  final Color primaryGreen = Color(0xFF2E7D32);
-  final Color lightGreen = Color(0xFF81C784);
-  final Color darkGreen = Color(0xFF1B5E20);
-  final Color accentGreen = Color(0xFFC8E6C9);
+  // Updated color palette based on design system
+  final Color primaryGreen = Color(0xFF4CAF50);
+  final Color darkGreen = Color(0xFF2E7D32);
+  final Color lightGreen = Color(0xFF66BB6A);
+  final Color accentGreen = Color(0xFF8BC34A);
+  final Color backgroundGreen = Color(0xFFE8F5E9);
+
+  final List<Color> chartGradients = [
+    Color(0xFF4CAF50),
+    Color(0xFF66BB6A),
+    Color(0xFF81C784),
+    Color(0xFF8BC34A),
+    Color(0xFF9CCC65),
+    Color(0xFFAED581),
+  ];
+
+  // Track touched section index for pie chart
+  int touchedIndex = -1;
 
   @override
   void initState() {
@@ -88,196 +102,505 @@ class _StatistikPageState extends State<StatistikPage>
         title: const Text(
           'Statistik Inventory',
           style: TextStyle(
-            color: Colors.green,
-            fontWeight: FontWeight.bold,
+            color: Color(0xFF2E7D32),
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            fontFamily: 'Poppins',
           ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: darkGreen),
+            onPressed: () => _controller.refreshInventory(),
+            tooltip: 'Refresh Data',
+          ),
+          SizedBox(width: 8),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: darkGreen,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: primaryGreen,
+          indicatorWeight: 3,
+          labelStyle: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+          ),
+          tabs: [
+            Tab(text: 'Jenis Kayu'),
+            Tab(text: 'Batch'),
+            Tab(text: 'Detail'),
+          ],
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.green),
+        automaticallyImplyLeading: false,
       ),
-      body: Obx(() {
-        // Refresh chart data when inventory changes
-        if (_controller.inventoryItems.isNotEmpty) {
-          _prepareChartData();
-        }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Color(0xFFF5F9F5),
+              Color(0xFFEDF7ED),
+            ],
+          ),
+        ),
+        child: Obx(() {
+          if (_controller.inventoryItems.isNotEmpty) {
+            _prepareChartData();
+          }
 
-        if (_controller.isLoading.value) {
-          return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
-            ),
+          if (_controller.isLoading.value) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
+              ),
+            );
+          }
+
+          if (_controller.inventoryItems.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildPieChartView(),
+              _buildBarChartView(),
+              _buildStockDetailView(),
+            ],
           );
-        }
+        }),
+      ),
+    );
+  }
 
-        if (_controller.inventoryItems.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.bar_chart_outlined,
-                    size: 80, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'Belum ada data inventory',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-              ],
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: backgroundGreen,
+              shape: BoxShape.circle,
             ),
-          );
-        }
-
-        return TabBarView(
-          controller: _tabController,
-          children: [
-            // Pie Chart - Jenis Kayu
-            _buildPieChartView(),
-
-            // Bar Chart - Batch
-            _buildBarChartView(),
-
-            // Stok Detail - Table View
-            _buildStockDetailView(),
-          ],
-        );
-      }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _controller.refreshInventory(),
-        backgroundColor: primaryGreen,
-        child: const Icon(Icons.refresh),
-        tooltip: 'Refresh Data',
+            child: Icon(
+              Icons.bar_chart_outlined,
+              size: 80,
+              color: primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Belum ada data inventory',
+            style: TextStyle(
+              fontSize: 18,
+              color: darkGreen,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tambahkan item inventory untuk melihat statistik',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPieChartView() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _buildStatsHeader('Distribusi Jenis Kayu',
-              'Total: ${_controller.totalKayu.value} unit'),
-        ),
-        Expanded(
-          child: _jenisKayuData.isEmpty
-              ? _buildNoDataView('jenis kayu')
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 0,
-                      sections: _getPieSections(),
-                      pieTouchData: PieTouchData(),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            margin: EdgeInsets.all(16),
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildStatsHeader('Distribusi Jenis Kayu',
+                    'Total: ${_controller.totalKayu.value} unit'),
+                SizedBox(height: 20),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: _jenisKayuData.isEmpty
+                      ? _buildNoDataView('jenis kayu')
+                      : Stack(
+                          children: [
+                            PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 60,
+                                sections: _getPieSections(),
+                                pieTouchData: PieTouchData(
+                                  touchCallback:
+                                      (FlTouchEvent event, pieTouchResponse) {
+                                    setState(() {
+                                      if (!event.isInterestedForInteractions ||
+                                          pieTouchResponse == null ||
+                                          pieTouchResponse.touchedSection ==
+                                              null) {
+                                        touchedIndex = -1;
+                                        return;
+                                      }
+                                      touchedIndex = pieTouchResponse
+                                          .touchedSection!.touchedSectionIndex;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Total',
+                                    style: TextStyle(
+                                      color: darkGreen,
+                                      fontSize: 14,
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_controller.totalKayu.value}',
+                                    style: TextStyle(
+                                      color: primaryGreen,
+                                      fontSize: 24,
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'unit',
+                                    style: TextStyle(
+                                      color: darkGreen,
+                                      fontSize: 14,
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                if (touchedIndex != -1 && _jenisKayuData.isNotEmpty)
+                  Container(
+                    margin: EdgeInsets.only(top: 16),
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Color(0xFF81C784), width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: chartGradients[
+                                touchedIndex % chartGradients.length],
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _jenisKayuData.keys.elementAt(touchedIndex),
+                                style: TextStyle(
+                                  color: darkGreen,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              Text(
+                                '${_jenisKayuData.values.elementAt(touchedIndex)} unit (${(_jenisKayuData.values.elementAt(touchedIndex) / _controller.totalKayu.value * 100).toStringAsFixed(1)}%)',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _buildLegend(_jenisKayuData),
-        ),
-      ],
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: _buildLegend(_jenisKayuData),
+          ),
+          SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
   Widget _buildBarChartView() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _buildStatsHeader('Distribusi Batch Panen',
-              'Total batch: ${_controller.jumlahBatch.value}'),
-        ),
-        Expanded(
-          child: _batchData.isEmpty
-              ? _buildNoDataView('batch panen')
-              : Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0, vertical: 20.0),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.center,
-                      maxY: _getMaxBatchValue(),
-                      minY: 0,
-                      barTouchData: BarTouchData(
-                        enabled: true,
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            String batchName =
-                                _getBatchNameForIndex(groupIndex);
-                            return BarTooltipItem(
-                              '$batchName\n${rod.toY.round()} unit',
-                              const TextStyle(color: Colors.white),
-                            );
-                          },
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              String text = '';
-                              if (value.toInt() < _batchData.length) {
-                                String batchName =
-                                    _getBatchNameForIndex(value.toInt());
-                                text = batchName.substring(
-                                    0, min(3, batchName.length));
-                                text += '...';
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(text,
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold)),
-                              );
-                            },
-                            reservedSize: 30,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            margin: EdgeInsets.all(16),
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildStatsHeader('Distribusi Batch Panen',
+                    'Total batch: ${_controller.jumlahBatch.value}'),
+                SizedBox(height: 20),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: _batchData.isEmpty
+                      ? _buildNoDataView('batch panen')
+                      : BarChart(
+                          BarChartData(
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: _getMaxBatchValue(),
+                            minY: 0,
+                            barTouchData: BarTouchData(
+                              enabled: true,
+                              touchTooltipData: BarTouchTooltipData(
+                                getTooltipItem:
+                                    (group, groupIndex, rod, rodIndex) {
+                                  String batchName =
+                                      _getBatchNameForIndex(groupIndex);
+                                  return BarTooltipItem(
+                                    '$batchName\n${rod.toY.round()} unit',
+                                    const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'Poppins',
+                                    ),
+                                  );
+                                },
+                                fitInsideHorizontally: true,
+                                fitInsideVertically: true,
+                                tooltipPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                tooltipMargin: 8,
+                                tooltipRoundedRadius: 8,
+                                tooltipHorizontalAlignment:
+                                    FLHorizontalAlignment.center,
+                                tooltipHorizontalOffset: 0,
+                              ),
+                            ),
+                            titlesData: FlTitlesData(
+                              show: true,
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    if (value.toInt() >= _batchData.length) {
+                                      return SizedBox();
+                                    }
+                                    String batchName =
+                                        _getBatchNameForIndex(value.toInt());
+                                    return Transform.rotate(
+                                      angle:
+                                          -0.5, // Rotate labels slightly for better readability
+                                      child: Container(
+                                        padding: EdgeInsets.only(top: 8),
+                                        width: 60,
+                                        child: Text(
+                                          batchName.length > 8
+                                              ? batchName.substring(0, 8) +
+                                                  '...'
+                                              : batchName,
+                                          style: TextStyle(
+                                            color: darkGreen,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Poppins',
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  reservedSize: 40,
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(right: 8.0),
+                                      child: Text(
+                                        value.toInt().toString(),
+                                        style: TextStyle(
+                                          color: darkGreen,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  reservedSize: 40,
+                                ),
+                              ),
+                              topTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              rightTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                            ),
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: false,
+                              horizontalInterval: _getMaxBatchValue() / 5,
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
+                                  color: Colors.grey.shade200,
+                                  strokeWidth: 1,
+                                  dashArray: [5, 5],
+                                );
+                              },
+                            ),
+                            borderData: FlBorderData(
+                              show: true,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                left: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            barGroups: _getBarGroups(),
                           ),
                         ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              if (value == 0) return const SizedBox();
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: Text(value.toInt().toString(),
-                                    style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold)),
-                              );
-                            },
-                            reservedSize: 30,
-                          ),
-                        ),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      gridData: FlGridData(
-                        show: true,
-                        horizontalInterval: _getMaxBatchValue() / 5,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.shade300,
-                            strokeWidth: 1,
-                            dashArray: [5, 5],
-                          );
-                        },
-                      ),
-                      barGroups: _getBarGroups(),
-                    ),
+                ),
+              ],
+            ),
+          ),
+          // Legend for bar chart
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Detail Batch',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: darkGreen,
+                    fontSize: 16,
+                    fontFamily: 'Poppins',
                   ),
                 ),
-        ),
-      ],
+                SizedBox(height: 12),
+                ..._batchData.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: chartGradients[
+                                _batchData.keys.toList().indexOf(entry.key) %
+                                    chartGradients.length],
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            entry.key,
+                            style: TextStyle(
+                              color: Colors.grey[800],
+                              fontSize: 13,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${entry.value} unit',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: darkGreen,
+                            fontSize: 13,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
@@ -290,140 +613,210 @@ class _StatistikPageState extends State<StatistikPage>
         ),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(
+            maxWidth: 500,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header dengan judul dan tombol tutup
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Detail Inventory: ${item.namaKayu}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: primaryGreen,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
-                  ),
-                ],
-              ),
-
-              const Divider(),
-
-              // Gambar
-              if (item.imageUrl.isNotEmpty)
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      item.imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 200,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported,
-                            size: 50, color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Center(
-                  child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: accentGreen,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.forest,
-                      size: 80,
-                      color: primaryGreen,
-                    ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
                 ),
-
-              const SizedBox(height: 20),
-
-              // Informasi detail
-              _buildDetailRow('ID', item.id),
-              _buildDetailRow('Nama Kayu', item.namaKayu),
-              _buildDetailRow('Jenis Kayu', item.jenisKayu),
-              _buildDetailRow('Batch', item.batchPanen),
-              _buildDetailRow('Stok', '${item.jumlahStok} unit'),
-
-              const SizedBox(height: 20),
-
-              // Tombol aksi
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Get.back();
-                      _controller.editItem(index);
-                    },
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: primaryGreen,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Detail Inventory: ${item.namaKayu}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  physics: BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Gambar
+                      if (item.imageUrl.isNotEmpty)
+                        Container(
+                          height: 250,
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 24),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                decoration: BoxDecoration(
+                                  color: Color(0xFFE8F5E9),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 50,
+                                  color: Color(0xFF4CAF50),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 250,
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 24),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.forest,
+                            size: 80,
+                            color: Color(0xFF4CAF50),
+                          ),
+                        ),
+
+                      // Informasi detail dalam card
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildDetailRow('ID', item.id),
+                            _buildDetailRow('Nama Kayu', item.namaKayu),
+                            _buildDetailRow('Jenis Kayu', item.jenisKayu),
+                            _buildDetailRow('Batch', item.batchPanen),
+                            _buildDetailRow('Stok', '${item.jumlahStok} unit'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      Get.back();
-                      _controller.viewItemDetails(index);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryGreen,
-                    ),
-                    child: const Text(
-                      'Lihat Detail Lengkap',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                ),
+              ),
+
+              // Footer dengan tombol
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
                   ),
-                ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Get.back();
+                        _controller.viewItemDetails(index);
+                      },
+                      icon:
+                          Icon(Icons.visibility, size: 18, color: Colors.white),
+                      label: Text(
+                        'Lihat Detail Lengkap',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF4CAF50),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
       ),
+      barrierDismissible: true,
     );
   }
 
   // Widget untuk baris informasi pada dialog detail
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 120,
             child: Text(
               label,
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+                fontSize: 14,
+                fontFamily: 'Poppins',
               ),
             ),
           ),
           Expanded(
             child: Text(
               value.isEmpty ? '-' : value,
-              style: const TextStyle(
-                color: Colors.black87,
+              style: TextStyle(
+                color: Color(0xFF424242),
+                fontSize: 14,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -587,53 +980,68 @@ class _StatistikPageState extends State<StatistikPage>
   }
 
   Widget _buildLegend(Map<String, int> data) {
-    List<Widget> legendItems = [];
-    int index = 0;
-
-    data.forEach((key, value) {
-      final color = _getPieChartColor(index);
-
-      legendItems.add(Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-        child: Row(
-          children: [
-            Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(key.isEmpty ? 'Tidak Spesifik' : key)),
-            Text(
-              '$value unit',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ));
-
-      index++;
-    });
-
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Legenda:',
-            style:
-                TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700]),
+            'Legenda',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: darkGreen,
+              fontSize: 16,
+              fontFamily: 'Poppins',
+            ),
           ),
-          const SizedBox(height: 8),
-          ...legendItems,
+          SizedBox(height: 12),
+          ...data.entries.map((entry) {
+            final index = data.keys.toList().indexOf(entry.key);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: chartGradients[index % chartGradients.length],
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      entry.key.isEmpty ? 'Tidak Spesifik' : entry.key,
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${entry.value} unit',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: darkGreen,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -645,20 +1053,33 @@ class _StatistikPageState extends State<StatistikPage>
     int index = 0;
 
     _jenisKayuData.forEach((jenis, jumlah) {
+      final isTouched = index == touchedIndex;
+      final double fontSize = isTouched ? 16 : 14;
+      final double radius = isTouched ? 110 : 100;
       final double percentage = (jumlah / _controller.totalKayu.value) * 100;
-      final color = _getPieChartColor(index);
+      final color = chartGradients[index % chartGradients.length];
 
       sections.add(
         PieChartSectionData(
           value: jumlah.toDouble(),
           title: '${percentage.toStringAsFixed(1)}%',
           color: color,
-          radius: 100,
-          titleStyle: const TextStyle(
+          radius: radius,
+          titleStyle: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontSize: fontSize,
+            fontFamily: 'Poppins',
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 2,
+                offset: Offset(0, 1),
+              ),
+            ],
           ),
+          titlePositionPercentageOffset: 0.6,
+          showTitle: true,
         ),
       );
 
@@ -680,12 +1101,23 @@ class _StatistikPageState extends State<StatistikPage>
             BarChartRodData(
               toY: jumlah.toDouble(),
               gradient: LinearGradient(
-                colors: [lightGreen, primaryGreen],
+                colors: [
+                  chartGradients[index % chartGradients.length],
+                  chartGradients[(index + 1) % chartGradients.length],
+                ],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
               ),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(4)),
+              width: 16,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(4),
+                bottom: Radius.circular(0),
+              ),
+              backDrawRodData: BackgroundBarChartRodData(
+                show: true,
+                toY: _getMaxBatchValue(),
+                color: Colors.grey.shade100,
+              ),
             ),
           ],
         ),
@@ -695,20 +1127,6 @@ class _StatistikPageState extends State<StatistikPage>
     });
 
     return groups;
-  }
-
-  Color _getPieChartColor(int index) {
-    // Liste colori verdi per il grafico a torta
-    final List<Color> colors = [
-      primaryGreen,
-      lightGreen,
-      darkGreen,
-      const Color(0xFF4CAF50), // Verde standard
-      const Color(0xFF8BC34A), // Verde lime
-      const Color(0xFF009688), // Verde turchese
-    ];
-
-    return colors[index % colors.length];
   }
 
   double _getMaxBatchValue() {

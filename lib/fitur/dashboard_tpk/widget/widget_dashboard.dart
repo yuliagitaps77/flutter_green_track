@@ -502,7 +502,7 @@ class ActivityItemWidget extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w400,
                     fontSize: 14,
                     color: Colors.black87,
                   ),

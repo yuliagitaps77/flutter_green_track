@@ -642,7 +642,6 @@ extension DashboardIntegration on AppController {
       ActivityTypes.addKayu,
       ActivityTypes.updateKayu,
       ActivityTypes.deleteKayu,
-      ActivityTypes.addPengiriman,
     ];
 
     // Filter activities by types relevant to Admin TPK

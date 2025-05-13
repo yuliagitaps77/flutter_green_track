@@ -8,6 +8,7 @@ import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart'
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:get/get.dart';
+import 'package:torch_light/torch_light.dart';
 import '../../data/repositories/navigation_repository.dart';
 import '../../data/models/navigation_model.dart';
 import 'package:get/get.dart';
@@ -76,7 +77,7 @@ class NavigationController extends GetxController
               width: 40,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Color(0xFFF5F9F5),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -91,21 +92,22 @@ class NavigationController extends GetxController
                   Text(
                     "Scan Barcode",
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF2E7D32),
+                      fontFamily: 'Poppins',
                     ),
                   ),
                   IconButton(
                     onPressed: () => Get.back(),
                     icon: Icon(Icons.close),
-                    color: Colors.grey[600],
+                    color: Color(0xFF424242),
                   ),
                 ],
               ),
             ),
 
-            // Camera preview placeholder (in real app, implement camera view)
+            // Camera preview placeholder
             Expanded(
               child: Container(
                 margin: EdgeInsets.all(20),
@@ -117,9 +119,8 @@ class NavigationController extends GetxController
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Animated scan indicator
                       GestureDetector(
-                        onTap: scanBarcode, // Make entire area clickable
+                        onTap: scanBarcode,
                         child: SizedBox(
                           width: 200,
                           height: 200,
@@ -139,6 +140,7 @@ class NavigationController extends GetxController
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
+                          fontFamily: 'Poppins',
                         ),
                       ),
                       SizedBox(height: 10),
@@ -147,6 +149,7 @@ class NavigationController extends GetxController
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
                           fontSize: 14,
+                          fontFamily: 'Poppins',
                         ),
                       ),
                     ],
@@ -157,34 +160,85 @@ class NavigationController extends GetxController
 
             // Manual input option
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => showManualInputDialog(userRole),
-                      icon: Icon(Icons.edit_rounded),
-                      label: FittedBox(
-                          child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              child: Text("Input Kode Manual"))),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Color(0xFF4CAF50),
-                        side: BorderSide(color: Color(0xFF4CAF50)),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xFF4CAF50)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => showManualInputDialog(userRole),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.edit_rounded,
+                                  color: Color(0xFF4CAF50),
+                                  size: 18,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  "Input Manual",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF4CAF50),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  SizedBox(width: 8),
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _toggleFlashlight,
-                      icon: Icon(Icons.flashlight_on_rounded),
-                      label: Text("Nyalakan Flash"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _toggleFlashlight,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.flashlight_on_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  "Nyalakan Flash",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -199,20 +253,60 @@ class NavigationController extends GetxController
     );
   }
 
+  bool _isFlashlightOn = false;
+
   // Toggle flashlight function
-  void _toggleFlashlight() {
-    Get.snackbar(
-      'Flashlight',
-      'Flashlight function would be implemented here',
-      backgroundColor: Colors.blue,
-      colorText: Colors.white,
-    );
-    // In real implementation, would toggle device flashlight
+  Future<void> _toggleFlashlight() async {
+    try {
+      if (_isFlashlightOn) {
+        await TorchLight.disableTorch();
+        Get.snackbar(
+          'Flashlight',
+          'Flash dimatikan',
+          backgroundColor: Color(0xFF2E7D32),
+          colorText: Colors.white,
+          duration: Duration(seconds: 1),
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
+        );
+      } else {
+        final bool isAvailable = await TorchLight.isTorchAvailable();
+        if (isAvailable) {
+          await TorchLight.enableTorch();
+          Get.snackbar(
+            'Flashlight',
+            'Flash dinyalakan',
+            backgroundColor: Color(0xFF4CAF50),
+            colorText: Colors.white,
+            duration: Duration(seconds: 1),
+            borderRadius: 15,
+            margin: const EdgeInsets.all(10),
+          );
+        } else {
+          Get.snackbar(
+            'Flashlight',
+            'Perangkat tidak memiliki flash',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            borderRadius: 15,
+            margin: const EdgeInsets.all(10),
+          );
+        }
+      }
+    } on Exception catch (e) {
+      Get.snackbar(
+        'Error',
+        'Tidak dapat mengakses flash: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        borderRadius: 15,
+        margin: const EdgeInsets.all(10),
+      );
+    }
   }
 
   Future<void> scanBarcode() async {
     try {
-      // Cek user role terlebih dahulu
       print('🔥 [SCAN] User Role: ${userRole}');
       final bool isAdminTPK = userRole == UserRole.adminTPK;
       final bool isAdminPenyemaian = userRole == UserRole.adminPenyemaian;
@@ -228,40 +322,36 @@ class NavigationController extends GetxController
       var result = await BarcodeScanner.scan(options: options);
 
       if (result.rawContent.isNotEmpty) {
-        // Tutup bottom sheet jika ada
         Get.back(result: result.rawContent);
-
-        // Tampilkan hasil scan dengan warna berbeda berdasarkan role
-        Color bgColor = isAdminTPK ? Colors.green : Colors.green;
 
         Get.snackbar(
           'Hasil Scan',
           'Kode barcode: ${result.rawContent}',
-          backgroundColor: bgColor,
+          backgroundColor: Color(0xFF4CAF50),
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
           snackPosition: SnackPosition.BOTTOM,
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
         );
 
-        // Penanganan hasil scan berdasarkan user role
         if (isAdminTPK) {
-          // Admin TPK -> menangani kayu
           print('🔥 [SCAN] Admin TPK: Navigasi ke detail kayu');
           final kayuController = Get.find<InventoryKayuController>();
           kayuController.navigateToDetailAfterScan(result.rawContent, userRole);
         } else if (isAdminPenyemaian) {
-          // Admin Penyemaian -> menangani bibit
           print('🔥 [SCAN] Admin Penyemaian: Navigasi ke detail bibit');
           final bibitController = Get.find<BibitController>();
           bibitController.navigateToDetailAfterScan(result.rawContent);
         } else {
-          // Default jika role tidak teridentifikasi
           print('⚠️ [SCAN] User role tidak teridentifikasi: ${userRole}');
           Get.snackbar(
             'Perhatian',
             'Peran pengguna tidak teridentifikasi',
             backgroundColor: Colors.orange,
             colorText: Colors.white,
+            borderRadius: 15,
+            margin: const EdgeInsets.all(10),
           );
         }
       }
@@ -273,8 +363,9 @@ class NavigationController extends GetxController
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
         );
-        // Tampilkan dialog input manual jika kamera tidak tersedia
         showManualInputDialog(userRole);
       } else {
         Get.snackbar(
@@ -283,8 +374,9 @@ class NavigationController extends GetxController
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
         );
-        // Tampilkan dialog input manual jika terjadi error pada scanner
         showManualInputDialog(userRole);
       }
     } on Exception catch (e) {
@@ -294,8 +386,9 @@ class NavigationController extends GetxController
         backgroundColor: Colors.red,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
+        borderRadius: 15,
+        margin: const EdgeInsets.all(10),
       );
-      // Tampilkan dialog input manual jika terjadi error
       showManualInputDialog(userRole);
     }
   }
@@ -311,17 +404,40 @@ class NavigationController extends GetxController
     final String dialogTitle =
         isAdminTPK ? 'Input ID Kayu Manual' : 'Input Kode Bibit Manual';
     final String labelText = isAdminTPK ? 'ID Kayu' : 'Kode Bibit';
-    final Color buttonColor = isAdminTPK ? Colors.brown : Colors.green;
+    final Color buttonColor = Color(0xFF4CAF50); // Updated to primary green
+    final Color textColor = Color(0xFF2E7D32); // Updated to dark green
 
     Get.dialog(
       AlertDialog(
-        title: Text(dialogTitle),
+        title: Text(
+          dialogTitle,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
+        ),
         content: TextField(
           controller: codeController,
           decoration: InputDecoration(
             labelText: labelText,
-            border: const OutlineInputBorder(),
+            labelStyle: TextStyle(
+              color: textColor,
+              fontFamily: 'Poppins',
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(color: buttonColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(color: buttonColor, width: 2),
+            ),
             hintText: isAdminTPK ? 'Masukkan ID kayu' : 'Masukkan kode bibit',
+            hintStyle: TextStyle(
+              color: Colors.grey[400],
+              fontFamily: 'Poppins',
+            ),
           ),
           keyboardType: TextInputType.text,
           autofocus: true,
@@ -329,7 +445,13 @@ class NavigationController extends GetxController
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Batal'),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: textColor,
+                fontFamily: 'Poppins',
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -344,6 +466,8 @@ class NavigationController extends GetxController
                   colorText: Colors.white,
                   duration: const Duration(seconds: 3),
                   snackPosition: SnackPosition.BOTTOM,
+                  borderRadius: 15,
+                  margin: const EdgeInsets.all(10),
                 );
 
                 // Penanganan hasil input manual berdasarkan user role
@@ -369,17 +493,25 @@ class NavigationController extends GetxController
                     'Peran pengguna tidak teridentifikasi',
                     backgroundColor: Colors.orange,
                     colorText: Colors.white,
+                    borderRadius: 15,
+                    margin: const EdgeInsets.all(10),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: buttonColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              textStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            child: const Text(
-              'Cari',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Cari'),
           ),
         ],
       ),

@@ -29,10 +29,11 @@ class _DaftarBibitPageState extends State<DaftarBibitPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Daftar Bibit',
+          "Daftar Bibit",
           style: TextStyle(
-            color: Colors.green,
+            color: Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
         backgroundColor: Colors.white,
@@ -87,20 +88,20 @@ class _DaftarBibitPageState extends State<DaftarBibitPage> {
                 ),
                 const SizedBox(height: 20),
                 // Jenis filter
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Obx(() => Row(
-                        children: [
-                          _buildJenisChip(
-                              'Semua', controller.selectedJenis == 'Semua'),
-                          ...controller.jenisList
-                              .map((jenis) => _buildJenisChip(
-                                    jenis,
-                                    controller.selectedJenis == jenis,
-                                  )),
-                        ],
-                      )),
-                ),
+                // SingleChildScrollView(
+                //   scrollDirection: Axis.horizontal,
+                //   child: Obx(() => Row(
+                //         children: [
+                //           _buildJenisChip(
+                //               'Semua', controller.selectedJenis == 'Semua'),
+                //           ...controller.jenisList
+                //               .map((jenis) => _buildJenisChip(
+                //                     jenis,
+                //                     controller.selectedJenis == jenis,
+                //                   )),
+                //         ],
+                //       )),
+                // ),
                 const SizedBox(height: 20),
                 // Grid view of bibit
                 Expanded(

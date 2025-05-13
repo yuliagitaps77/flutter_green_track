@@ -29,6 +29,7 @@ dependencies:
   qr_flutter: ^4.1.0
   image_gallery_saver_plus: ^4.0.1
   shimmer: ^3.0.0
+  torch_light: ^1.1.0
 
 dev_dependencies:
   flutter_test:

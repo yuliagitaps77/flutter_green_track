@@ -325,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen>
           child: TextButton(
             onPressed: controller.forgotPassword,
             child: Text(
-              "Lupa Password?",
+              "Lupa Kata Sandi",
               style: TextStyle(
                 color: Color(0xFF4CAF50),
                 fontWeight: FontWeight.w600,

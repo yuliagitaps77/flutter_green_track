@@ -5,6 +5,12 @@ import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_con
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'dart:io';
 
 class CetakBarcodeBibitPage extends StatefulWidget {
   static String routeName = "/cetak-barcode-bibit";
@@ -57,9 +63,16 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-            isEditMode ? "Update Informasi Bibit" : 'Cetak Barcode Bibit Baru'),
+          isEditMode ? "Update Informasi Bibit" : 'Cetak Barcode Bibit Baru',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2E7D32),
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF2E7D32)),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -75,7 +88,8 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.all(20.0),
             child: Form(
               key: _formKey,
               child: Obx(() {
@@ -94,11 +108,18 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                             color: const Color(0xFF2E7D32),
                             width: 1.5,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: controller.selectedImages.isEmpty
                             ? Center(
                                 child: Icon(Icons.forest_rounded,
-                                    size: 100, color: const Color(0xFF2E7D32)),
+                                    size: 100, color: const Color(0xFF4CAF50)),
                               )
                             : ClipRRect(
                                 borderRadius: BorderRadius.circular(34),
@@ -138,13 +159,25 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                                 clipBehavior: Clip
                                     .none, // Allow the delete button to overlap the image
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      File(controller.selectedImages[index]),
-                                      width: 100, // Set width of each image
-                                      height: 100, // Set height of each image
-                                      fit: BoxFit.cover,
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 5,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        File(controller.selectedImages[index]),
+                                        width: 100, // Set width of each image
+                                        height: 100, // Set height of each image
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                   Positioned(
@@ -174,7 +207,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ],
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // Add Image Button (circle with plus sign)
                     Center(
@@ -198,7 +231,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           child: const Center(
                             child: Icon(
                               Icons.add,
-                              color: Color(0xFF2E7D32),
+                              color: Color(0xFF4CAF50),
                               size: 30,
                             ),
                           ),
@@ -206,7 +239,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 30),
 
                     // ID Bibit Section
                     const Text(
@@ -214,24 +247,31 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.idBibitController,
                         readOnly: true,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -243,7 +283,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Nama Bibit Section
                     const Text(
@@ -251,23 +291,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.namaBibitController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -285,7 +332,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Varietas Section
                     const Text(
@@ -293,23 +340,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.varietasController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -321,7 +375,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Usia Section
                     const Text(
@@ -329,24 +383,31 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.usiaController,
                         keyboardType: TextInputType.number,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -358,7 +419,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Tinggi Section
                     const Text(
@@ -366,24 +427,31 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.tinggiController,
                         keyboardType: TextInputType.number,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -395,7 +463,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Jenis Bibit Section
                     const Text(
@@ -403,23 +471,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.jenisBibitController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -431,7 +506,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Kondisi Section
                     const Text(
@@ -439,17 +514,24 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: DropdownButtonFormField<String>(
                         value: controller.kondisi.value.isEmpty
@@ -465,8 +547,9 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                         ),
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
+                        dropdownColor: Colors.white,
                         items: ['Baik', 'Sedang', 'Buruk'].map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -482,7 +565,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                     // Add more fields with similar styling...
                     // Continuing with similar pattern for all fields
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Status Hama Section
                     const Text(
@@ -490,17 +573,24 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: DropdownButtonFormField<String>(
                         value: controller.statusHama.value.isEmpty
@@ -516,8 +606,9 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                         ),
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
+                        dropdownColor: Colors.white,
                         items: ['Tidak Ada', 'Ringan', 'Sedang', 'Berat']
                             .map((String value) {
                           return DropdownMenuItem<String>(
@@ -531,7 +622,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Media Tanam Section
                     const Text(
@@ -539,23 +630,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.mediaTanamController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -567,7 +665,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Nutrisi Section
                     const Text(
@@ -575,23 +673,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.nutrisiController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -603,7 +708,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Asal Bibit Section
                     const Text(
@@ -611,23 +716,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.asalBibitController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -639,7 +751,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Produktivitas Section
                     const Text(
@@ -647,23 +759,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.produktivitasController,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
@@ -675,7 +794,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Lokasi Tanam (KPH)
                     const Text(
@@ -683,17 +802,24 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.3),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: DropdownButtonFormField<String>(
                         value: controller.selectedKPH.value.isEmpty
@@ -709,8 +835,9 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                         ),
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          color: Color(0xFF424242),
                         ),
+                        dropdownColor: Colors.white,
                         items: controller.kphList.map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -880,8 +1007,8 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       'Tanggal Pembibitan',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -890,76 +1017,100 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Color(0xFFEDF7ED),
+                            width: 1.5,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 5,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: AbsorbPointer(
                           child: TextFormField(
                             controller: controller.tanggalPembibitanController,
                             style: const TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF4A4A4A),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF424242),
                             ),
                             decoration: const InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 16),
                               border: InputBorder.none,
                               hintText: 'Pilih tanggal',
-                              hintStyle: TextStyle(color: Colors.grey),
+                              hintStyle: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 15,
+                              ),
                               suffixIcon: Icon(Icons.calendar_today,
-                                  color: Color(0xFF2E7D32)),
+                                  color: Color(0xFF4CAF50)),
                             ),
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Catatan
                     const Text(
                       'Catatan',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4A4A4A),
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2E7D32),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Color(0xFFEDF7ED),
+                          width: 1.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: TextFormField(
                         controller: controller.catatanController,
                         maxLines: 4,
                         style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF4A4A4A),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF424242),
                         ),
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
                           hintText: 'Tambahkan catatan jika perlu',
-                          hintStyle: TextStyle(color: Colors.grey),
+                          hintStyle: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 30),
 
                     // Submit Button
                     Obx(() {
                       return SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 54,
                         child: ElevatedButton(
                           onPressed: controller.isLoading.value
                               ? null
@@ -970,9 +1121,12 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
+                            backgroundColor: const Color(0xFF4CAF50),
+                            foregroundColor: Colors.white,
+                            elevation: 3,
+                            shadowColor: Color(0xFF4CAF50).withOpacity(0.3),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: controller.isLoading.value
@@ -988,6 +1142,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
                         ),
@@ -1017,16 +1172,27 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Ambil Foto dari Kamera'),
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF4CAF50)),
+                title: const Text('Ambil Foto dari Kamera',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF424242),
+                    )),
                 onTap: () {
                   controller.pickImageFromCamera();
                   Navigator.of(context).pop();
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Pilih Foto dari Galeri'),
+                leading:
+                    const Icon(Icons.photo_library, color: Color(0xFF4CAF50)),
+                title: const Text('Pilih Foto dari Galeri',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF424242),
+                    )),
                 onTap: () {
                   controller.pickImageFromGallery();
                   Navigator.of(context).pop();

@@ -613,10 +613,11 @@ class JadwalPerawatanPage extends StatelessWidget {
       backgroundColor: Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text(
-          'Jadwal Perawatan',
+          "Jadwal Perawatan",
           style: TextStyle(
-            color: Colors.green,
+            color: Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
         backgroundColor: Colors.white,
@@ -1630,31 +1631,31 @@ class JadwalPerawatanPage extends StatelessWidget {
 
                 SizedBox(height: 24),
 
-                // Button
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Get.back();
-                        controller.setBibitForNewJadwal(bibit);
-                        _showAddJadwalDialog();
-                      },
-                      icon: Icon(Icons.calendar_today),
-                      label: Text('Jadwalkan Perawatan'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
-                    ),
-                  ),
-                ),
+                // // Button
+                // Padding(
+                //   padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+                //   child: SizedBox(
+                //     width: double.infinity,
+                //     child: ElevatedButton.icon(
+                //       onPressed: () {
+                //         Get.back();
+                //         controller.setBibitForNewJadwal(bibit);
+                //         _showAddJadwalDialog();
+                //       },
+                //       icon: Icon(Icons.calendar_today),
+                //       label: Text('Jadwalkan Perawatan'),
+                //       style: ElevatedButton.styleFrom(
+                //         backgroundColor: Color(0xFF4CAF50),
+                //         foregroundColor: Colors.white,
+                //         padding: EdgeInsets.symmetric(vertical: 16),
+                //         shape: RoundedRectangleBorder(
+                //           borderRadius: BorderRadius.circular(12),
+                //         ),
+                //         elevation: 2,
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),

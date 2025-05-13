@@ -38,10 +38,12 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
   List<dynamic> imageUrls = [];
   Map<String, dynamic> lokasiData = {};
 
-  // Colors - Diganti menjadi hijau
-  final Color primaryGreen = Color(0xFF2E7D32); // Hijau tua
-  final Color secondaryGreen = Color(0xFF66BB6A); // Hijau medium
-  final Color accentColor = Color(0xFFC8E6C9); // Hijau muda
+  // Colors - Updated to match style guide
+  final Color primaryGreen = Color(0xFF4CAF50); // Main brand color
+  final Color darkGreen = Color(0xFF2E7D32); // Used for headings
+  final Color lightGreen = Color(0xFF66BB6A); // Secondary elements
+  final Color accentGreen = Color(0xFF8BC34A); // Secondary color
+  final Color bodyTextColor = Color(0xFF424242); // Body text color
 
   @override
   void initState() {
@@ -95,8 +97,17 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: Color(0xFFF5F9F5), // Light background color
       appBar: AppBar(
-        title: Text('Detail Kayu', style: TextStyle(color: Colors.white)),
+        title: Text(
+          'Detail Kayu',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20.0,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+          ),
+        ),
         backgroundColor: primaryGreen,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
@@ -122,29 +133,18 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
               child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(primaryGreen)))
           : SingleChildScrollView(
+              physics: BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Image Carousel
                   _buildImageCarousel(),
-
-                  // Info Sections
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Main Info
                         _buildMainInfo(),
-
                         SizedBox(height: 24),
-
-                        // QR Code Section
-                        _buildQrCodeSection(screenWidth),
-
-                        SizedBox(height: 24),
-
-                        // Tabs for additional info
                         _buildInfoTabs(),
                       ],
                     ),
@@ -157,7 +157,14 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
               onPressed: () {
                 _showStockAdjustmentDialog();
               },
-              label: Text('Ubah Stok'),
+              label: Text(
+                'Ubah Stok',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               icon: Icon(Icons.edit_note),
               backgroundColor: primaryGreen,
             )
@@ -209,7 +216,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
   Widget _buildMainInfo() {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -218,18 +225,20 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             Text(
               kayuData['nama_kayu'] ?? 'Tidak ada nama',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 26.0,
                 fontWeight: FontWeight.bold,
-                color: primaryGreen,
+                color: darkGreen,
+                fontFamily: 'Poppins',
               ),
             ),
             SizedBox(height: 8),
             Text(
               kayuData['jenis_kayu'] ?? 'Jenis tidak tersedia',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 16.0,
                 color: Colors.grey[600],
                 fontStyle: FontStyle.italic,
+                fontFamily: 'Poppins',
               ),
             ),
             SizedBox(height: 16),
@@ -271,7 +280,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.2),
+              color: accentGreen.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -298,7 +307,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 ),
               ],
               border: Border.all(
-                color: secondaryGreen.withOpacity(0.3),
+                color: lightGreen.withOpacity(0.3),
                 width: 1.5,
               ),
             ),
@@ -333,10 +342,10 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: secondaryGreen.withOpacity(0.1),
+              color: lightGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: secondaryGreen.withOpacity(0.3),
+                color: lightGreen.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -385,19 +394,44 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey[200],
+              color: Colors.white,
               borderRadius: BorderRadius.circular(50),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
             child: TabBar(
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(50),
                 color: primaryGreen,
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF66BB6A),
+                    Color(0xFF4CAF50),
+                    Color(0xFF388E3C),
+                  ],
+                ),
               ),
+              dividerColor: Colors.transparent,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.black54,
+              unselectedLabelColor: bodyTextColor,
+              labelStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 14.0,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14.0,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              indicatorSize: TabBarIndicatorSize.tab,
               tabs: [
                 Tab(text: 'Fisik'),
-                Tab(text: 'Lokasi'),
                 Tab(text: 'Lainnya'),
               ],
             ),
@@ -407,114 +441,65 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             margin: EdgeInsets.only(top: 16),
             child: TabBarView(
               children: [
-                // Physical attributes tab
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Karakteristik Fisik',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryGreen)),
-                          Divider(),
-                          _buildInfoRow(
-                              'Usia', '${kayuData['usia'] ?? 0} tahun'),
-                          _buildInfoRow(
-                              'Tinggi', '${kayuData['tinggi'] ?? 0} meter'),
-                          if (kayuData['tanggal_lahir_pohon'] != null)
-                            _buildInfoRow(
-                                'Tanggal Lahir Pohon',
-                                DateFormat('dd MMM yyyy').format(
-                                    DateTime.fromMillisecondsSinceEpoch(
-                                        kayuData['tanggal_lahir_pohon']
-                                            as int))),
-                          _buildInfoRow('ID Kayu',
-                              kayuData['id_kayu']?.toString() ?? '-'),
-                          _buildInfoRow('Barcode',
-                              kayuData['barcode']?.toString() ?? '-'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Location tab
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Informasi Lokasi',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryGreen)),
-                          Divider(),
-                          _buildInfoRow(
-                              'KPH', lokasiData['kph']?.toString() ?? '-'),
-                          _buildInfoRow(
-                              'BKPH', lokasiData['bkph']?.toString() ?? '-'),
-                          _buildInfoRow(
-                              'RKPH', lokasiData['rkph']?.toString() ?? '-'),
-                          _buildInfoRow('Luas Petak',
-                              lokasiData['luas_petak']?.toString() ?? '-'),
-                          _buildInfoRow('Alamat',
-                              lokasiData['alamat']?.toString() ?? '-'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Additional info tab
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Informasi Tambahan',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: primaryGreen)),
-                          Divider(),
-                          _buildInfoRow('Catatan',
-                              kayuData['catatan']?.toString() ?? '-'),
-                          if (kayuData['updated_at'] != null &&
-                              kayuData['updated_at'] is Timestamp)
-                            _buildInfoRow(
-                                'Terakhir Diperbarui',
-                                DateFormat('dd MMM yyyy, HH:mm').format(
-                                    (kayuData['updated_at'] as Timestamp)
-                                        .toDate())),
-                          _buildInfoRow('ID User',
-                              kayuData['id_user']?.toString() ?? '-'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                _buildTabContent('Karakteristik Fisik', [
+                  _buildInfoRow('Usia', '${kayuData['usia'] ?? 0} tahun'),
+                  _buildInfoRow('Tinggi', '${kayuData['tinggi'] ?? 0} meter'),
+                  if (kayuData['tanggal_lahir_pohon'] != null)
+                    _buildInfoRow(
+                        'Tanggal Lahir Pohon',
+                        DateFormat('dd MMM yyyy').format(
+                            DateTime.fromMillisecondsSinceEpoch(
+                                kayuData['tanggal_lahir_pohon'] as int))),
+                  _buildInfoRow(
+                      'ID Kayu', kayuData['id_kayu']?.toString() ?? '-'),
+                  _buildInfoRow(
+                      'Barcode', kayuData['barcode']?.toString() ?? '-'),
+                ]),
+                _buildTabContent('Informasi Tambahan', [
+                  _buildInfoRow(
+                      'Catatan', kayuData['catatan']?.toString() ?? '-'),
+                  if (kayuData['updated_at'] != null &&
+                      kayuData['updated_at'] is Timestamp)
+                    _buildInfoRow(
+                        'Terakhir Diperbarui',
+                        DateFormat('dd MMM yyyy, HH:mm').format(
+                            (kayuData['updated_at'] as Timestamp).toDate())),
+                  _buildInfoRow(
+                      'ID User', kayuData['id_user']?.toString() ?? '-'),
+                ]),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTabContent(String title, List<Widget> children) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          physics: BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                  color: darkGreen,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              SizedBox(height: 8), // Replace divider with simple spacing
+              ...children,
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -530,9 +515,10 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 14.0,
                 fontWeight: FontWeight.w500,
                 color: Colors.grey[600],
+                fontFamily: 'Poppins',
               ),
             ),
           ),
@@ -540,8 +526,9 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
+                fontSize: 15.0,
+                color: bodyTextColor,
+                fontFamily: 'Poppins',
               ),
             ),
           ),
@@ -577,81 +564,107 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
   }
 
   void _showDeleteConfirmation() {
-    // Dapatkan indeks item di inventoryItems berdasarkan kayuId
-    final index = kayuController.inventoryItems
-        .indexWhere((item) => item.id == widget.kayuId);
-
-    if (index != -1) {
-      // Jika item ditemukan, panggil fungsi deleteItem dari controller
-      kayuController.deleteItem(index).then((_) {
-        // Setelah hapus selesai, kembali ke halaman sebelumnya
-        Get.back(); // Kembali ke halaman daftar inventaris
-      });
-    } else {
-      // Jika item tidak ditemukan di list, coba hapus langsung dari database
-      Get.dialog(
-        AlertDialog(
-          title: Text('Konfirmasi'),
-          content: Text(
-              'Apakah Anda yakin ingin menghapus ${kayuData['nama_kayu']}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  Get.back(); // Tutup dialog
-
-                  // Tampilkan loading
-                  Get.dialog(
-                    Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                      ),
-                    ),
-                    barrierDismissible: false,
-                  );
-
-                  // Hapus dokumen langsung dari Firestore
-                  await _firestore
-                      .collection('kayu')
-                      .doc(widget.kayuId)
-                      .delete();
-
-                  Get.back(); // Tutup loading dialog
-                  Get.back(); // Kembali ke halaman sebelumnya
-
-                  Get.snackbar(
-                    'Sukses',
-                    'Data berhasil dihapus',
-                    backgroundColor: Colors.green,
-                    colorText: Colors.white,
-                  );
-
-                  // Refresh inventoryItems
-                  kayuController.fetchInventoryFromFirestore();
-                } catch (e) {
-                  Get.back(); // Tutup loading dialog
-
-                  Get.snackbar(
-                    'Error',
-                    'Gagal menghapus data: $e',
-                    backgroundColor: Colors.red,
-                    colorText: Colors.white,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-              ),
-              child: Text('Hapus'),
-            ),
-          ],
+    Get.dialog(
+      AlertDialog(
+        title: Text(
+          'Konfirmasi Hapus',
+          style: TextStyle(
+            color: Color(0xFF2E7D32),
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
         ),
-      );
-    }
+        content: Text(
+          'Apakah Anda yakin ingin menghapus data ini?',
+          style: TextStyle(
+            color: Color(0xFF424242),
+            fontFamily: 'Poppins',
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: Color(0xFF2E7D32),
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                Get.back(); // Tutup dialog konfirmasi
+
+                // Tampilkan loading
+                Get.dialog(
+                  Center(
+                    child: CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                    ),
+                  ),
+                  barrierDismissible: false,
+                );
+
+                // Hapus dokumen dari Firestore
+                await _firestore.collection('kayu').doc(widget.kayuId).delete();
+
+                Get.back(); // Tutup loading dialog
+                Get.back(); // Kembali ke halaman sebelumnya
+
+                // Tampilkan snackbar sukses
+                Get.snackbar(
+                  'Sukses',
+                  'Data berhasil dihapus',
+                  backgroundColor: Color(0xFF4CAF50),
+                  colorText: Colors.white,
+                  duration: Duration(seconds: 2),
+                  snackPosition: SnackPosition.BOTTOM,
+                  borderRadius: 15,
+                  margin: EdgeInsets.all(10),
+                );
+
+                // Refresh data inventory
+                await kayuController.fetchInventoryFromFirestore();
+              } catch (e) {
+                Get.back(); // Tutup loading dialog
+
+                // Tampilkan snackbar error
+                Get.snackbar(
+                  'Error',
+                  'Gagal menghapus data: $e',
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                  duration: Duration(seconds: 3),
+                  snackPosition: SnackPosition.BOTTOM,
+                  borderRadius: 15,
+                  margin: EdgeInsets.all(10),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              textStyle: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: Text('Hapus'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showStockAdjustmentDialog() {
@@ -842,7 +855,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: isAddition ? Colors.green : Colors.green,
+                backgroundColor: isAddition ? Colors.white : Colors.white,
               ),
               child: Text('Konfirmasi'),
             ),

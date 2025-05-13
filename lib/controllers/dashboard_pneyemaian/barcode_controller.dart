@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
+import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:http/http.dart' as http;
@@ -308,111 +310,6 @@ class BarcodeController extends GetxController {
     }
   }
 
-  Future<void> saveBibit({bool isUpdate = false}) async {
-    final firestore = FirebaseFirestore.instance;
-
-    final bibitData = {
-      'id_bibit': idBibitController.text,
-      'nama_bibit': namaBibitController.text,
-      'varietas': varietasController.text,
-      'usia': int.tryParse(usiaController.text) ?? 0,
-      'tinggi': int.tryParse(tinggiController.text) ?? 0,
-      'jenis_bibit': jenisBibitController.text,
-      'kondisi': kondisi.value,
-      'status_hama': statusHama.value,
-      'media_tanam': mediaTanamController.text,
-      'nutrisi': nutrisiController.text,
-      'asal_bibit': asalBibitController.text,
-      'produktivitas': produktivitasController.text,
-      'catatan': catatanController.text,
-      'gambar_image': selectedImages, // URL ya, kalau upload
-      'lokasi_tanam': {
-        'kph': selectedKPH.value,
-        'bkph': selectedBKPH.value,
-        'rkph': selectedRKPH.value,
-      },
-      'tanggal_pembibitan': tanggalPembibitan.value,
-      'updated_at': DateTime.now(),
-      if (!isUpdate) 'created_at': DateTime.now(),
-    };
-
-    final id = idBibitController.text;
-
-    if (isUpdate) {
-      print("is update yes ${isUpdate}");
-      AppController.to.recordActivity(
-        activityType: ActivityTypes.updateBibit,
-        name: 'Pembaruan Data ${namaBibitController.text}',
-        targetId: idBibitController.text,
-        metadata: {
-          'barcode': idBibitController.text,
-          'id_bibit': idBibitController.text,
-          'nama_bibit': namaBibitController.text,
-          'varietas': varietasController.text,
-          'usia': int.tryParse(usiaController.text) ?? 0,
-          'tinggi': int.tryParse(tinggiController.text) ?? 0,
-          'jenis_bibit': jenisBibitController.text,
-          'kondisi': kondisi.value,
-          'status_hama': statusHama.value,
-          'media_tanam': mediaTanamController.text,
-          'nutrisi': nutrisiController.text,
-          'asal_bibit': asalBibitController.text,
-          'produktivitas': produktivitasController.text,
-          'catatan': catatanController.text,
-          'gambar_image': selectedImages, // URL ya, kalau upload
-          'lokasi_tanam': {
-            'kph': selectedKPH.value,
-            'bkph': selectedBKPH.value,
-            'rkph': selectedRKPH.value,
-          },
-          'tanggal_pembibitan': tanggalPembibitan.value,
-          'updated_at': DateTime.now(),
-          'timestamp': DateTime.now().toString(),
-        },
-      );
-      await firestore.collection('bibit').doc(id).update(bibitData);
-
-      Get.snackbar("Berhasil", "Data bibit berhasil diperbarui");
-    } else {
-      print("is update no ${isUpdate}");
-      AppController.to.recordActivity(
-        activityType: ActivityTypes.printBarcode,
-        name: '${namaBibitController.text}',
-        targetId: idBibitController.text,
-        metadata: {
-          'barcode': idBibitController.text,
-          'id_bibit': idBibitController.text,
-          'nama_bibit': namaBibitController.text,
-          'varietas': varietasController.text,
-          'usia': int.tryParse(usiaController.text) ?? 0,
-          'tinggi': int.tryParse(tinggiController.text) ?? 0,
-          'jenis_bibit': jenisBibitController.text,
-          'kondisi': kondisi.value,
-          'status_hama': statusHama.value,
-          'media_tanam': mediaTanamController.text,
-          'nutrisi': nutrisiController.text,
-          'asal_bibit': asalBibitController.text,
-          'produktivitas': produktivitasController.text,
-          'catatan': catatanController.text,
-          'gambar_image': selectedImages, // URL ya, kalau upload
-          'lokasi_tanam': {
-            'kph': selectedKPH.value,
-            'bkph': selectedBKPH.value,
-            'rkph': selectedRKPH.value,
-          },
-          'tanggal_pembibitan': tanggalPembibitan.value,
-          'updated_at': DateTime.now(),
-          'timestamp': DateTime.now().toString(),
-        },
-      );
-      await firestore.collection('bibit').doc(id).set(bibitData);
-
-      Get.snackbar("Berhasil", "Data bibit berhasil ditambahkan");
-    }
-
-    resetForm();
-  }
-
   Future<void> saveBibitToFirestore(
       Map<String, dynamic> bibitData, bool isUpdate) async {
     try {
@@ -501,10 +398,12 @@ class BarcodeController extends GetxController {
       // Refresh daftar bibit dan kembali
       await Get.find<BibitController>().fetchBibitFromFirestore();
       await Get.find<BibitController>().fetchJenisList();
+      final userRole = Get.find<AuthenticationController>()
+          .currentUser
+          .value; // Assuming you have an AuthController with userRole
+      // Or however you get the current user role in your app
+      Get.offAll(() => MainNavigationContainer(userRole: userRole!.role));
       navigationController.navigateToInventory();
-      Get.back();
-
-      // Opsional: reset form setelah sukses
 
       resetForm();
     } catch (e) {
@@ -614,24 +513,43 @@ class BarcodeController extends GetxController {
           'kph': selectedKPH.value,
           'bkph': selectedBKPH.value,
           'rkph': selectedRKPH.value,
-          'luas_petak': selectedLuasPetak.value, // Add this field
+          'luas_petak': selectedLuasPetak.value,
         },
         'updated_at': DateTime.now(),
         if (!isUpdate) 'created_at': DateTime.now(),
       };
 
       await saveBibitToFirestore(bibitData, isUpdate);
+
+      // Pastikan loading berhenti dan kembali ke halaman sebelumnya
+      isLoading.value = false;
+      Get.back();
+
+      // Tampilkan snackbar sukses
+      Get.snackbar(
+        'Sukses',
+        'Bibit berhasil disimpan ke database.',
+        backgroundColor: const Color(0xFF2E7D32),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+
+      // Refresh data
+      await Get.find<BibitController>().fetchBibitFromFirestore();
+      await Get.find<BibitController>().fetchJenisList();
+      navigationController.navigateToInventory();
     } catch (e) {
       print("Error saat simpan bibit: $e");
+      isLoading.value = false;
       Get.snackbar(
         "Error",
         e.toString(),
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
       );
-    } finally {
-      isLoading.value = false;
-      Get.back();
     }
   }
 

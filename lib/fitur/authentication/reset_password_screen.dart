@@ -11,28 +11,28 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with TickerProviderStateMixin {
-  // Get reference to the authentication controller
-  final AuthenticationController controller =
-      Get.put(AuthenticationController());
+  // Gunakan satu controller saja untuk menghindari kebingungan
+  final AuthenticationController _authController =
+      Get.find<AuthenticationController>();
+  final TextEditingController _emailController = TextEditingController();
 
   late AnimationController _backgroundAnimController;
   late AnimationController _formAnimController;
   late Animation<double> _formAnimation;
-  final AuthenticationController _authController =
-      Get.find<AuthenticationController>();
-  final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   bool _success = false;
+
   @override
   void initState() {
     super.initState();
-// Pre-fill the email field if available in the auth controller
+    // Pre-fill the email field if available in the auth controller
     if (_authController.emailController.text.isNotEmpty) {
       _emailController.text = _authController.emailController.text;
     } else if (_authController.currentUser.value != null) {
       _emailController.text = _authController.currentUser.value!.email;
     }
+
     _backgroundAnimController = AnimationController(
       vsync: this,
       duration: Duration(seconds: 30),
@@ -56,7 +56,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     _backgroundAnimController.dispose();
     _formAnimController.dispose();
     _emailController.dispose();
-
     super.dispose();
   }
 
@@ -90,6 +89,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         _errorMessage = e.toString();
         _isLoading = false;
       });
+
+      // Tampilkan error di UI
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage?.replaceAll('Exception: ', '') ??
+              'Terjadi kesalahan'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -163,6 +171,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                         Text(
                           "Ubah Kata Sandi",
                           style: Theme.of(context).textTheme.displayLarge,
+                        ),
+                        // Welcome text
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Text(
+                          "Masukan alamat email anda untuk menerima tautan reset password",
+                          style: TextStyle(
+                            color: Color(0xFF757575),
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
 
                         SizedBox(height: 50),
@@ -285,8 +305,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             },
           ),
         ),
-
-        // Floating leaves
       ],
     );
   }
@@ -322,7 +340,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ],
           ),
           child: TextField(
-            controller: controller.emailController,
+            controller:
+                _emailController, // PERBAIKAN: Gunakan _emailController daripada controller.emailController
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: "Email",
@@ -342,24 +361,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         SizedBox(height: 20),
 
         // Error message (if any)
-        Obx(() => controller.errorMessage.isNotEmpty
-            ? Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  "Email Tidak Boleh Kosong",
-                  style: TextStyle(
-                    color: Colors.red[700],
-                    fontSize: 12,
-                  ),
-                ),
-              )
-            : SizedBox.shrink()),
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              _errorMessage!.replaceAll('Exception: ', ''),
+              style: TextStyle(
+                color: Colors.red[700],
+                fontSize: 12,
+              ),
+            ),
+          ),
 
         SizedBox(height: 30),
 
         // Login button with animation
         GestureDetector(
-            onTap: _isLoading ? null : _sendResetLink,
+            onTap: _isLoading
+                ? null
+                : _sendResetLink, // Pastikan ini tidak kosong saat loading
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: 18),

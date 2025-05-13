@@ -27,14 +27,16 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
         title: const Text(
           'Jadwal Perawatan',
           style: TextStyle(
-            color: Colors.green,
+            color: Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,
+            fontSize: 20.0,
+            fontFamily: 'Poppins',
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.green),
+        iconTheme: const IconThemeData(color: Color(0xFF2E7D32)),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -49,7 +51,7 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -62,45 +64,51 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.green),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF4CAF50)),
                           ),
                         )
                       : const SizedBox()),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
                           const Icon(Icons.inventory_2,
-                              size: 32, color: Colors.green),
-                          const SizedBox(height: 8),
+                              size: 32, color: Color(0xFF4CAF50)),
+                          const SizedBox(height: 10),
                           const Text('Total Kayu',
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF424242),
+                                fontFamily: 'Poppins',
+                              )),
                           Obx(() => Text(
                                 controller.totalKayu.value.toString(),
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 20),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  color: Color(0xFF2E7D32),
+                                  fontFamily: 'Poppins',
+                                ),
                               )),
                         ],
                       ),
@@ -108,33 +116,38 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                   ),
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(left: 10),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
                           const Icon(Icons.layers,
-                              size: 32, color: Colors.green),
-                          const SizedBox(height: 8),
+                              size: 32, color: Color(0xFF4CAF50)),
+                          const SizedBox(height: 10),
                           const Text('Jumlah Batch',
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey)),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF424242),
+                                fontFamily: 'Poppins',
+                              )),
                           Obx(() => Text(
                                 controller.jumlahBatch.value.toString(),
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 20),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  color: Color(0xFF2E7D32),
+                                  fontFamily: 'Poppins',
+                                ),
                               )),
                         ],
                       ),
@@ -149,14 +162,15 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                   const Text(
                     'Daftar Inventory',
                     style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                      fontFamily: 'Poppins',
+                    ),
                   ),
-                  // Optional: Add filter options here
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Error message if any
               Obx(() => controller.errorMessage.value.isNotEmpty
@@ -266,30 +280,25 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                     return RefreshIndicator(
                         onRefresh: () =>
                             controller.fetchInventoryFromFirestore(),
-                        color: Colors.green,
+                        color: Color(0xFF4CAF50),
                         child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
                           itemCount: items.length,
                           itemBuilder: (context, index) {
                             final item = items[index];
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
+                              margin: const EdgeInsets.only(bottom: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(15),
                               ),
-                              elevation: 1,
+                              elevation: 2,
                               child: InkWell(
-                                // Ubah onTap untuk navigasi ke KayuDetailPage alih-alih dialog
                                 onTap: () {
                                   print(
                                       '🔥 [ITEM CLICK] Navigasi ke halaman detail: ${item.id}');
-                                  // Langsung akses dan gunakan userRole yang ada di controller
                                   UserRole? userRole;
-                                  // Cek apakah userRole tersedia di scope tertentu, sesuaikan dengan struktur app Anda
                                   if (controller is InventoryKayuController) {
-                                    // Asumsi controller memiliki akses ke userRole
-                                    // Atau gunakan cara lain untuk mendapatkan userRole sesuai dengan struktur aplikasi Anda
-                                    userRole = UserRole
-                                        .adminTPK; // Ini contoh default, sesuaikan dengan kebutuhan
+                                    userRole = UserRole.adminTPK;
                                   }
 
                                   Get.to(() => KayuDetailPage(
@@ -297,15 +306,14 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                         userRole: userRole,
                                       ));
                                 },
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(15),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(4.0),
+                                  padding: const EdgeInsets.all(12.0),
                                   child: ListTile(
-                                    // Display an image if available
                                     leading: item.imageUrl.isNotEmpty
                                         ? ClipRRect(
                                             borderRadius:
-                                                BorderRadius.circular(8),
+                                                BorderRadius.circular(12),
                                             child: Image.network(
                                               item.imageUrl,
                                               width: 50,
@@ -316,11 +324,15 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                                 return Container(
                                                   width: 50,
                                                   height: 50,
-                                                  color: Colors.grey
-                                                      .withOpacity(0.2),
+                                                  decoration: BoxDecoration(
+                                                    color: Color(0xFFF5F9F5),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                  ),
                                                   child: const Icon(
                                                       Icons.image_not_supported,
-                                                      color: Colors.grey),
+                                                      color: Color(0xFF4CAF50)),
                                                 );
                                               },
                                             ),
@@ -329,30 +341,41 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                             width: 50,
                                             height: 50,
                                             decoration: BoxDecoration(
-                                              color:
-                                                  Colors.green.withOpacity(0.1),
+                                              color: Color(0xFFF5F9F5),
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(12),
                                             ),
                                             child: const Icon(Icons.forest,
-                                                color: Colors.green),
+                                                color: Color(0xFF4CAF50)),
                                           ),
                                     title: Text(
                                       item.batch,
                                       style: const TextStyle(
-                                          fontWeight: FontWeight.w500),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: Color(0xFF2E7D32),
+                                        fontFamily: 'Poppins',
+                                      ),
                                     ),
                                     subtitle: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text('Jumlah Stok: ${item.stock}'),
+                                        Text(
+                                          'Jumlah Stok: ${item.stock}',
+                                          style: const TextStyle(
+                                            color: Color(0xFF424242),
+                                            fontSize: 14,
+                                            fontFamily: 'Poppins',
+                                          ),
+                                        ),
                                         if (item.namaKayu.isNotEmpty)
                                           Text(
                                             item.namaKayu,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
+                                            style: const TextStyle(
+                                              color: Color(0xFF424242),
                                               fontSize: 12,
+                                              fontFamily: 'Poppins',
                                             ),
                                           ),
                                       ],
@@ -360,16 +383,14 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        // Icon button untuk langsung ke halaman detail
                                         IconButton(
                                           icon: const Icon(Icons.info_outline,
-                                              color: Colors.blue),
+                                              color: Color(0xFF4CAF50)),
                                           onPressed: () {
                                             UserRole? userRole;
                                             if (controller
                                                 is InventoryKayuController) {
-                                              userRole = UserRole
-                                                  .adminTPK; // Sesuaikan dengan kebutuhan
+                                              userRole = UserRole.adminTPK;
                                             }
 
                                             Get.to(() => KayuDetailPage(
@@ -378,18 +399,16 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                                                 ));
                                           },
                                         ),
-                                        // Edit button
                                         IconButton(
                                           icon: const Icon(Icons.edit,
-                                              color: Colors.green),
+                                              color: Color(0xFF4CAF50)),
                                           onPressed: () => controller.editItem(
                                               controller.inventoryItems
                                                   .indexOf(item)),
                                         ),
-                                        // Delete button
                                         IconButton(
                                           icon: const Icon(Icons.delete,
-                                              color: Colors.green),
+                                              color: Color(0xFF4CAF50)),
                                           onPressed: () =>
                                               controller.deleteItem(controller
                                                   .inventoryItems
@@ -413,13 +432,20 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
                 child: ElevatedButton.icon(
                   onPressed: () => controller.addNewInventory(),
                   icon: const Icon(Icons.add),
-                  label: const Text('Tambahkan Persediaan baru'),
+                  label: const Text(
+                    'Tambahkan Persediaan baru',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: Color(0xFF4CAF50),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     elevation: 2,
                   ),

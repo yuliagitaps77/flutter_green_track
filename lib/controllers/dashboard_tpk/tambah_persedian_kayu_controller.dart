@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -23,6 +24,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'tambah_persedian_kayu_controller.dart';
+import 'package:flutter_green_track/data/models/user_model.dart';
+import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
 
 class LocationData {
   final String kph;
@@ -324,8 +327,8 @@ class TambahPersediaanController extends GetxController {
     if (namaController.text.isEmpty ||
         varietasController.text.isEmpty ||
         jenisController.text.isEmpty ||
-        selectedRKPH.value.isEmpty ||
-        selectedLuasPetak.value.isEmpty ||
+        // selectedRKPH.value.isEmpty ||
+        // selectedLuasPetak.value.isEmpty ||
         jumlahStokController.text.isEmpty ||
         batchPanenController.text.isEmpty) {
       Get.snackbar(
@@ -535,7 +538,7 @@ class TambahPersediaanController extends GetxController {
           'bkph': selectedBKPH.value,
           'rkph': selectedRKPH.value,
           'luas_petak': selectedLuasPetak.value,
-          'lat': 0, // You can add these if you have location data
+          'lat': 0,
           'lng': 0,
           'alamat': lokasiController.text,
         },
@@ -544,9 +547,10 @@ class TambahPersediaanController extends GetxController {
       print('✅ Data structure created successfully');
       print('🔵 Data to be saved: $kayuData');
       AppController.to.recordActivity(
-        activityType: ActivityTypes.addKayu,
-        name: "${namaController.text} | ${jenisController.text}",
-      );
+          activityType: ActivityTypes.addKayu,
+          name: "${namaController.text} | ${jenisController.text}",
+          metadata: {"kayu": kayuData});
+
       // Save to Firestore
       print(
           '🔵 Attempting to save to Firestore collection "kayu" with document ID: ${idController.text}');
@@ -555,17 +559,16 @@ class TambahPersediaanController extends GetxController {
             .collection('kayu')
             .doc(idController.text)
             .set(kayuData)
-            .timeout(const Duration(
-                seconds: 30)); // Add timeout for better error detection
+            .timeout(const Duration(seconds: 30));
         print('✅ Document successfully saved to Firestore');
       } catch (firestoreError, stackTrace) {
         print('❌ Firestore save operation failed');
         print('❌ Firestore error: $firestoreError');
         print('❌ Stack trace: $stackTrace');
-        throw firestoreError; // Re-throw to be caught by the outer try-catch
+        throw firestoreError;
       }
 
-      // Add to local inventory (if needed)
+      // Add to local inventory
       print('🔵 Adding to local inventory through controller');
       try {
         final inventoryController = Get.find<InventoryKayuController>();
@@ -579,22 +582,43 @@ class TambahPersediaanController extends GetxController {
         print('✅ Item added to local inventory successfully');
       } catch (inventoryError) {
         print('⚠️ Warning: Could not add to local inventory: $inventoryError');
-        // Continue execution - this is not critical
       }
 
-      // Show success message
+      // Show success message with styled snackbar
       print('🔵 Showing success message');
       Get.snackbar(
         'Sukses',
         'Persediaan kayu berhasil ditambahkan',
-        backgroundColor: Colors.green.withOpacity(0.1),
-        colorText: Colors.green,
+        backgroundColor: Color(0xFF4CAF50),
+        colorText: Colors.white,
         duration: const Duration(seconds: 2),
+        borderRadius: 15,
+        margin: const EdgeInsets.all(10),
+        snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.check_circle, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        titleText: Text(
+          'Sukses',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        messageText: Text(
+          'Persediaan kayu berhasil ditambahkan',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontFamily: 'Poppins',
+          ),
+        ),
       );
 
-      // Navigate back to inventory page
+      // Navigate back using Get.off
       print('🔵 Navigating back');
-      Get.back();
+      Get.off(() => MainNavigationContainer(userRole: UserRole.adminTPK));
       print('✅ saveInventory function completed successfully');
     } catch (e, stackTrace) {
       print('❌ Error in saveInventory function: $e');
@@ -602,9 +626,31 @@ class TambahPersediaanController extends GetxController {
       Get.snackbar(
         'Error',
         'Terjadi kesalahan saat menyimpan: $e',
-        backgroundColor: Colors.red.withOpacity(0.1),
-        colorText: Colors.red,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
         duration: const Duration(seconds: 3),
+        borderRadius: 15,
+        margin: const EdgeInsets.all(10),
+        snackPosition: SnackPosition.BOTTOM,
+        icon: Icon(Icons.error, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        titleText: Text(
+          'Error',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        messageText: Text(
+          'Terjadi kesalahan saat menyimpan: $e',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontFamily: 'Poppins',
+          ),
+        ),
       );
     } finally {
       print('🔵 Setting isLoading to false');

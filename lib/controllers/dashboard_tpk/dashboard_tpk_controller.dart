@@ -170,7 +170,7 @@ class TPKDashboardController extends GetxController {
       },
       {
         'icon': Icons.history_rounded,
-        'title': 'Aktivitas',
+        'title': 'Riwayat',
         'onTap': () => handleAction(3),
         'highlight': false,
       },
@@ -508,28 +508,11 @@ class TPKDashboardController extends GetxController {
         },
       },
       {
-        'icon': Icons.refresh_rounded,
-        'title': "Refresh Data",
-        'onTap': () {
-          closeMenu();
-          refreshDashboardData();
-        },
-      },
-      {
         'icon': Icons.settings_rounded,
         'title': "Update Profile Akun",
         'onTap': () {
           closeMenu();
           navigateToSettings();
-        },
-      },
-      {
-        'icon': Icons.lock_outline_rounded,
-        'title': "Ubah Kata Sandi",
-        'onTap': () {
-          closeMenu();
-          // Show change password dialog
-          _showChangePasswordDialog();
         },
       },
       {

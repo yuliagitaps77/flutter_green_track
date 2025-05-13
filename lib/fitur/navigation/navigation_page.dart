@@ -256,7 +256,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
     // Get labels based on user role with shorter text
     final List<String> labels = widget.userRole == UserRole.adminPenyemaian
         ? ['Beranda', 'Bibit', '', 'Jadwal', 'Riwayat']
-        : ['Beranda', 'Inventory Kayu', '', 'Statistik Inventory', 'Aktivitas'];
+        : ['Beranda', 'Inventory Kayu', '', 'Statistik Inventory', 'Riwayat'];
 
     // Get icons based on user role
     final List<IconData> icons = widget.userRole == UserRole.adminPenyemaian
@@ -272,7 +272,7 @@ class _MainNavigationContainerState extends State<MainNavigationContainer>
             Icons.inventory_2_rounded,
             Icons.qr_code_scanner_rounded,
             Icons.bar_chart,
-            Icons.menu_rounded,
+            Icons.history_rounded,
           ];
 
     // Responsive sizing based on screen width

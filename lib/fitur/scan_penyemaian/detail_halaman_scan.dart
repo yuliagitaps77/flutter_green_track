@@ -3,292 +3,676 @@ import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/contr
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class DetailPage extends StatelessWidget {
   final String barcodeId;
   final BibitController bibitController = Get.find<BibitController>();
+  final GlobalKey qrKey = GlobalKey();
 
   DetailPage({Key? key, required this.barcodeId}) : super(key: key);
 
+  // Function to export QR code
+  void _exportQR(String data) {
+    Get.snackbar(
+      'QR Code',
+      'QR Code berhasil diexport',
+      backgroundColor: Color(0xFF4CAF50),
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: EdgeInsets.all(20),
+      borderRadius: 10,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Detail Bibit',
-          style: TextStyle(color: Colors.white),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Color(0xFFF5F9F5),
+              Color(0xFFEDF7ED),
+            ],
+          ),
         ),
-        backgroundColor: Colors.green,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: FutureBuilder<Bibit?>(
-        future: bibitController.getBibitByBarcode(barcodeId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text('Bibit tidak ditemukan'));
-          } else {
-            final bibit = snapshot.data!;
-            return _buildDetailContent(context, bibit);
-          }
-        },
+        child: FutureBuilder<Bibit?>(
+          future: bibitController.getBibitByBarcode(barcodeId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF4CAF50),
+                ),
+              );
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
+                    SizedBox(height: 16),
+                    Text(
+                      'Terjadi Kesalahan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF424242),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            } else if (!snapshot.hasData || snapshot.data == null) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.search_off, size: 60, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text(
+                      'Bibit Tidak Ditemukan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              final bibit = snapshot.data!;
+              return _buildDetailContent(context, bibit, screenWidth);
+            }
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildDetailContent(BuildContext context, Bibit bibit) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Carousel gambar bibit
-          if (bibit.gambarImage.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: PageView.builder(
-                itemCount: bibit.gambarImage.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    elevation: 4,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Image.network(
-                      bibit.gambarImage[index],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(Icons.error, size: 40),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            )
-          else
-            Card(
-              elevation: 4,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                color: Colors.grey[300],
-                child: const Center(
-                  child: Icon(Icons.image_not_supported, size: 50),
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
-
-          // Informasi utama bibit
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bibit.namaBibit,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+  Widget _buildDetailContent(
+      BuildContext context, Bibit bibit, double screenWidth) {
+    return CustomScrollView(
+      physics: BouncingScrollPhysics(),
+      slivers: [
+        // App Bar with image
+        SliverAppBar(
+          expandedHeight: 240.0,
+          floating: false,
+          pinned: true,
+          backgroundColor: Color(0xFF2E7D32),
+          flexibleSpace: FlexibleSpaceBar(
+            title: Text(
+              bibit.namaBibit,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(0, 1),
+                    blurRadius: 3.0,
+                    color: Color.fromARGB(130, 0, 0, 0),
                   ),
-                  const SizedBox(height: 8),
-                  _buildPropertyRow('Jenis Bibit', bibit.jenisBibit),
-                  _buildPropertyRow('Varietas', bibit.varietas),
-                  _buildPropertyRow('Usia', '${bibit.usia} hari'),
-                  _buildPropertyRow('Tinggi', '${bibit.tinggi} cm'),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Informasi kondisi
-          _buildSectionCard(
-            'Kondisi Bibit',
-            [
-              _buildPropertyRow('Kondisi', bibit.kondisi),
-              _buildPropertyRow('Status Hama', bibit.statusHama),
-              _buildPropertyRow('Media Tanam', bibit.mediaTanam),
-              _buildPropertyRow('Nutrisi', bibit.nutrisi),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Informasi asal & lokasi
-          _buildSectionCard(
-            'Asal & Lokasi',
-            [
-              _buildPropertyRow('Asal Bibit', bibit.asalBibit),
-              _buildPropertyRow('KPH', bibit.kph),
-              _buildPropertyRow('BKPH', bibit.bkph),
-              _buildPropertyRow('RKPH', bibit.rkph),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Informasi tambahan
-          _buildSectionCard(
-            'Informasi Tambahan',
-            [
-              _buildPropertyRow('Produktivitas', bibit.produktivitas),
-              _buildPropertyRow(
-                'Tanggal Pembibitan',
-                DateFormat('dd MMMM yyyy').format(bibit.tanggalPembibitan),
-              ),
-              _buildPropertyRow(
-                'Terakhir Diperbarui',
-                DateFormat('dd MMMM yyyy').format(bibit.updatedAt),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Catatan
-          if (bibit.catatan.isNotEmpty)
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Catatan',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Background image or color
+                bibit.gambarImage.isNotEmpty
+                    ? Image.network(
+                        bibit.gambarImage[0],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Color(0xFF4CAF50).withOpacity(0.3),
+                            child: Center(
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 40,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Color(0xFF4CAF50).withOpacity(0.3),
+                        child: Center(
+                          child: Icon(
+                            Icons.forest,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
                       ),
+                // Gradient overlay for better text visibility
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.5),
+                      ],
+                      stops: [0.6, 1.0],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      bibit.catatan,
-                      style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          leading: IconButton(
+            icon: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.arrow_back, color: Color(0xFF2E7D32), size: 20),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+
+        // Content
+        SliverToBoxAdapter(
+          child: Container(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Quick summary card
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Color(0xFFEDF7ED),
+                            radius: 24,
+                            child: Icon(
+                              Icons.spa,
+                              color: Color(0xFF4CAF50),
+                              size: 28,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  bibit.namaBibit,
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2E7D32),
+                                  ),
+                                ),
+                                Text(
+                                  bibit.jenisBibit,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF66BB6A),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildQuickInfoItem(Icons.calendar_today_outlined,
+                              '${bibit.usia}', 'Usia (hari)'),
+                          _buildQuickInfoItem(
+                              Icons.height, '${bibit.tinggi}', 'Tinggi (cm)'),
+                          _buildQuickInfoItem(Icons.health_and_safety_outlined,
+                              bibit.kondisi, 'Kondisi'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                // QR Code Section
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Text(
+                        "QR Code Bibit",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: RepaintBoundary(
+                          key: qrKey,
+                          child: Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: Color(0xFFEDF7ED),
+                                width: 2,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                QrImageView(
+                                  data: bibit.id,
+                                  version: QrVersions.auto,
+                                  size: screenWidth * 0.5,
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Color(0xFF2E7D32),
+                                  errorStateBuilder: (cxt, err) {
+                                    return Center(
+                                      child: Text(
+                                        "QR Error: $err",
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  "ID Bibit",
+                                  style: TextStyle(
+                                    color: Color(0xFF424242),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  bibit.id,
+                                  style: TextStyle(
+                                    color: Color(0xFF2E7D32),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: SizedBox(
+                          width: screenWidth * 0.6,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _exportQR(bibit.id),
+                            icon: const Icon(Icons.download_rounded),
+                            label: const Text("Export QR"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF4CAF50),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                // Detail Information
+                _buildDetailSection(
+                  "Detail Bibit",
+                  Icons.info_outline,
+                  [
+                    _buildInfoRow("Varietas", bibit.varietas),
+                    _buildInfoRow("Jenis Bibit", bibit.jenisBibit),
+                    _buildInfoRow("Usia", "${bibit.usia} hari"),
+                    _buildInfoRow("Tinggi", "${bibit.tinggi} cm"),
+                    _buildInfoRow("Kondisi", bibit.kondisi),
+                  ],
+                ),
+
+                SizedBox(height: 20),
+
+                _buildDetailSection(
+                  "Kondisi Bibit",
+                  Icons.health_and_safety_outlined,
+                  [
+                    _buildInfoRow("Status Hama", bibit.statusHama),
+                    _buildInfoRow("Media Tanam", bibit.mediaTanam),
+                    _buildInfoRow("Nutrisi", bibit.nutrisi),
+                  ],
+                ),
+
+                SizedBox(height: 20),
+
+                _buildDetailSection(
+                  "Asal & Lokasi",
+                  Icons.location_on_outlined,
+                  [
+                    _buildInfoRow("Asal Bibit", bibit.asalBibit),
+                    _buildInfoRow("KPH", bibit.kph),
+                    _buildInfoRow("BKPH", bibit.bkph),
+                    _buildInfoRow("RKPH", bibit.rkph),
+                  ],
+                ),
+
+                SizedBox(height: 20),
+
+                _buildDetailSection(
+                  "Informasi Tambahan",
+                  Icons.more_horiz,
+                  [
+                    _buildInfoRow("Produktivitas", bibit.produktivitas),
+                    _buildInfoRow(
+                      "Tanggal Pembibitan",
+                      DateFormat('dd MMMM yyyy')
+                          .format(bibit.tanggalPembibitan),
+                    ),
+                    _buildInfoRow("URL Bibit",
+                        bibit.urlBibit.isNotEmpty ? bibit.urlBibit : "-"),
+                    _buildInfoRow(
+                      "Terakhir Diperbarui",
+                      DateFormat('dd MMMM yyyy').format(bibit.updatedAt),
                     ),
                   ],
                 ),
-              ),
-            ),
-          const SizedBox(height: 30),
 
-          // Tombol aksi
+                SizedBox(height: 20),
+
+                // Catatan
+                if (bibit.catatan.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.notes_rounded,
+                              color: Color(0xFF4CAF50),
+                              size: 24,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Catatan",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Divider(
+                            height: 30, thickness: 1, color: Color(0xFFEDF7ED)),
+                        Text(
+                          bibit.catatan,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF424242),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                SizedBox(height: 20),
+
+                // Image Gallery
+                if (bibit.gambarImage.length > 1)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.photo_library_rounded,
+                              color: Color(0xFF4CAF50),
+                              size: 24,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Galeri Foto",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Container(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: BouncingScrollPhysics(),
+                            itemCount: bibit.gambarImage.length,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 120,
+                                margin: EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 5,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    bibit.gambarImage[index],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[200],
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            size: 30,
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                SizedBox(height: 30),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickInfoItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Color(0xFFEDF7ED),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: Color(0xFF4CAF50),
+            size: 20,
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2E7D32),
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailSection(
+      String title, IconData icon, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () {
-                    // Fitur berbagi informasi bibit
-                    Get.snackbar(
-                      'Info',
-                      'Berbagi informasi bibit ${bibit.namaBibit}',
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                    );
-                  },
-                  icon: const Icon(Icons.share, color: Colors.white),
-                  label: const Text('Bagikan',
-                      style: TextStyle(fontSize: 16, color: Colors.white)),
-                ),
+              Icon(
+                icon,
+                color: Color(0xFF4CAF50),
+                size: 24,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: () {
-                    // Fitur untuk mengarahkan ke URL terkait bibit
-                    if (bibit.urlBibit.isNotEmpty) {
-                      // Misalnya launch URL
-                      Get.snackbar(
-                        'Info',
-                        'Membuka URL: ${bibit.urlBibit}',
-                        backgroundColor: Colors.blue,
-                        colorText: Colors.white,
-                      );
-                    } else {
-                      Get.snackbar(
-                        'Info',
-                        'URL tidak tersedia',
-                        backgroundColor: Colors.orange,
-                        colorText: Colors.white,
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.link, color: Colors.white),
-                  label: const Text('Buka Link',
-                      style: TextStyle(fontSize: 16, color: Colors.white)),
+              SizedBox(width: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32),
                 ),
               ),
             ],
           ),
+          Divider(height: 30, thickness: 1, color: Color(0xFFEDF7ED)),
+          ...children
         ],
       ),
     );
   }
 
-  Widget _buildSectionCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPropertyRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
+          Container(
             width: 120,
             child: Text(
               label,
@@ -302,8 +686,10 @@ class DetailPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF2E7D32),
               ),
             ),
           ),

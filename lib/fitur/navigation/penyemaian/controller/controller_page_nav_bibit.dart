@@ -39,6 +39,7 @@ class BibitController extends GetxController {
               'updated_at': DateTime.now(),
               'timestamp': DateTime.now().toString(),
             });
+
         return bibit;
       }
 

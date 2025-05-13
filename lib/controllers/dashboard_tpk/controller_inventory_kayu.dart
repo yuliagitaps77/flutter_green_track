@@ -515,18 +515,15 @@ class InventoryKayuController extends GetxController {
                           Text('Menghapus...'),
                         ],
                       )
-                    : const Text('Hapus'),
+                    : const Text(
+                        'Hapus',
+                        style: TextStyle(color: Colors.white),
+                      ),
               )),
         ],
       ),
     );
   }
-// Tambahkan fungsi berikut ke dalam InventoryKayuController
-
-  // Mengambil data kayu berdasarkan ID
-
-  // Fungsi untuk navigasi ke halaman detail setelah scan berhasil
-  // Tambahkan fungsi berikut ke dalam InventoryKayuController
 
   // Mengambil data kayu berdasarkan ID
   Future<InventoryItem?> getKayuById(String kayuId) async {
@@ -573,15 +570,6 @@ class InventoryKayuController extends GetxController {
   void navigateToDetailAfterScan(
       String barcodeResult, UserRole? userRole) async {
     try {
-      Get.dialog(
-        Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
-          ),
-        ),
-        barrierDismissible: false,
-      );
-
       // Ambil data kayu dari Firestore
       final snapshot = await _firestore
           .collection('kayu')
@@ -755,19 +743,6 @@ class InventoryKayuController extends GetxController {
                               DateFormat('dd MMM yyyy').format(tanggalLahir)),
                       ]),
 
-                      // Location info
-                      _buildInfoSection('Informasi Lokasi', [
-                        _buildInfoRow('KPH', lokasi['kph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'BKPH', lokasi['bkph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'RKPH', lokasi['rkph']?.toString() ?? '-'),
-                        _buildInfoRow('Luas Petak',
-                            lokasi['luas_petak']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Alamat', lokasi['alamat']?.toString() ?? '-'),
-                      ]),
-
                       // Additional info
                       _buildInfoSection('Informasi Tambahan', [
                         _buildInfoRow(
@@ -846,7 +821,10 @@ class InventoryKayuController extends GetxController {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                 ),
-                                child: const Text('Hapus'),
+                                child: const Text(
+                                  'Hapus',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                               ),
                             ],
                           ),
@@ -991,15 +969,6 @@ class InventoryKayuController extends GetxController {
                             'Jumlah Stok', '${data['jumlah_stok'] ?? 0} Unit'),
                       ]),
 
-                      // Location info
-                      _buildInfoSection('Informasi Lokasi', [
-                        _buildInfoRow('KPH', lokasi['kph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'BKPH', lokasi['bkph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'RKPH', lokasi['rkph']?.toString() ?? '-'),
-                      ]),
-
                       // Additional info - hanya sebagian
                       if (createdAt != null)
                         _buildInfoSection('Informasi Tambahan', [
@@ -1069,186 +1038,299 @@ class InventoryKayuController extends GetxController {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            width: Get.width * 0.9,
             constraints: BoxConstraints(
-              maxWidth: 500,
-              maxHeight: Get.height * 0.8,
+              maxWidth: 600,
+              maxHeight: Get.height * 0.9,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header with title and close button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Detail Inventory: ${item.namaKayu}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF4CAF50),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Get.back(),
-                    ),
-                  ],
-                ),
-                const Divider(),
-
-                // Scrollable content
-                Expanded(
-                  child: ListView(
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Images carousel
-                      if (imageUrls.isNotEmpty)
-                        Container(
-                          height: 200,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: PageView.builder(
-                            itemCount: imageUrls.length,
-                            itemBuilder: (context, imageIndex) {
-                              return Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  image: DecorationImage(
-                                    image: NetworkImage(
-                                        imageUrls[imageIndex].toString()),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              );
-                            },
+                      Expanded(
+                        child: Text(
+                          'Detail Inventory: ${item.namaKayu}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Poppins',
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-
-                      // Basic info
-                      _buildInfoSection('Informasi Dasar', [
-                        _buildInfoRow(
-                            'ID Kayu', data['id_kayu']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Barcode', data['barcode']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Nama Kayu', data['nama_kayu']?.toString() ?? '-'),
-                        _buildInfoRow('Jenis Kayu',
-                            data['jenis_kayu']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Varietas', data['varietas']?.toString() ?? '-'),
-                        _buildInfoRow('Batch Panen',
-                            data['batch_panen']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Jumlah Stok', '${data['jumlah_stok'] ?? 0} Unit'),
-                      ]),
-
-                      // Physical attributes
-                      _buildInfoSection('Karakteristik Fisik', [
-                        _buildInfoRow('Usia', '${data['usia'] ?? 0} tahun'),
-                        _buildInfoRow('Tinggi', '${data['tinggi'] ?? 0} meter'),
-                        if (tanggalLahir != null)
-                          _buildInfoRow('Tanggal Lahir Pohon',
-                              DateFormat('dd MMM yyyy').format(tanggalLahir)),
-                      ]),
-
-                      // Location info
-                      _buildInfoSection('Informasi Lokasi', [
-                        _buildInfoRow('KPH', lokasi['kph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'BKPH', lokasi['bkph']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'RKPH', lokasi['rkph']?.toString() ?? '-'),
-                        _buildInfoRow('Luas Petak',
-                            lokasi['luas_petak']?.toString() ?? '-'),
-                        _buildInfoRow(
-                            'Alamat', lokasi['alamat']?.toString() ?? '-'),
-                      ]),
-
-                      // Additional info
-                      _buildInfoSection('Informasi Tambahan', [
-                        _buildInfoRow(
-                            'Catatan', data['catatan']?.toString() ?? '-'),
-                        if (createdAt != null)
-                          _buildInfoRow(
-                              'Tanggal Dibuat', formatter.format(createdAt)),
-                        if (updatedAt != null)
-                          _buildInfoRow('Terakhir Diperbarui',
-                              formatter.format(updatedAt)),
-                      ]),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Get.back(),
+                      ),
                     ],
                   ),
                 ),
 
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    physics: BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Images carousel
+                        if (imageUrls.isNotEmpty)
+                          Container(
+                            height: 250,
+                            margin: const EdgeInsets.only(bottom: 24),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: PageView.builder(
+                                itemCount: imageUrls.length,
+                                itemBuilder: (context, imageIndex) {
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 10,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        imageUrls[imageIndex].toString(),
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            color: Color(0xFFE8F5E9),
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              size: 50,
+                                              color: Color(0xFF4CAF50),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+
+                        // Basic info
+                        _buildInfoSection(
+                          'Informasi Dasar',
+                          [
+                            _buildInfoRow(
+                                'ID Kayu', data['id_kayu']?.toString() ?? '-'),
+                            _buildInfoRow(
+                                'Barcode', data['barcode']?.toString() ?? '-'),
+                            _buildInfoRow('Nama Kayu',
+                                data['nama_kayu']?.toString() ?? '-'),
+                            _buildInfoRow('Jenis Kayu',
+                                data['jenis_kayu']?.toString() ?? '-'),
+                            _buildInfoRow('Varietas',
+                                data['varietas']?.toString() ?? '-'),
+                            _buildInfoRow('Batch Panen',
+                                data['batch_panen']?.toString() ?? '-'),
+                            _buildInfoRow('Jumlah Stok',
+                                '${data['jumlah_stok'] ?? 0} Unit'),
+                          ],
+                          icon: Icons.info_outline,
+                        ),
+
+                        // Physical attributes
+                        _buildInfoSection(
+                          'Karakteristik Fisik',
+                          [
+                            _buildInfoRow('Usia', '${data['usia'] ?? 0} tahun'),
+                            _buildInfoRow(
+                                'Tinggi', '${data['tinggi'] ?? 0} meter'),
+                            if (tanggalLahir != null)
+                              _buildInfoRow(
+                                  'Tanggal Lahir Pohon',
+                                  DateFormat('dd MMM yyyy')
+                                      .format(tanggalLahir)),
+                          ],
+                          icon: Icons.straighten,
+                        ),
+
+                        // Location info
+
+                        // Additional info
+                        _buildInfoSection(
+                          'Informasi Tambahan',
+                          [
+                            _buildInfoRow(
+                                'Catatan', data['catatan']?.toString() ?? '-'),
+                            if (createdAt != null)
+                              _buildInfoRow('Tanggal Dibuat',
+                                  formatter.format(createdAt)),
+                            if (updatedAt != null)
+                              _buildInfoRow('Terakhir Diperbarui',
+                                  formatter.format(updatedAt)),
+                          ],
+                          icon: Icons.notes,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 // Action buttons
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Get.back();
-                        editItem(index);
-                      },
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Edit'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Get.back();
-                        deleteItem(index);
-                      },
-                      icon: const Icon(Icons.delete, size: 16),
-                      label: const Text('Hapus'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, -5),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Get.back();
+                          editItem(index);
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Color(0xFF4CAF50),
+                          side: BorderSide(color: Color(0xFF4CAF50)),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Get.back();
+                          deleteItem(index);
+                        },
+                        icon: const Icon(
+                          Icons.delete,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          'Hapus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade600,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
+        barrierDismissible: true,
       );
     } catch (e) {
       print('❌ [FIRESTORE VIEW] Error viewing document details: $e');
-
       Get.snackbar(
         'Error',
         'Gagal mengakses detail data: $e',
-        backgroundColor: Colors.red.withOpacity(0.1),
-        colorText: Colors.red,
+        backgroundColor: Colors.red.shade50,
+        colorText: Colors.red.shade700,
+        borderRadius: 8,
+        margin: EdgeInsets.all(16),
+        duration: Duration(seconds: 4),
+        icon: Icon(Icons.error_outline, color: Colors.red.shade700),
       );
     }
   }
 
   // Helper widgets for detail view
-  Widget _buildInfoSection(String title, List<Widget> children) {
+  Widget _buildInfoSection(String title, List<Widget> children,
+      {IconData? icon}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: Color(0xFF4CAF50)),
+                SizedBox(width: 8),
+              ],
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2E7D32),
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(12),
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: children,
             ),
           ),
@@ -1259,25 +1341,30 @@ class InventoryKayuController extends GetxController {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 140,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
+                color: Colors.grey.shade700,
+                fontSize: 14,
+                fontFamily: 'Poppins',
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
+                color: Color(0xFF424242),
+                fontSize: 14,
+                fontFamily: 'Poppins',
               ),
             ),
           ),
