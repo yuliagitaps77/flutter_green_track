@@ -15,10 +15,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
-import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
 
 class BibitDetailPage extends StatefulWidget {
-  static String routeName = "/detail-bibit";
+  static String routeName = "/BibitDetailPage";
 
   const BibitDetailPage({Key? key}) : super(key: key);
 
@@ -27,8 +26,7 @@ class BibitDetailPage extends StatefulWidget {
 }
 
 class _BibitDetailPageState extends State<BibitDetailPage> {
-  late final Bibit bibit;
-  late final BarcodeController barcodeController;
+  late Bibit bibit;
   final GlobalKey qrKey = GlobalKey();
 
   // Define constant colors based on GreenTracks style guide
@@ -43,10 +41,6 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
   @override
   void initState() {
     super.initState();
-    if (!Get.isRegistered<BarcodeController>()) {
-      Get.put(BarcodeController());
-    }
-    barcodeController = Get.find<BarcodeController>();
     bibit = Get.arguments as Bibit;
   }
 
@@ -199,21 +193,10 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                                 _buildInfoRow(Icons.place, "KPH: ${bibit.kph}",
                                     smallTextSize),
                                 const SizedBox(height: 8),
-                                _buildInfoRow(
-                                    Icons.place_outlined,
-                                    "BKPH: ${bibit.bkph}\n(${barcodeController.luasBKPHMap[bibit.bkph]?.toStringAsFixed(2) ?? '0.00'} Ha)",
-                                    smallTextSize),
+                                _buildInfoRow(Icons.place_outlined,
+                                    "BKPH: ${bibit.bkph}", smallTextSize),
                                 const SizedBox(height: 8),
-                                _buildInfoRow(
-                                    Icons.map,
-                                    "RKPH: ${bibit.rkph}\n(${barcodeController.luasAreaMap[bibit.rkph]?.toStringAsFixed(2) ?? '0.00'} Ha)",
-                                    smallTextSize),
-                                const SizedBox(height: 16),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                                _buildInfoRow(
-                                    Icons.forest,
-                                    "Bagian Hutan:\nBH Berbek: ${barcodeController.bagianHutanMap[bibit.kph]?['BH Berbek']?.toStringAsFixed(2) ?? '0.00'} Ha\nBH Tritik: ${barcodeController.bagianHutanMap[bibit.kph]?['BH Tritik']?.toStringAsFixed(2) ?? '0.00'} Ha",
+                                _buildInfoRow(Icons.map, "RKPH: ${bibit.rkph}",
                                     smallTextSize),
                               ],
                             ),
