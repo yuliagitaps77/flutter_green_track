@@ -65,25 +65,29 @@ class BarcodeController extends GetxController {
     usiaController.text = '30';
     tinggiController.text = '20';
     jenisBibitController.text = 'Kayu keras';
-    // kondisi.value = 'Siap Tanam';
-    // statusHama.value = 'Tidak ada';
+    kondisi.value = 'Baik';
+    statusHama.value = 'Tidak ada';
     mediaTanamController.text = 'Polybag';
     nutrisiController.text = 'Pupuk NPK';
     asalBibitController.text = 'Kebun Induk Wilangan';
     produktivitasController.text = 'Tinggi';
     catatanController.text = 'Auto-generated untuk testing cepat.';
 
-    // Lokasi tanam dummy
-    // selectedKPH.value = 'KPH Wilangan';
-    // loadBKPHOptions(selectedKPH.value);
-    // selectedBKPH.value = bkphOptions.isNotEmpty ? bkphOptions.first : '';
-    // loadRKPHOptions(selectedBKPH.value);
-    // selectedRKPH.value = rkphOptions.isNotEmpty ? rkphOptions.first : '';
+    // Lokasi tanam dengan data baru
+    selectedKPH.value = 'KPH Nganjuk';
+    loadBKPHOptions(selectedKPH.value);
+    if (bkphOptions.isNotEmpty) {
+      selectedBKPH.value = bkphOptions.first;
+      loadRKPHOptions(selectedBKPH.value);
+      if (rkphOptions.isNotEmpty) {
+        selectedRKPH.value = rkphOptions.first;
+      }
+    }
 
     // Tanggal pembibitan
     tanggalPembibitan.value = DateTime.now();
     tanggalPembibitanController.text =
-        DateFormat('dd/MM/yyyy').format(tanggalPembibitan.value);
+        DateFormat('dd-MM-yyyy').format(tanggalPembibitan.value);
 
     print('✅ Data form bibit berhasil diisi otomatis.');
   }
@@ -102,90 +106,109 @@ class BarcodeController extends GetxController {
   var bkphOptions = <String>[].obs;
   var rkphOptions = <String>[].obs;
 
-  // KPH List
-  final kphList =
-      ['KPH Wilangan', 'KPH Saradan', 'KPH Bojonegoro', 'KPH Parengan'].obs;
+  // KPH List with Bagian Hutan (BH)
+  final kphList = ['KPH Nganjuk'].obs;
 
-// Map of BKPH options based on KPH
+  // Map of Bagian Hutan areas
+  final Map<String, Map<String, double>> bagianHutanMap = {
+    'KPH Nganjuk': {
+      'BH Berbek': 8658.80,
+      'BH Tritik': 12635.42,
+    },
+  };
+
+  // Map of BKPH options and their areas
   final Map<String, List<String>> bkphMap = {
-    'KPH Wilangan': ['BKPH Wilangan Utara', 'BKPH Wilangan Selatan'],
-    'KPH Saradan': ['BKPH Saradan Timur', 'BKPH Saradan Barat'],
-    'KPH Bojonegoro': ['BKPH Bojonegoro A', 'BKPH Bojonegoro B'],
-    'KPH Parengan': ['BKPH Parengan 1', 'BKPH Parengan 2'],
+    'KPH Nganjuk': [
+      'BKPH Berbek',
+      'BKPH Bagor',
+      'BKPH Tritik',
+      'BKPH Tamanan',
+      'BKPH Wengkal'
+    ],
   };
 
-// Map of RKPH options based on BKPH
+  // Map of BKPH areas
+  final Map<String, double> luasBKPHMap = {
+    'BKPH Berbek': 4100.44,
+    'BKPH Bagor': 4558.36,
+    'BKPH Tritik': 5370.84,
+    'BKPH Tamanan': 3613.73,
+    'BKPH Wengkal': 3650.85,
+  };
+
+  // Map of RKPH options based on BKPH
   final Map<String, List<String>> rkphMap = {
-    'BKPH Wilangan Utara': [
-      'RKPH Wilangan A',
-      'RKPH Wilangan B',
-      'RKPH Wilangan C'
+    'BKPH Berbek': [
+      'RPH Tirip',
+      'RPH Maguan',
+      'RPH Klonggean',
+      'RPH Suwaru',
+      'RPH Jatirejo'
     ],
-    'BKPH Wilangan Selatan': ['RKPH Wilangan D', 'RKPH Wilangan E'],
-    'BKPH Saradan Timur': [
-      'RKPH Saradan A',
-      'RKPH Saradan B',
-      'RKPH Saradan C'
+    'BKPH Bagor': [
+      'RPH Awar Awar',
+      'RPH Malangbong',
+      'RPH Tunglur',
+      'RPH Gawok',
+      'RPH Sudimorogeneng'
     ],
-    'BKPH Saradan Barat': [
-      'RKPH Saradan D',
-      'RKPH Saradan E',
-      'RKPH Saradan F'
+    'BKPH Tritik': [
+      'RPH Tritik',
+      'RPH Turi',
+      'RPH Jeruk',
+      'RPH Bendosewu',
+      'RPH Kedungrejo'
     ],
-    'BKPH Bojonegoro A': [
-      'RKPH Bojonegoro A1',
-      'RKPH Bojonegoro A2',
-      'RKPH Bojonegoro A3'
-    ],
-    'BKPH Bojonegoro B': [
-      'RKPH Bojonegoro B1',
-      'RKPH Bojonegoro B2',
-      'RKPH Bojonegoro B3'
-    ],
-    'BKPH Parengan 1': [
-      'RKPH Parengan 1A',
-      'RKPH Parengan 1B',
-      'RKPH Parengan 1C'
-    ],
-    'BKPH Parengan 2': [
-      'RKPH Parengan 2A',
-      'RKPH Parengan 2B',
-      'RKPH Parengan 2C'
+    'BKPH Tamanan': ['RPH Tamanan', 'RPH Wedegan', 'RPH Brengkok', 'RPH Balo'],
+    'BKPH Wengkal': [
+      'RPH Wengkal',
+      'RPH Senggowar',
+      'RPH Ngluyu',
+      'RPH Cabean'
     ],
   };
 
-// Map of Luas Petak options based on RKPH
-  final Map<String, List<String>> luasPetakMap = {
-    'RKPH Wilangan A': ['10 x 10', '20 x 30', '30 x 30'],
-    'RKPH Wilangan B': ['20 x 30', '40 x 40', '50 x 50'],
-    'RKPH Wilangan C': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Wilangan D': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Wilangan E': ['25 x 25', '35 x 35', '45 x 45'],
-    'RKPH Saradan A': ['10 x 10', '20 x 20', '30 x 30'],
-    'RKPH Saradan B': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Saradan C': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Saradan D': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Saradan E': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Saradan F': ['25 x 25', '35 x 35', '45 x 45'],
-    'RKPH Bojonegoro A1': ['10 x 10', '20 x 20', '30 x 30'],
-    'RKPH Bojonegoro A2': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Bojonegoro A3': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Bojonegoro B1': ['10 x 10', '20 x 20', '30 x 30'],
-    'RKPH Bojonegoro B2': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Bojonegoro B3': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Parengan 1A': ['10 x 10', '20 x 20', '30 x 30'],
-    'RKPH Parengan 1B': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Parengan 1C': ['20 x 20', '30 x 30', '40 x 40'],
-    'RKPH Parengan 2A': ['10 x 10', '20 x 20', '30 x 30'],
-    'RKPH Parengan 2B': ['15 x 15', '25 x 25', '35 x 35'],
-    'RKPH Parengan 2C': ['20 x 20', '30 x 30', '40 x 40'],
+  // Map of RPH areas
+  final Map<String, double> luasAreaMap = {
+    'RPH Tirip': 716.10,
+    'RPH Maguan': 832.49,
+    'RPH Klonggean': 884.00,
+    'RPH Suwaru': 847.97,
+    'RPH Jatirejo': 819.88,
+    'RPH Awar Awar': 944.04,
+    'RPH Malangbong': 783.74,
+    'RPH Tunglur': 943.00,
+    'RPH Gawok': 886.23,
+    'RPH Sudimorogeneng': 1001.35,
+    'RPH Tritik': 1160.08,
+    'RPH Turi': 1065.23,
+    'RPH Jeruk': 892.33,
+    'RPH Bendosewu': 974.15,
+    'RPH Kedungrejo': 1279.05,
+    'RPH Tamanan': 1037.47,
+    'RPH Wedegan': 740.77,
+    'RPH Brengkok': 935.92,
+    'RPH Balo': 899.57,
+    'RPH Wengkal': 923.66,
+    'RPH Senggowar': 793.97,
+    'RPH Ngluyu': 962.64,
+    'RPH Cabean': 970.58,
   };
+
+  final navigationController = Get.find<NavigationController>();
+
   @override
   void onInit() {
     super.onInit();
+    // Initialize with empty values
+    selectedKPH.value = '';
+    selectedBKPH.value = '';
+    selectedRKPH.value = '';
     // Initialize tanggal pembibitan with current date
     tanggalPembibitanController.text =
-        DateFormat('dd/MM/yyyy').format(DateTime.now());
+        DateFormat('dd-MM-yyyy').format(DateTime.now());
+    selectedImages.clear();
     autoFillBibitForm(); // Auto-fill form for testing
   }
 
@@ -402,7 +425,8 @@ class BarcodeController extends GetxController {
           .currentUser
           .value; // Assuming you have an AuthController with userRole
       // Or however you get the current user role in your app
-      Get.offAll(() => MainNavigationContainer(userRole: userRole!.role));
+      // Get.offAll(() => MainNavigationContainer(userRole: userRole!.role));
+      Navigator.of(Get.context!).pop();
       navigationController.navigateToInventory();
 
       resetForm();
@@ -418,40 +442,12 @@ class BarcodeController extends GetxController {
     }
   }
 
-  var selectedLuasPetak = ''.obs; // Add this new observable
-  // Available options for dropdowns
-  var luasPetakOptions = <String>[].obs; // Add this new observable
-
-  final navigationController = Get.find<NavigationController>();
-// Before setting the options, remove duplicates
-  void loadLuasPetakOptions(String rkph) {
-    var options = luasPetakMap[rkph] ?? [];
-    // Remove duplicates by converting to Set and back to List
-    options = options.toSet().toList();
-    luasPetakOptions.assignAll(options);
-  }
-
-  // Update the RKPH selection method to reset the Luas Petak selection
-  void onRKPHSelected(String rkph) {
-    selectedRKPH.value = rkph;
-    selectedLuasPetak.value = '';
-    loadLuasPetakOptions(rkph);
-  }
-
-  // Add method for Luas Petak selection
-  void onLuasPetakSelected(String luasPetak) {
-    selectedLuasPetak.value = luasPetak;
-  }
-
   // Submit form data
   Future<void> submitBibit({bool isUpdate = false}) async {
     isLoading.value = true;
 
     // Validasi field wajib
     List<String> errors = [];
-    if (selectedLuasPetak.value.isEmpty) {
-      errors.add("Luas Petak");
-    }
     if (namaBibitController.text.isEmpty) errors.add("Nama Bibit");
     if (jenisBibitController.text.isEmpty) errors.add("Jenis Bibit");
     if (kondisi.value.isEmpty) errors.add("Kondisi");
@@ -513,7 +509,11 @@ class BarcodeController extends GetxController {
           'kph': selectedKPH.value,
           'bkph': selectedBKPH.value,
           'rkph': selectedRKPH.value,
-          'luas_petak': selectedLuasPetak.value,
+          'luas_area': {
+            'bkph_total': getSelectedBKPHArea(),
+            'rph': getSelectedRPHArea(),
+          },
+          'bagian_hutan': getSelectedBagianHutanArea(),
         },
         'updated_at': DateTime.now(),
         if (!isUpdate) 'created_at': DateTime.now(),
@@ -555,8 +555,12 @@ class BarcodeController extends GetxController {
 
   // Reset form values
   void resetForm() {
-    selectedLuasPetak.value = '';
-    luasPetakOptions.clear();
+    selectedKPH.value = '';
+    selectedBKPH.value = '';
+    selectedRKPH.value = '';
+    bkphOptions.clear();
+    rkphOptions.clear();
+    selectedImages.clear();
     generateIdBibit(); // Generate new ID
     namaBibitController.clear();
     varietasController.clear();
@@ -570,14 +574,38 @@ class BarcodeController extends GetxController {
     asalBibitController.clear();
     produktivitasController.clear();
     catatanController.clear();
-    selectedKPH.value = '';
+    tanggalPembibitanController.text =
+        DateFormat('dd-MM-yyyy').format(DateTime.now());
+  }
+
+  // Update BKPH options when KPH is selected
+  void updateBKPHOptions(String kph) {
+    bkphOptions.value = bkphMap[kph] ?? [];
     selectedBKPH.value = '';
     selectedRKPH.value = '';
-    bkphOptions.clear();
-    rkphOptions.clear();
-    tanggalPembibitan.value = DateTime.now();
-    tanggalPembibitanController.text =
-        DateFormat('dd/MM/yyyy').format(DateTime.now());
-    selectedImages.clear();
+  }
+
+  // Update RKPH options when BKPH is selected
+  void updateRKPHOptions(String bkph) {
+    rkphOptions.value = rkphMap[bkph] ?? [];
+    selectedRKPH.value = '';
+  }
+
+  // Get area for selected RPH
+  double getSelectedRPHArea() {
+    return luasAreaMap[selectedRKPH.value] ?? 0.0;
+  }
+
+  // Get area for selected BKPH
+  double getSelectedBKPHArea() {
+    return luasBKPHMap[selectedBKPH.value] ?? 0.0;
+  }
+
+  // Get area for selected Bagian Hutan
+  double getSelectedBagianHutanArea() {
+    if (selectedKPH.value.isEmpty) return 0.0;
+    final bhMap = bagianHutanMap[selectedKPH.value];
+    if (bhMap == null) return 0.0;
+    return bhMap.values.reduce((a, b) => a + b);
   }
 }

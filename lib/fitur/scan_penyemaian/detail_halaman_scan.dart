@@ -1,16 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class DetailPage extends StatelessWidget {
+class DetailPage extends StatefulWidget {
   final String barcodeId;
+
+  const DetailPage({Key? key, required this.barcodeId}) : super(key: key);
+
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+class _DetailPageState extends State<DetailPage> {
+  final barcodeController = Get.find<BarcodeController>();
   final BibitController bibitController = Get.find<BibitController>();
   final GlobalKey qrKey = GlobalKey();
 
-  DetailPage({Key? key, required this.barcodeId}) : super(key: key);
+  @override
+  void initState() {
+    super.initState();
+    if (!Get.isRegistered<BarcodeController>()) {
+      Get.put(BarcodeController());
+    }
+  }
 
   // Function to export QR code
   void _exportQR(String data) {
@@ -43,7 +59,7 @@ class DetailPage extends StatelessWidget {
           ),
         ),
         child: FutureBuilder<Bibit?>(
-          future: bibitController.getBibitByBarcode(barcodeId),
+          future: bibitController.getBibitByBarcode(widget.barcodeId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
@@ -410,8 +426,15 @@ class DetailPage extends StatelessWidget {
                   [
                     _buildInfoRow("Asal Bibit", bibit.asalBibit),
                     _buildInfoRow("KPH", bibit.kph),
-                    _buildInfoRow("BKPH", bibit.bkph),
-                    _buildInfoRow("RKPH", bibit.rkph),
+                    _buildInfoRow("BKPH",
+                        "${bibit.bkph} (${barcodeController.luasBKPHMap[bibit.bkph]?.toStringAsFixed(2) ?? '0.00'} Ha)"),
+                    _buildInfoRow("RPH",
+                        "${bibit.rkph} (${barcodeController.luasAreaMap[bibit.rkph]?.toStringAsFixed(2) ?? '0.00'} Ha)"),
+                    const Divider(height: 16),
+                    _buildInfoRow(
+                        "Bagian Hutan",
+                        "${barcodeController.bagianHutanMap[bibit.kph]?['BH Berbek']?.toStringAsFixed(2) ?? '0.00'} Ha (BH Berbek)\n"
+                            "${barcodeController.bagianHutanMap[bibit.kph]?['BH Tritik']?.toStringAsFixed(2) ?? '0.00'} Ha (BH Tritik)"),
                   ],
                 ),
 
@@ -668,28 +691,29 @@ class DetailPage extends StatelessWidget {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          SizedBox(
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: Colors.grey,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                fontSize: 14,
                 color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

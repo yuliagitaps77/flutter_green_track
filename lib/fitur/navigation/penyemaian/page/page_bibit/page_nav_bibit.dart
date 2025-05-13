@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
+import 'package:get/get.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibit.dart';
 import 'package:flutter_green_track/fitur/navigation/penyemaian/page/page_bibit/page_detail_bibit.dart';
 
@@ -14,7 +15,15 @@ class DaftarBibitPage extends StatefulWidget {
 }
 
 class _DaftarBibitPageState extends State<DaftarBibitPage> {
-  final BibitController controller = Get.put(BibitController());
+  late final BibitController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers in the correct order
+    Get.put(BarcodeController());
+    controller = Get.put(BibitController());
+  }
 
   final List<String> jenisList = [
     'Semua',

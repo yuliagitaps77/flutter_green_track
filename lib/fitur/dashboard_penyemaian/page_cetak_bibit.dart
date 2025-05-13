@@ -39,8 +39,21 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
       controller.usiaController.text = b.usia.toString();
       controller.tinggiController.text = b.tinggi.toString();
       controller.jenisBibitController.text = b.jenisBibit;
-      controller.kondisi.value = b.kondisi;
-      controller.statusHama.value = b.statusHama;
+
+      // Ensure dropdown values match available options
+      if (b.kondisi == 'Siap Tanam') {
+        controller.kondisi.value = 'Baik';
+      } else {
+        controller.kondisi.value = b.kondisi;
+      }
+
+      // Convert status hama to match dropdown options
+      if (b.statusHama == 'Tidak Ada') {
+        controller.statusHama.value = 'Tidak ada';
+      } else {
+        controller.statusHama.value = b.statusHama;
+      }
+
       controller.mediaTanamController.text = b.mediaTanam;
       controller.nutrisiController.text = b.nutrisi;
       controller.asalBibitController.text = b.asalBibit;
@@ -53,8 +66,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
       controller.selectedRKPH.value = b.rkph;
       controller.tanggalPembibitan.value = b.tanggalPembibitan;
       controller.tanggalPembibitanController.text =
-          DateFormat('dd/MM/yyyy').format(b.tanggalPembibitan);
-      // Gambar tidak di-preload karena tidak disimpan sebagai file lokal
+          DateFormat('dd-MM-yyyy').format(b.tanggalPembibitan);
     }
   }
 
@@ -550,7 +562,13 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           color: Color(0xFF424242),
                         ),
                         dropdownColor: Colors.white,
-                        items: ['Baik', 'Sedang', 'Buruk'].map((String value) {
+                        items: [
+                          'Siap Tanam',
+                          'Baik',
+                          'Sedang',
+                          'Buruk',
+                          'Belum Siap Tanam'
+                        ].map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
                             child: Text(value),
@@ -609,7 +627,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           color: Color(0xFF424242),
                         ),
                         dropdownColor: Colors.white,
-                        items: ['Tidak Ada', 'Ringan', 'Sedang', 'Berat']
+                        items: ['Tidak ada', 'Ringan', 'Sedang', 'Berat']
                             .map((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -942,64 +960,77 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                               onChanged: (value) {
                                 if (value != null) {
                                   controller.selectedRKPH.value = value;
-                                  controller.selectedLuasPetak.value =
-                                      ''; // Reset the value
-                                  controller.loadLuasPetakOptions(value);
                                 }
                               },
                             ),
                           ),
                         ],
                       ),
-// Add this after the RKPH dropdown in the UI
-// Luas Petak (depends on RKPH)
+
+                    // Area Information Display
                     if (controller.selectedRKPH.value.isNotEmpty)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Informasi Luas Area',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.grey.withOpacity(0.3),
-                                ),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.3),
                               ),
-                              child: DropdownButtonFormField<String>(
-                                value: controller
-                                            .selectedLuasPetak.value.isEmpty ||
-                                        !controller.luasPetakOptions.contains(
-                                            controller.selectedLuasPetak.value)
-                                    ? null // Use null if the value is empty or not in the list
-                                    : controller.selectedLuasPetak.value,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                  contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  border: InputBorder.none,
-                                  hintText: 'Pilih Luas Petak',
-                                  hintStyle: TextStyle(color: Colors.grey),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFF4A4A4A),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bagian Hutan: ${controller.getSelectedBagianHutanArea().toStringAsFixed(2)} Ha',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF424242),
+                                  ),
                                 ),
-                                items: controller.luasPetakOptions
-                                    .map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  if (value != null) {
-                                    controller.selectedLuasPetak.value = value;
-                                  }
-                                },
-                              )),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'BKPH: ${controller.getSelectedBKPHArea().toStringAsFixed(2)} Ha',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF424242),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'RPH: ${controller.getSelectedRPHArea().toStringAsFixed(2)} Ha',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF424242),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
+
                     const SizedBox(height: 16),
 
                     // Tanggal Pembibitan

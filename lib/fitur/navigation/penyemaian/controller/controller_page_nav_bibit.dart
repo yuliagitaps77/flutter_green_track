@@ -12,7 +12,7 @@ class BibitController extends GetxController {
   final RxString _selectedJenis = 'Semua'.obs;
   final RxString _searchQuery = ''.obs;
   var jenisList = <String>[].obs;
-  final barcodeController = Get.find<BarcodeController>();
+  late final BarcodeController barcodeController;
 
   Future<Bibit?> getBibitByBarcode(String barcodeId) async {
     try {
@@ -125,8 +125,13 @@ class BibitController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Initialize BarcodeController using lazyPut
+    if (!Get.isRegistered<BarcodeController>()) {
+      Get.lazyPut(() => BarcodeController());
+    }
+    barcodeController = Get.find<BarcodeController>();
     fetchBibitFromFirestore();
-    fetchJenisList(); // ambil semua jenis unik dari Firestore
+    fetchJenisList();
   }
 
   Future<void> fetchJenisList() async {
