@@ -313,14 +313,8 @@ class StatCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Filter options untuk periode
-    final List<String> filterOptions = [
-      '1 Bulan',
-      '3 Bulan',
-      '6 Bulan',
-      '1 Tahun'
-    ];
-    String selectedFilter = '6 Bulan';
+    // Determine if this is a count chart (no units needed)
+    final bool isCountChart = title.toLowerCase().contains('bibit');
 
     return AnimatedBuilder(
       animation: breathingAnimation,
@@ -347,46 +341,26 @@ class StatCardWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Section
+                  // Simplified Header Section
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title and Value Section
+                      Container(
+                        padding: EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: isSmallScreen ? 14 : 16,
+                          color: color,
+                        ),
+                      ),
+                      SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Title with icon
-                            Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: color.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    icon,
-                                    size: isSmallScreen ? 14 : 16,
-                                    color: color,
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    title,
-                                    style: TextStyle(
-                                      fontSize: isSmallScreen ? 13 : 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey[800],
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            // Value
                             Text(
                               value,
                               style: TextStyle(
@@ -394,219 +368,140 @@ class StatCardWidget extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF2E7D32),
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: 4),
-                            // Trend
                             Text(
-                              trend,
+                              title,
                               style: TextStyle(
-                                fontSize: isSmallScreen ? 11 : 12,
+                                fontSize: isSmallScreen ? 12 : 13,
                                 color: Colors.grey[600],
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      // Filter Dropdown (if applicable)
-                      if (title == "Pertumbuhan Bibit")
-                        StatefulBuilder(
-                          builder: (context, setState) {
-                            return Container(
-                              height: 32,
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 0),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: selectedFilter,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: color,
-                                    size: 16,
-                                  ),
-                                  isDense: true,
-                                  items: filterOptions.map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 12,
-                                            color: color,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            value,
-                                            style: TextStyle(
-                                              fontSize: isSmallScreen ? 11 : 12,
-                                              color: color,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    if (newValue != null) {
-                                      setState(() {
-                                        selectedFilter = newValue;
-                                      });
-                                    }
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
                     ],
                   ),
-                  // Chart Section
+
+                  // Chart Section with safe constraints and labels
                   if (spots.isNotEmpty) ...[
                     SizedBox(height: isSmallScreen ? 12 : 15),
                     Container(
-                      height: isSmallScreen ? 100 : 120,
-                      child: LayoutBuilder(
-                        builder: (context, chartConstraints) {
-                          return LineChart(
-                            LineChartData(
-                              gridData: FlGridData(
+                      height: isSmallScreen ? 80 : 100,
+                      child: LineChart(
+                        LineChartData(
+                          gridData: FlGridData(show: false),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  if (value % 1 != 0) return const SizedBox();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 5),
+                                    child: Text(
+                                      'H${value.toInt() + 1}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: isSmallScreen ? 9 : 10,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 14,
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  return Text(
+                                    value.toInt().toString(),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: isSmallScreen ? 9 : 10,
+                                    ),
+                                  );
+                                },
+                                reservedSize: 20,
+                                interval: _calculateInterval(spots),
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          minY: 0,
+                          maxY: _calculateMaxY(spots),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              color: color,
+                              barWidth: isSmallScreen ? 2.0 : 2.5,
+                              isStrokeCapRound: true,
+                              dotData: FlDotData(
                                 show: true,
-                                drawVerticalLine: false,
-                                horizontalInterval: 20,
-                                getDrawingHorizontalLine: (value) {
-                                  return FlLine(
-                                    color: Colors.grey[200],
-                                    strokeWidth: 1,
+                                getDotPainter: (spot, percent, barData, index) {
+                                  return FlDotCirclePainter(
+                                    radius: isSmallScreen ? 2.5 : 3,
+                                    color: Colors.white,
+                                    strokeWidth: isSmallScreen ? 1.5 : 2,
+                                    strokeColor: color,
                                   );
                                 },
                               ),
-                              titlesData: FlTitlesData(
+                              belowBarData: BarAreaData(
                                 show: true,
-                                rightTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: isSmallScreen ? 16 : 22,
-                                    interval:
-                                        chartConstraints.maxWidth > 300 ? 2 : 3,
-                                    getTitlesWidget: (value, meta) {
-                                      if (value % 1 != 0)
-                                        return const SizedBox.shrink();
-                                      return Padding(
-                                        padding: EdgeInsets.only(top: 5),
-                                        child: Text(
-                                          'B${value.toInt() + 1}',
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: isSmallScreen ? 9 : 10,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    interval: 20,
-                                    reservedSize: isSmallScreen ? 24 : 28,
-                                    getTitlesWidget: (value, meta) {
-                                      return Text(
-                                        '${value.toInt()}',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: isSmallScreen ? 9 : 10,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              borderData: FlBorderData(show: false),
-                              minY: math.max(
-                                  0,
-                                  spots.map((spot) => spot.y).reduce(math.min) -
-                                      10),
-                              maxY:
-                                  spots.map((spot) => spot.y).reduce(math.max) +
-                                      10,
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: spots,
-                                  isCurved: true,
-                                  color: color,
-                                  barWidth: isSmallScreen ? 2.0 : 2.5,
-                                  isStrokeCapRound: true,
-                                  dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter:
-                                        (spot, percent, barData, index) {
-                                      return FlDotCirclePainter(
-                                        radius: isSmallScreen ? 2.5 : 3,
-                                        color: Colors.white,
-                                        strokeWidth: isSmallScreen ? 1.5 : 2,
-                                        strokeColor: color,
-                                      );
-                                    },
-                                  ),
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        color.withOpacity(0.3),
-                                        color.withOpacity(0.0),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              lineTouchData: LineTouchData(
-                                enabled: true,
-                                touchTooltipData: LineTouchTooltipData(
-                                  fitInsideHorizontally: true,
-                                  fitInsideVertically: true,
-                                  tooltipRoundedRadius: 8,
-                                  tooltipBorder: BorderSide(
-                                    color: color.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                  tooltipPadding: EdgeInsets.symmetric(
-                                    horizontal: isSmallScreen ? 8 : 12,
-                                    vertical: isSmallScreen ? 6 : 8,
-                                  ),
-                                  tooltipMargin: 6,
-                                  getTooltipItems:
-                                      (List<LineBarSpot> touchedSpots) {
-                                    return touchedSpots
-                                        .map((LineBarSpot touchedSpot) {
-                                      return LineTooltipItem(
-                                        'Bulan ${touchedSpot.x.toInt() + 1}\n${touchedSpot.y.toStringAsFixed(1)} cm',
-                                        TextStyle(
-                                          color: color,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: isSmallScreen ? 10 : 12,
-                                        ),
-                                      );
-                                    }).toList();
-                                  },
+                                gradient: LinearGradient(
+                                  colors: [
+                                    color.withOpacity(0.3),
+                                    color.withOpacity(0.0),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          ],
+                          lineTouchData: LineTouchData(
+                            enabled: true,
+                            touchTooltipData: LineTouchTooltipData(
+                              fitInsideHorizontally: true,
+                              fitInsideVertically: true,
+                              tooltipRoundedRadius: 8,
+                              tooltipBorder: BorderSide(
+                                color: color.withOpacity(0.2),
+                                width: 1,
+                              ),
+                              tooltipPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              tooltipMargin: 6,
+                              getTooltipItems:
+                                  (List<LineBarSpot> touchedSpots) {
+                                return touchedSpots.map((spot) {
+                                  return LineTooltipItem(
+                                    spot.y.toInt().toString(),
+                                    TextStyle(
+                                      color: color,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: isSmallScreen ? 10 : 12,
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -617,6 +512,18 @@ class StatCardWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  double _calculateInterval(List<FlSpot> spots) {
+    if (spots.isEmpty) return 1;
+    double maxY = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+    return maxY <= 5 ? 1 : (maxY / 5).ceil().toDouble();
+  }
+
+  double _calculateMaxY(List<FlSpot> spots) {
+    if (spots.isEmpty) return 5;
+    double maxY = spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+    return maxY <= 5 ? 5 : (maxY * 1.2).ceilToDouble();
   }
 }
 

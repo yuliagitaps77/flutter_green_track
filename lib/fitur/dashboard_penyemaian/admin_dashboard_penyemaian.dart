@@ -6,6 +6,7 @@ import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.
 import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
+import 'package:flutter_green_track/fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
@@ -31,6 +32,7 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
   late Animation<double> _menuAnimation;
 
   // Controller for Penyemaian Dashboard
+  final BibitController bibitController = Get.put(BibitController());
   final PenyemaianDashboardController controller =
       Get.put(PenyemaianDashboardController());
 
@@ -318,32 +320,68 @@ class _PenyemaianDashboardScreenState extends State<PenyemaianDashboardScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Statistik",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2E7D32),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Statistik",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2E7D32),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                // Navigate to statistics detail page
+                Get.toNamed('/statistics-detail');
+              },
+              child: Row(
+                children: [
+                  Text(
+                    "Lihat Detail",
+                    style: TextStyle(
+                      color: Color(0xFF4CAF50),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 15),
-        Row(
+        GridView.count(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 15,
+          mainAxisSpacing: 15,
+          childAspectRatio: 1, // Make it square
           children: [
-            // Plant Growth Card
-            Expanded(
+            // Plant Growth Card replaced with Incoming Plants Card
+            GestureDetector(
+              onTap: () =>
+                  Get.toNamed('/statistics-detail', arguments: 'incoming'),
               child: Obx(() => StatCardWidget(
-                    title: "Pertumbuhan Bibit",
-                    value: controller.averageGrowthRate.value,
-                    trend: "Rata-rata pertumbuhan per bulan",
-                    icon: Icons.trending_up_rounded,
-                    spots: controller.growthSpots,
+                    title: "Bibit Masuk",
+                    value: controller.totalBibitMasuk.value,
+                    trend: controller.bibitMasukTrend.value,
+                    icon: Icons.add_circle_outline_rounded,
+                    spots: controller.bibitMasukSpots,
                     color: Color(0xFF4CAF50),
                     breathingAnimation: _breathingAnimation,
                   )),
             ),
-            SizedBox(width: 15),
             // Scanned Plants Card
-            Expanded(
+            GestureDetector(
+              onTap: () =>
+                  Get.toNamed('/statistics-detail', arguments: 'scanned'),
               child: Obx(() => StatCardWidget(
                     title: "Bibit Dipindai",
                     value: controller.bibitDipindai.value,

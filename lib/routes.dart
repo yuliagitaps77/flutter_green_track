@@ -5,6 +5,7 @@ import 'package:flutter_green_track/fitur/authentication/otp_screen.dart';
 import 'package:flutter_green_track/fitur/authentication/reset_password_screen.dart';
 import 'package:flutter_green_track/fitur/authentication/update_profile_screen.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/statistics_detail_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/admin_dashboard_tpk_page.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
 import 'package:flutter_green_track/fitur/history_pengisian/page_history_detail_bibit.dart';
@@ -30,6 +31,7 @@ class AppRoutes {
   static const String tpkDashboard = '/tpk-dashboard';
   static const String resetPasswordPage = "/ubah-katasandi";
   static const String halamanBuatAkun = "/admin_akub";
+  static const String statisticsDetail = '/statistics-detail';
 
   // List of GetX route definitions
   static final List<GetPage> routes = [
@@ -121,6 +123,12 @@ class AppRoutes {
       name: ProfileUpdateScreen.routeName,
       page: () => ProfileUpdateScreen(),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: statisticsDetail,
+      page: () => StatisticsDetailPage(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 300),
     ),
   ];
 }

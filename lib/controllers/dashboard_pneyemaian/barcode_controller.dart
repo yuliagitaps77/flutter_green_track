@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer' as dev;
 import 'package:flutter_green_track/controllers/authentication/authentication_controller.dart';
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
@@ -209,7 +210,7 @@ class BarcodeController extends GetxController {
     tanggalPembibitanController.text =
         DateFormat('dd-MM-yyyy').format(DateTime.now());
     selectedImages.clear();
-    autoFillBibitForm(); // Auto-fill form for testing
+    // autoFillBibitForm(); // Auto-fill form for testing
   }
 
   @override
@@ -302,33 +303,58 @@ class BarcodeController extends GetxController {
     await pickImage(ImageSource.gallery);
   }
 
-  Future<String?> uploadImageToFreeImageHost(String imagePath) async {
+  Future<String?> uploadImageToImgBB(String imagePath) async {
     try {
-      final apiKey = '6d207e02198a847aa98d0a2a901485a5';
-      final url = Uri.parse('https://freeimage.host/api/1/upload');
+      final apiKey = '558a46a506db3bfdce88d81f9e5c7e19';
+      final url = Uri.parse('https://api.imghippo.com/v1/upload');
 
-      final imageBytes = await File(imagePath).readAsBytes();
-      final base64Image = base64Encode(imageBytes);
+      // Create multipart request
+      var request = http.MultipartRequest('POST', url);
 
-      final response = await http.post(
-        url,
-        body: {
-          'key': apiKey,
-          'source': base64Image,
-          'format': 'json',
-        },
-      );
+      // Add API key
+      request.fields['api_key'] = apiKey;
+
+      // Add file
+      var file = await http.MultipartFile.fromPath('file', imagePath);
+      request.files.add(file);
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        final imageUrl = jsonResponse['image']['url'];
+
+        // Log complete response for debugging
+        dev.log('=== COMPLETE IMGHIPPO API RESPONSE ===', name: 'ImageUpload');
+        dev.log('Raw Response: ${response.body}', name: 'ImageUpload');
+        dev.log('Success: ${jsonResponse['success']}', name: 'ImageUpload');
+        dev.log('Status: ${jsonResponse['status']}', name: 'ImageUpload');
+        dev.log(
+            'Image Details: ${JsonEncoder.withIndent('  ').convert(jsonResponse['data'])}',
+            name: 'ImageUpload');
+
+        // Get the view URL from the response
+        final imageUrl = jsonResponse['data']['view_url'];
+        dev.log('Image URL: $imageUrl', name: 'ImageUpload');
+
+        // Log detailed image information
+        dev.log('''
+Image Details:
+- Title: ${jsonResponse['data']['title']}
+- Size: ${jsonResponse['data']['size']} bytes
+- Extension: ${jsonResponse['data']['extension']}
+- Created At: ${jsonResponse['data']['created_at']}
+''', name: 'ImageUpload');
+
         return imageUrl;
       } else {
-        print('Upload failed: ${response.statusCode}');
+        dev.log('Upload failed: ${response.statusCode}', name: 'ImageUpload');
+        dev.log('Response body: ${response.body}', name: 'ImageUpload');
         return null;
       }
     } catch (e) {
-      print('Error uploading image: $e');
+      dev.log('Error uploading image: $e', name: 'ImageUpload', error: e);
       return null;
     }
   }
@@ -481,7 +507,7 @@ class BarcodeController extends GetxController {
       List<String> uploadedUrls = [];
 
       for (String path in selectedImages) {
-        final uploadedUrl = await uploadImageToFreeImageHost(path);
+        final uploadedUrl = await uploadImageToImgBB(path);
         if (uploadedUrl != null) {
           uploadedUrls.add(uploadedUrl);
         } else {

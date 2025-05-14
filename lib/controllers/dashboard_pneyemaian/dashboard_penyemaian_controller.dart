@@ -11,9 +11,16 @@ import 'dart:math' as math;
 
 import '../../fitur/dashboard_penyemaian/page_cetak_bibit.dart';
 import '../../fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
+import '../../fitur/navigation/penyemaian/model/model_bibit.dart';
+import '../../fitur/navigation/penyemaian/controller/controller_page_nav_bibit.dart';
+import '../../fitur/lacak_history/user_activity_model.dart';
 
 class PenyemaianDashboardController extends GetxController {
   final FirebaseService _firebaseService = FirebaseService();
+  final BibitController bibitController = Get.find<BibitController>();
+  final AuthenticationController authController =
+      Get.find<AuthenticationController>();
+  final AppController appController = Get.find<AppController>();
 
   // Loading state
   RxBool isLoading = false.obs;
@@ -28,13 +35,13 @@ class PenyemaianDashboardController extends GetxController {
   RxString bibitSiapTanam = "0".obs;
   RxString bibitButuhPerhatian = "0".obs;
   RxString bibitDipindai = "0".obs;
-  RxString pertumbuhanBibit = "0%".obs;
-  RxString growthStatTrend = "Bulan ini".obs;
+  RxString bibitMasukBulanIni = "0".obs;
+  RxString bibitMasukTrend = "Bulan ini".obs;
   RxString scanStatTrend = "Minggu ini".obs;
 
   // Chart data
-  final RxList<FlSpot> growthSpots = <FlSpot>[].obs;
-  final RxString averageGrowthRate = "0%".obs;
+  final RxList<FlSpot> bibitMasukSpots = <FlSpot>[].obs;
+  final RxString totalBibitMasuk = "0".obs;
 
   final RxList<FlSpot> scannedSpots = <FlSpot>[
     FlSpot(0, 5),
@@ -61,12 +68,19 @@ class PenyemaianDashboardController extends GetxController {
   // Current user ID
   String? currentUserId;
 
+  // Observable values
+  final averageHeight = "0".obs;
+  final highestGrowth = "0.0".obs;
+  final lowestGrowth = "0.0".obs;
+  final totalMeasurements = "0".obs;
+
   @override
   void onInit() {
     super.onInit();
     initActions();
     initUserData();
     fetchGrowthData();
+    refreshDashboardData();
   }
 
   // Initialize user data
@@ -322,7 +336,6 @@ class PenyemaianDashboardController extends GetxController {
   }
 
   // Data fetching methods
-// Data fetching methods
   Future<void> fetchDashboardData() async {
     if (currentUserId == null) return;
 
@@ -348,9 +361,9 @@ class PenyemaianDashboardController extends GetxController {
           final current = dashboardData['total_bibit'] ?? 0;
           final previous = dashboardData['previous_total_bibit'] ?? 1;
           final growth = ((current - previous) / previous) * 100;
-          pertumbuhanBibit.value = "${growth.toStringAsFixed(1)}%";
+          bibitMasukTrend.value = "${growth.toStringAsFixed(1)}%";
         } else {
-          pertumbuhanBibit.value = "0%";
+          bibitMasukTrend.value = "0%";
         }
       }
 
@@ -364,37 +377,146 @@ class PenyemaianDashboardController extends GetxController {
     }
   }
 
-// Tambahkan metode untuk refresh data secara manual
   Future<void> refreshDashboardData() async {
-    if (currentUserId == null) return;
+    await calculateBibitMasukStatistics();
+    await calculateScanningStatistics();
+    await calculateBibitStatistics();
+  }
 
+  Future<void> calculateBibitMasukStatistics() async {
     try {
-      // Clear dashboard cache first
-      await _firebaseService.clearDashboardCache(currentUserId!);
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
 
-      // Then fetch fresh data
-      await fetchDashboardData();
-      await fetchRecentActivities();
+      // Get bibit created in current month
+      final bibitThisMonth = bibitController.bibitList
+          .where((bibit) =>
+              bibit.createdAt != null && bibit.createdAt!.isAfter(startOfMonth))
+          .toList();
 
-      // Show success message
-      Get.snackbar(
-        'Sukses',
-        'Data dashboard berhasil diperbarui',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: Duration(seconds: 2),
-      );
+      // Count total bibit masuk this month
+      totalBibitMasuk.value = bibitThisMonth.length.toString();
+
+      // Group bibit by day for the chart
+      final Map<int, int> dailyCount = {};
+      for (var bibit in bibitThisMonth) {
+        final day = bibit.createdAt!.day;
+        dailyCount[day] = (dailyCount[day] ?? 0) + 1;
+      }
+
+      // Create spots for chart (last 7 days)
+      final spots = <FlSpot>[];
+      for (int i = 6; i >= 0; i--) {
+        final date = now.subtract(Duration(days: i));
+        final count = dailyCount[date.day] ?? 0;
+        spots.add(FlSpot(6 - i.toDouble(), count.toDouble()));
+      }
+
+      bibitMasukSpots.value = spots;
+      bibitMasukTrend.value = "Bulan ini";
     } catch (e) {
-      print('Error refreshing dashboard data: $e');
-      Get.snackbar(
-        'Gagal',
-        'Gagal memperbarui data dashboard',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      print('Error calculating bibit masuk statistics: $e');
     }
+  }
+
+  Future<void> calculateScanningStatistics() async {
+    try {
+      final currentUser = authController.currentUser.value;
+      if (currentUser == null) return;
+
+      // Get scan activities for current user
+      List<UserActivity> scanActivities = appController.recentActivities
+          .where((activity) =>
+              activity.userId == currentUser.id &&
+              activity.activityType == ActivityTypes.scanBarcode)
+          .toList();
+
+      // Update total scans
+      bibitDipindai.value = scanActivities.length.toString();
+
+      // Calculate trend
+      if (scanActivities.isNotEmpty) {
+        int recentScans = scanActivities
+            .where((activity) => activity.timestamp
+                .isAfter(DateTime.now().subtract(Duration(days: 7))))
+            .length;
+        scanStatTrend.value = "$recentScans pemindaian minggu ini";
+      } else {
+        scanStatTrend.value = "Belum ada pemindaian";
+      }
+
+      // Generate scanning spots for chart
+      Map<int, int> scansByMonth = {};
+      for (var activity in scanActivities) {
+        int monthKey = activity.timestamp.month;
+        scansByMonth[monthKey] = (scansByMonth[monthKey] ?? 0) + 1;
+      }
+
+      List<FlSpot> spots = [];
+      for (int i = 0; i < 6; i++) {
+        int monthKey = DateTime.now().subtract(Duration(days: i * 30)).month;
+        spots.add(
+            FlSpot(i.toDouble(), (scansByMonth[monthKey] ?? 0).toDouble()));
+      }
+      scannedSpots.value = spots.reversed.toList();
+    } catch (e) {
+      print('Error calculating scanning statistics: $e');
+    }
+  }
+
+  Future<void> calculateBibitStatistics() async {
+    try {
+      await bibitController.fetchBibitFromFirestore();
+      List<Bibit> allBibit = bibitController.bibitList;
+
+      totalBibit.value = allBibit.length.toString();
+
+      int siapTanam = allBibit
+          .where((b) => b.tinggi >= 30 && b.kondisi.toLowerCase() == 'baik')
+          .length;
+      bibitSiapTanam.value = siapTanam.toString();
+
+      int butuhPerhatian = allBibit
+          .where((b) =>
+              b.kondisi.toLowerCase() != 'baik' ||
+              b.statusHama.toLowerCase() != 'tidak ada')
+          .length;
+      bibitButuhPerhatian.value = butuhPerhatian.toString();
+    } catch (e) {
+      print('Error calculating bibit statistics: $e');
+    }
+  }
+
+  // Get filtered scan history
+  List<UserActivity> getScanHistory(String period) {
+    final currentUser = authController.currentUser.value;
+    if (currentUser == null) return [];
+
+    DateTime startDate;
+    switch (period) {
+      case '1 Bulan':
+        startDate = DateTime.now().subtract(Duration(days: 30));
+        break;
+      case '3 Bulan':
+        startDate = DateTime.now().subtract(Duration(days: 90));
+        break;
+      case '6 Bulan':
+        startDate = DateTime.now().subtract(Duration(days: 180));
+        break;
+      case '1 Tahun':
+        startDate = DateTime.now().subtract(Duration(days: 365));
+        break;
+      default:
+        startDate = DateTime.now().subtract(Duration(days: 180));
+    }
+
+    return appController.recentActivities
+        .where((activity) =>
+            activity.userId == currentUser.id &&
+            activity.activityType == ActivityTypes.scanBarcode &&
+            activity.timestamp.isAfter(startDate))
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
   // Helper function to format numbers with commas
@@ -579,16 +701,6 @@ class PenyemaianDashboardController extends GetxController {
     );
   }
 
-  // Tambahkan fungsi-fungsi ini ke PenyemaianDashboardController
-
-// ====== STATISTIK DASHBOARD ======
-
-// ====== BIBIT CRUD ======
-
-// Menambahkan bibit baru
-
-// ====== RIWAYAT PEMINDAIAN ======
-
   // Method untuk mengambil data pertumbuhan bibit
   Future<void> fetchGrowthData() async {
     try {
@@ -616,11 +728,11 @@ class PenyemaianDashboardController extends GetxController {
 
       if (bibitSnapshot.docs.isEmpty) {
         print('⚠️ Tidak ada data bibit, menggunakan nilai default');
-        growthSpots.assignAll([
+        bibitMasukSpots.assignAll([
           FlSpot(0, 0),
           FlSpot(1, 0),
         ]);
-        averageGrowthRate.value = "0 cm/bulan";
+        bibitMasukTrend.value = "0%";
         return;
       }
 
@@ -735,20 +847,19 @@ class PenyemaianDashboardController extends GetxController {
         double monthsPassed = spots.last.x - spots.first.x;
         double averageGrowthPerMonth =
             monthsPassed > 0 ? totalGrowth / monthsPassed : 0;
-        averageGrowthRate.value =
-            "${averageGrowthPerMonth.toStringAsFixed(1)} cm/bulan";
-        print('\n📈 Pertumbuhan rata-rata: ${averageGrowthRate.value}');
+        bibitMasukTrend.value = "${averageGrowthPerMonth.toStringAsFixed(1)}%";
+        print('\n📈 Pertumbuhan rata-rata: ${bibitMasukTrend.value}');
       } else {
-        averageGrowthRate.value = "0 cm/bulan";
+        bibitMasukTrend.value = "0%";
       }
 
-      print('\n✅ Assigning ${spots.length} spots to growthSpots');
-      growthSpots.assignAll(spots);
+      print('\n✅ Assigning ${spots.length} spots to bibitMasukSpots');
+      bibitMasukSpots.assignAll(spots);
     } catch (e, stackTrace) {
       print('❌ Error in fetchGrowthData: $e');
       print('Stack trace: $stackTrace');
-      growthSpots.assignAll([FlSpot(0, 0), FlSpot(1, 0)]);
-      averageGrowthRate.value = "0 cm/bulan";
+      bibitMasukSpots.assignAll([FlSpot(0, 0), FlSpot(1, 0)]);
+      bibitMasukTrend.value = "0%";
     }
   }
 }
