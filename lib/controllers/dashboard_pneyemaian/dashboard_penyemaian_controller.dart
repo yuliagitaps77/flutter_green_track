@@ -435,30 +435,47 @@ class PenyemaianDashboardController extends GetxController {
       bibitDipindai.value = scanActivities.length.toString();
 
       // Calculate trend
-      if (scanActivities.isNotEmpty) {
-        int recentScans = scanActivities
-            .where((activity) => activity.timestamp
-                .isAfter(DateTime.now().subtract(Duration(days: 7))))
-            .length;
-        scanStatTrend.value = "$recentScans pemindaian minggu ini";
-      } else {
-        scanStatTrend.value = "Belum ada pemindaian";
+      int recentScans = scanActivities
+          .where((activity) =>
+              activity.timestamp != null &&
+              activity.timestamp!
+                  .isAfter(DateTime.now().subtract(Duration(days: 7))))
+          .length;
+      scanStatTrend.value = "$recentScans pemindaian minggu ini";
+
+      // Generate scanning spots for chart with dates
+      Map<DateTime, int> scansByDate = {};
+      DateTime now = DateTime.now();
+
+      // Initialize last 7 days with 0
+      for (int i = 6; i >= 0; i--) {
+        DateTime date =
+            DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+        scansByDate[date] = 0;
       }
 
-      // Generate scanning spots for chart
-      Map<int, int> scansByMonth = {};
+      // Aggregate scans by date
       for (var activity in scanActivities) {
-        int monthKey = activity.timestamp.month;
-        scansByMonth[monthKey] = (scansByMonth[monthKey] ?? 0) + 1;
+        if (activity.timestamp != null) {
+          DateTime date = DateTime(
+            activity.timestamp!.year,
+            activity.timestamp!.month,
+            activity.timestamp!.day,
+          );
+          if (date.isAfter(now.subtract(Duration(days: 7)))) {
+            scansByDate[date] = (scansByDate[date] ?? 0) + 1;
+          }
+        }
       }
 
+      // Convert to spots
       List<FlSpot> spots = [];
-      for (int i = 0; i < 6; i++) {
-        int monthKey = DateTime.now().subtract(Duration(days: i * 30)).month;
+      List<DateTime> sortedDates = scansByDate.keys.toList()..sort();
+      for (int i = 0; i < sortedDates.length; i++) {
         spots.add(
-            FlSpot(i.toDouble(), (scansByMonth[monthKey] ?? 0).toDouble()));
+            FlSpot(i.toDouble(), scansByDate[sortedDates[i]]?.toDouble() ?? 0));
       }
-      scannedSpots.value = spots.reversed.toList();
+      scannedSpots.value = spots;
     } catch (e) {
       print('Error calculating scanning statistics: $e');
     }

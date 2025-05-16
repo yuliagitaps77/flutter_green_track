@@ -10,9 +10,11 @@ import 'package:flutter_green_track/fitur/dashboard_tpk/model/model_dashboard_tp
 import 'package:flutter_green_track/fitur/dashboard_tpk/page_inventory_kayu.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../controllers/authentication/authentication_controller.dart';
 import '../../service/services.dart';
+import '../../fitur/lacak_history/user_activity_model.dart';
 import '../dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 
 class TPKDashboardController extends GetxController {
@@ -20,6 +22,9 @@ class TPKDashboardController extends GetxController {
 
   // Loading state
   RxBool isLoading = false.obs;
+
+  // Selected period for filtering
+  RxString selectedPeriod = '6 Bulan'.obs;
 
   // User profile data
   Rx<UserProfileModel> userProfile =
@@ -289,199 +294,160 @@ class TPKDashboardController extends GetxController {
 
   // Data fetching methods
   Future<void> fetchDashboardData() async {
-    if (currentUserId == null) return;
-
-    isLoading.value = true;
     try {
-      // Fetch dashboard data directly from kayu collection
-      final dashboardData = await _calculateTPKDashboardData(currentUserId!);
-
-      if (dashboardData.isNotEmpty) {
-        // Format numbers with commas if needed
-        totalWood.value = _formatNumber(dashboardData['total_kayu'] ?? 0);
-        scannedWood.value =
-            _formatNumber(dashboardData['total_kayu_dipindai'] ?? 0);
-        totalBatch.value = _formatNumber(dashboardData['total_batch'] ?? 0);
-      }
-
-      // Update chart data if needed
-      updateChartData();
+      isLoading.value = true;
+      await calculateWoodStatistics();
+      await calculateScanningStatistics();
     } catch (e) {
       print('Error fetching dashboard data: $e');
-      // Handle error appropriately
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Helper function to calculate TPK dashboard data directly from collections
-  Future<Map<String, dynamic>> _calculateTPKDashboardData(String userId) async {
+  // Calculate statistics for wood inventory and scanning
+  Future<void> calculateWoodStatistics() async {
     try {
-      // Coba ambil dari cache lokal dulu untuk performa
-      final prefs = await SharedPreferences.getInstance();
-      final String cacheKey = 'dashboard_tpk_$userId';
-      final String? cachedData = prefs.getString(cacheKey);
-      final int cacheExpiry = prefs.getInt('${cacheKey}_expiry') ?? 0;
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
 
-      // Jika cache masih valid (tidak lebih dari 5 menit), gunakan cache
-      if (cachedData != null &&
-          cacheExpiry > DateTime.now().millisecondsSinceEpoch) {
-        return jsonDecode(cachedData);
-      }
-
-      // Get all kayu documents for this user
-      final QuerySnapshot kayuSnapshot = await FirebaseFirestore.instance
+      // Get wood inventory data
+      final QuerySnapshot woodSnapshot = await FirebaseFirestore.instance
           .collection('kayu')
-          .where('id_user', isEqualTo: userId)
+          .where('id_user', isEqualTo: currentUser.uid)
           .get();
 
-      // Initialize counters
-      int totalKayu = kayuSnapshot.docs.length;
-      int totalKayuDipindai = 0;
+      // Calculate total wood and batches
+      int totalKayu = 0;
       Set<String> uniqueBatches = {};
 
-      // Process each kayu document
-      for (var doc in kayuSnapshot.docs) {
+      for (var doc in woodSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        String kayuId = doc.id;
-
-        // Add batch to unique batches if it exists
+        totalKayu += (data['jumlah_stok'] as num?)?.toInt() ?? 0;
         String batchPanen = data['batch_panen'] as String? ?? '';
         if (batchPanen.isNotEmpty) {
           uniqueBatches.add(batchPanen);
         }
+      }
 
-        // Check if this kayu has been scanned
-        try {
-          QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
-              .collection('kayu')
-              .doc(kayuId)
-              .collection('riwayat_scan')
-              .limit(1)
-              .get();
+      // Update total wood and batch counts
+      totalWood.value = totalKayu.toString();
+      totalBatch.value = uniqueBatches.length.toString();
 
-          if (scanSnapshot.docs.isNotEmpty) {
-            totalKayuDipindai++;
+      // Calculate trend
+      int woodLastWeek = 0;
+      for (var doc in woodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final createdAt = data['created_at'] as Timestamp?;
+        if (createdAt != null &&
+            createdAt
+                .toDate()
+                .isAfter(DateTime.now().subtract(Duration(days: 7)))) {
+          woodLastWeek += (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+        }
+      }
+      woodStatTrend.value = "$woodLastWeek kayu minggu ini";
+
+      // Generate inventory spots for chart with dates
+      Map<DateTime, int> woodByDate = {};
+      DateTime now = DateTime.now();
+
+      // Initialize last 7 days with 0
+      for (int i = 6; i >= 0; i--) {
+        DateTime date =
+            DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+        woodByDate[date] = 0;
+      }
+
+      // Aggregate data by date
+      for (var doc in woodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final createdAt = data['created_at'] as Timestamp?;
+        if (createdAt != null) {
+          DateTime date = DateTime(
+            createdAt.toDate().year,
+            createdAt.toDate().month,
+            createdAt.toDate().day,
+          );
+          if (date.isAfter(now.subtract(Duration(days: 7)))) {
+            final jumlahStok = (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+            woodByDate[date] = (woodByDate[date] ?? 0) + jumlahStok;
           }
-        } catch (e) {
-          print('Error checking scan history for kayu $kayuId: $e');
         }
       }
 
-      // Buat hasil perhitungan
-      final Map<String, dynamic> result = {
-        'total_kayu': totalKayu,
-        'total_kayu_dipindai': totalKayuDipindai,
-        'total_batch': uniqueBatches.length,
-      };
-
-      // Simpan hasil ke cache untuk 5 menit
-      await prefs.setString(cacheKey, jsonEncode(result));
-      await prefs.setInt('${cacheKey}_expiry',
-          DateTime.now().add(Duration(minutes: 5)).millisecondsSinceEpoch);
-
-      // Cache the calculated data to Firestore
-      await _cacheTPKDashboardData(userId, {
-        'total_kayu': totalKayu,
-        'total_kayu_dipindai': totalKayuDipindai,
-        'total_batch': uniqueBatches.length,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      return result;
+      // Convert to spots
+      List<FlSpot> spots = [];
+      List<DateTime> sortedDates = woodByDate.keys.toList()..sort();
+      for (int i = 0; i < sortedDates.length; i++) {
+        spots.add(
+            FlSpot(i.toDouble(), woodByDate[sortedDates[i]]?.toDouble() ?? 0));
+      }
+      inventorySpots.value = spots;
     } catch (e) {
-      print('Error calculating TPK dashboard data: $e');
+      print('Error calculating wood statistics: $e');
+    }
+  }
 
-      // Try to get data from Firestore cache if calculation fails
-      try {
-        final cachedData = await _getTPKDashboardData(userId);
-        if (cachedData.isNotEmpty) {
-          return cachedData;
+  Future<void> calculateScanningStatistics() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get scan activities for current user
+      final activities = AppController.to.recentActivities
+          .where((activity) =>
+              activity.userId == currentUser.uid &&
+              activity.activityType == ActivityTypes.scanPohon)
+          .toList();
+
+      // Update total scans
+      scannedWood.value = activities.length.toString();
+
+      // Calculate trend
+      int recentScans = activities
+          .where((activity) =>
+              activity.timestamp != null &&
+              activity.timestamp!
+                  .isAfter(DateTime.now().subtract(Duration(days: 7))))
+          .length;
+      scanStatTrend.value = "$recentScans pemindaian minggu ini";
+
+      // Generate scanning spots for chart with dates
+      Map<DateTime, int> scansByDate = {};
+      DateTime now = DateTime.now();
+
+      // Initialize last 7 days with 0
+      for (int i = 6; i >= 0; i--) {
+        DateTime date =
+            DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
+        scansByDate[date] = 0;
+      }
+
+      // Aggregate scans by date
+      for (var activity in activities) {
+        if (activity.timestamp != null) {
+          DateTime date = DateTime(
+            activity.timestamp!.year,
+            activity.timestamp!.month,
+            activity.timestamp!.day,
+          );
+          if (date.isAfter(now.subtract(Duration(days: 7)))) {
+            scansByDate[date] = (scansByDate[date] ?? 0) + 1;
+          }
         }
-      } catch (_) {
-        // Ignore cache errors
       }
 
-      return {};
-    }
-  }
-
-  // Helper function to cache dashboard data to Firestore
-  Future<void> _cacheTPKDashboardData(
-      String userId, Map<String, dynamic> data) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('dashboard_informasi_admin_tpk')
-          .doc(userId)
-          .set(data, SetOptions(merge: true));
-    } catch (e) {
-      print('Error caching TPK dashboard data: $e');
-    }
-  }
-
-  // Helper function to get cached TPK dashboard data from Firestore
-  Future<Map<String, dynamic>> _getTPKDashboardData(String userId) async {
-    try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('dashboard_informasi_admin_tpk')
-          .doc(userId)
-          .get();
-
-      if (doc.exists) {
-        return doc.data() as Map<String, dynamic>;
+      // Convert to spots
+      List<FlSpot> spots = [];
+      List<DateTime> sortedDates = scansByDate.keys.toList()..sort();
+      for (int i = 0; i < sortedDates.length; i++) {
+        spots.add(
+            FlSpot(i.toDouble(), scansByDate[sortedDates[i]]?.toDouble() ?? 0));
       }
-      return {};
+      revenueSpots.value = spots;
     } catch (e) {
-      print('Error getting TPK dashboard data: $e');
-      return {};
-    }
-  }
-
-  // Add function to refresh dashboard data manually
-  Future<void> refreshDashboardData() async {
-    if (currentUserId == null) return;
-
-    isLoading.value = true;
-    try {
-      // Clear local cache
-      final prefs = await SharedPreferences.getInstance();
-      final String cacheKey = 'dashboard_tpk_${currentUserId}';
-      await prefs.remove(cacheKey);
-      await prefs.remove('${cacheKey}_expiry');
-
-      // Force recalculation of dashboard data
-      final dashboardData = await _calculateTPKDashboardData(currentUserId!);
-
-      if (dashboardData.isNotEmpty) {
-        totalWood.value = _formatNumber(dashboardData['total_kayu'] ?? 0);
-        scannedWood.value =
-            _formatNumber(dashboardData['total_kayu_dipindai'] ?? 0);
-        totalBatch.value = _formatNumber(dashboardData['total_batch'] ?? 0);
-      }
-
-      // Also refresh activities
-      await fetchRecentActivities();
-
-      // Show success message
-      Get.snackbar(
-        'Sukses',
-        'Data dashboard berhasil diperbarui',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: Duration(seconds: 2),
-      );
-    } catch (e) {
-      print('Error refreshing dashboard data: $e');
-      Get.snackbar(
-        'Gagal',
-        'Gagal memperbarui data dashboard',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    } finally {
-      isLoading.value = false;
+      print('Error calculating scanning statistics: $e');
     }
   }
 
@@ -692,6 +658,150 @@ class TPKDashboardController extends GetxController {
         ],
       ),
     );
+  }
+
+  Future<void> refreshDashboardData() async {
+    try {
+      isLoading.value = true;
+
+      // Get current user
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Clear cache to force refresh
+      await _firebaseService.clearDashboardCache(currentUser.uid);
+
+      // Get fresh data
+      final dashboardData =
+          await _firebaseService.getTPKDashboardData(currentUser.uid);
+
+      // Update observable values
+      totalWood.value = dashboardData['total_kayu']?.toString() ?? '0';
+      scannedWood.value =
+          dashboardData['total_kayu_dipindai']?.toString() ?? '0';
+      totalBatch.value = dashboardData['total_batch']?.toString() ?? '0';
+
+      // Update chart data based on selected period
+      await _updateChartData();
+
+      // Refresh activities
+      await fetchRecentActivities();
+    } catch (e) {
+      print('Error refreshing dashboard data: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> _updateChartData() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Get wood data from Firestore
+      final QuerySnapshot woodSnapshot = await FirebaseFirestore.instance
+          .collection('kayu')
+          .where('id_user', isEqualTo: currentUser.uid)
+          .orderBy('created_at', descending: true)
+          .get();
+
+      // Get scanning data
+      final QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
+          .collectionGroup('riwayat_scan')
+          .where('id_user', isEqualTo: currentUser.uid)
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      // Create maps to store aggregated data
+      Map<DateTime, int> woodByDate = {};
+      Map<DateTime, int> scansByDate = {};
+
+      // Get date range based on selected period
+      DateTime now = DateTime.now();
+      DateTime startDate = now
+          .subtract(Duration(days: 7)); // Selalu tampilkan data 7 hari terakhir
+
+      // Initialize dates for the last 7 days
+      for (int i = 0; i < 7; i++) {
+        DateTime date = startDate.add(Duration(days: i));
+        DateTime normalizedDate = DateTime(date.year, date.month, date.day);
+        woodByDate[normalizedDate] = 0;
+        scansByDate[normalizedDate] = 0;
+      }
+
+      // Aggregate wood data
+      for (var doc in woodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final createdAt = (data['created_at'] as Timestamp).toDate();
+        if (createdAt.isAfter(startDate)) {
+          final normalizedDate = DateTime(
+            createdAt.year,
+            createdAt.month,
+            createdAt.day,
+          );
+          final stockCount = (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+          woodByDate[normalizedDate] =
+              (woodByDate[normalizedDate] ?? 0) + stockCount;
+        }
+      }
+
+      // Aggregate scan data
+      for (var doc in scanSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final timestamp = (data['timestamp'] as Timestamp).toDate();
+        if (timestamp.isAfter(startDate)) {
+          final normalizedDate = DateTime(
+            timestamp.year,
+            timestamp.month,
+            timestamp.day,
+          );
+          scansByDate[normalizedDate] = (scansByDate[normalizedDate] ?? 0) + 1;
+        }
+      }
+
+      // Convert to spots ensuring all days have values
+      List<FlSpot> woodSpots = [];
+      List<FlSpot> scanSpots = [];
+
+      // Sort dates to ensure correct order
+      List<DateTime> sortedDates = woodByDate.keys.toList()..sort();
+
+      for (int i = 0; i < sortedDates.length; i++) {
+        DateTime date = sortedDates[i];
+        woodSpots.add(FlSpot(i.toDouble(), woodByDate[date]?.toDouble() ?? 0));
+        scanSpots.add(FlSpot(i.toDouble(), scansByDate[date]?.toDouble() ?? 0));
+      }
+
+      // Update the observable lists
+      inventorySpots.assignAll(woodSpots);
+      revenueSpots.assignAll(scanSpots);
+
+      // Update trends with proper Indonesian formatting
+      int woodLastWeek = woodByDate.values.fold(0, (a, b) => a + b);
+      int scansLastWeek = scansByDate.values.fold(0, (a, b) => a + b);
+
+      woodStatTrend.value = "$woodLastWeek kayu dalam 7 hari terakhir";
+      scanStatTrend.value = "$scansLastWeek pemindaian dalam 7 hari terakhir";
+
+      // Update total counts
+      int totalWoodCount = 0;
+      Set<String> uniqueBatches = {};
+
+      for (var doc in woodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        totalWoodCount += (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+        String batchPanen = data['batch_panen'] as String? ?? '';
+        if (batchPanen.isNotEmpty) {
+          uniqueBatches.add(batchPanen);
+        }
+      }
+
+      totalWood.value = totalWoodCount.toString();
+      totalBatch.value = uniqueBatches.length.toString();
+      scannedWood.value = scanSnapshot.docs.length.toString();
+    } catch (e) {
+      print('Error updating chart data: $e');
+    }
   }
 }
 

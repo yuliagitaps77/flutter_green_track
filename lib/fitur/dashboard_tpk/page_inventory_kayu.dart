@@ -25,7 +25,7 @@ class _InventoryKayuPageState extends State<InventoryKayuPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Jadwal Perawatan',
+          'Inventory Kayu',
           style: TextStyle(
             color: Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,

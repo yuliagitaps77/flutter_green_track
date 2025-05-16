@@ -45,6 +45,8 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
   final Color accentGreen = Color(0xFF8BC34A); // Secondary color
   final Color bodyTextColor = Color(0xFF424242); // Body text color
 
+  bool showQrCode = false;
+
   @override
   void initState() {
     super.initState();
@@ -99,13 +101,30 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
     return Scaffold(
       backgroundColor: Color(0xFFF5F9F5), // Light background color
       appBar: AppBar(
-        title: Text(
-          'Detail Kayu',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20.0,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
+        title: GestureDetector(
+          onTap: () {
+            setState(() {
+              showQrCode = !showQrCode;
+            });
+          },
+          child: Row(
+            children: [
+              Text(
+                'Detail Kayu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(
+                showQrCode ? Icons.qr_code : Icons.qr_code_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
+            ],
           ),
         ),
         backgroundColor: primaryGreen,
@@ -146,6 +165,7 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                         _buildMainInfo(),
                         SizedBox(height: 24),
                         _buildInfoTabs(),
+                        if (showQrCode) _buildQrCodeSection(screenWidth),
                       ],
                     ),
                   ),

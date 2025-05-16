@@ -5,6 +5,7 @@ import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_cont
 import 'package:flutter_green_track/controllers/navigation/navigation_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_penyemaian/admin_dashboard_penyemaian.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/dashboard_tpk_page.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/statistik_detail_page_tpk.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/widget/widget_dashboard.dart';
 import 'package:flutter_green_track/fitur/lacak_history/activity_history_screen.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
@@ -13,6 +14,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
 import 'package:intl/intl.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/widgets/summary_item_widget_tpk.dart';
+import 'package:flutter_green_track/fitur/dashboard_tpk/widgets/stat_card_widget_tpk.dart';
 
 // Import shared widgets
 
@@ -330,14 +333,16 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Color(0xFF2E7D32),
+            fontFamily: 'Poppins',
           ),
         ),
         SizedBox(height: 15),
+        // Statistik Cards
         Row(
           children: [
             // Inventory Card
             Expanded(
-              child: Obx(() => StatCardWidget(
+              child: Obx(() => StatCardWidgetTPK(
                     title: "Inventory Kayu",
                     value: controller.totalWood.value,
                     trend: controller.woodStatTrend.value,
@@ -345,12 +350,14 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
                     spots: controller.inventorySpots,
                     color: Color(0xFF4CAF50),
                     breathingAnimation: _breathingAnimation,
+                    onTap: () =>
+                        Get.to(() => StatistikDetailPageTPK(type: 'inventory')),
                   )),
             ),
             SizedBox(width: 15),
             // Scanned Wood Card
             Expanded(
-              child: Obx(() => StatCardWidget(
+              child: Obx(() => StatCardWidgetTPK(
                     title: "Kayu Dipindai",
                     value: controller.scannedWood.value,
                     trend: controller.scanStatTrend.value,
@@ -358,6 +365,8 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
                     spots: controller.revenueSpots,
                     color: Color(0xFF66BB6A),
                     breathingAnimation: _breathingAnimation,
+                    onTap: () =>
+                        Get.to(() => StatistikDetailPageTPK(type: 'scanning')),
                   )),
             ),
           ],
@@ -379,18 +388,25 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
           ),
           child: Column(
             children: [
-              Obx(() => SummaryItemWidget(
+              Obx(() => ISummaryItemWidgetTPK(
                     icon: Icons.inventory_2_rounded,
                     title: "Total Kayu",
                     value: controller.totalWood.value,
                     color: Color(0xFF4CAF50),
                   )),
-              SizedBox(height: 10),
-              Obx(() => SummaryItemWidget(
+              Divider(height: 20),
+              Obx(() => ISummaryItemWidgetTPK(
                     icon: Icons.fact_check_rounded,
                     title: "Total Batch",
                     value: controller.totalBatch.value,
                     color: Color(0xFF66BB6A),
+                  )),
+              Divider(height: 20),
+              Obx(() => ISummaryItemWidgetTPK(
+                    icon: Icons.trending_up_rounded,
+                    title: "Pertumbuhan Minggu Ini",
+                    value: controller.woodStatTrend.value,
+                    color: Color(0xFF81C784),
                   )),
             ],
           ),

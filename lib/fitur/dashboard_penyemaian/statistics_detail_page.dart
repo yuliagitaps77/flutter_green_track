@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
+import 'package:intl/intl.dart';
 
 class StatisticsDetailPage extends StatefulWidget {
   static String routeName = "/statistics-detail";
@@ -143,10 +144,17 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
                     color: Color(0xFF4CAF50),
                   ),
                   labelColor: Colors.white,
+                  dividerColor: Colors.transparent,
                   unselectedLabelColor: Color(0xFF4CAF50),
                   tabs: [
-                    Tab(text: 'Bibit Masuk'),
-                    Tab(text: 'Pemindaian'),
+                    Container(
+                        padding:
+                            EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                        child: Tab(text: 'Bibit Masuk')),
+                    Container(
+                        padding:
+                            EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                        child: Tab(text: 'Pemindaian')),
                   ],
                 ),
               ),
@@ -329,8 +337,53 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
     }
   }
 
+  String getFormattedDate(DateTime date, String period) {
+    if (period == '1 Bulan') {
+      return DateFormat('dd/MM').format(date);
+    } else if (period == '3 Bulan') {
+      return 'M${date.difference(date.subtract(Duration(days: date.weekday - 1))).inDays ~/ 7 + 1}\n${DateFormat('MM').format(date)}';
+    } else if (period == '6 Bulan') {
+      return '${DateFormat('MM/yy').format(date)}';
+    } else {
+      return DateFormat('MM/yy').format(date);
+    }
+  }
+
+  double getDateInterval(String period) {
+    switch (period) {
+      case '1 Bulan':
+        return 1; // Show every day
+      case '3 Bulan':
+        return 7; // Show weekly
+      case '6 Bulan':
+        return 14; // Show bi-weekly
+      case '1 Tahun':
+        return 30; // Show monthly
+      default:
+        return 1;
+    }
+  }
+
+  int getDataPoints(String period) {
+    switch (period) {
+      case '1 Bulan':
+        return 30; // 30 days
+      case '3 Bulan':
+        return 12; // 12 weeks
+      case '6 Bulan':
+        return 12; // 12 bi-weekly points
+      case '1 Tahun':
+        return 12; // 12 months
+      default:
+        return 30;
+    }
+  }
+
   Widget _buildStatCard(String title, String value, String unit, IconData icon,
       Color color, List<FlSpot> spots) {
+    final interval = getDateInterval(selectedPeriod);
+    final dataPoints = getDataPoints(selectedPeriod);
+
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -348,51 +401,57 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color),
-              ),
-              SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Icon(icon, color: color),
                   ),
-                  SizedBox(height: 5),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: value,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
+                  SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
                         ),
-                        TextSpan(
-                          text: ' $unit',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
+                      ),
+                      SizedBox(height: 5),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: value,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' $unit',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+              // Filter dropdown
             ],
           ),
           SizedBox(height: 20),
@@ -414,17 +473,22 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 22,
-                      interval: 1,
+                      reservedSize: 30,
+                      interval: interval,
                       getTitlesWidget: (value, meta) {
+                        final now = DateTime.now();
+                        final date = now.subtract(Duration(
+                            days: ((dataPoints - 1) - value).toInt() *
+                                interval.toInt()));
                         return Padding(
                           padding: EdgeInsets.only(top: 5),
                           child: Text(
-                            'H${value.toInt() + 1}',
+                            getFormattedDate(date, selectedPeriod),
                             style: TextStyle(
                               color: Colors.grey[600],
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         );
                       },
@@ -434,7 +498,7 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
                     sideTitles: SideTitles(
                       showTitles: true,
                       interval: 5,
-                      reservedSize: 28,
+                      reservedSize: 35,
                       getTitlesWidget: (value, meta) {
                         return Text(
                           '${value.toInt()}',
@@ -485,6 +549,49 @@ class _StatisticsDetailPageState extends State<StatisticsDetailPage>
                     ),
                   ),
                 ],
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    tooltipPadding: EdgeInsets.all(8),
+                    tooltipMargin: 8,
+                    tooltipRoundedRadius: 8,
+                    tooltipBorder: BorderSide(
+                      color: color.withOpacity(0.2),
+                      width: 1,
+                    ),
+                    getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                      return touchedSpots.map((LineBarSpot touchedSpot) {
+                        final now = DateTime.now();
+                        final date = now.subtract(Duration(
+                            days: ((dataPoints - 1) - touchedSpot.x).toInt() *
+                                interval.toInt()));
+                        String periodLabel = '';
+                        if (selectedPeriod == '1 Bulan') {
+                          periodLabel =
+                              '${DateFormat('dd MMMM yyyy', 'id').format(date)}';
+                        } else if (selectedPeriod == '3 Bulan') {
+                          periodLabel =
+                              'Minggu ${date.difference(date.subtract(Duration(days: date.weekday - 1))).inDays ~/ 7 + 1}\n${DateFormat('MMMM yyyy', 'id').format(date)}';
+                        } else if (selectedPeriod == '6 Bulan') {
+                          periodLabel =
+                              '${DateFormat('dd MMM', 'id').format(date)} - ${DateFormat('dd MMM yyyy', 'id').format(date.add(Duration(days: 13)))}';
+                        } else {
+                          periodLabel =
+                              DateFormat('MMMM yyyy', 'id').format(date);
+                        }
+                        return LineTooltipItem(
+                          '${touchedSpot.y.toInt()} $unit\n$periodLabel',
+                          TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
             ),
           ),
