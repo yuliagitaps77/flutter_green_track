@@ -327,14 +327,42 @@ class _TPKDashboardScreenState extends State<TPKDashboardScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Statistik",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF2E7D32),
-            fontFamily: 'Poppins',
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Statistik",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2E7D32),
+                fontFamily: 'Poppins',
+              ),
+            ),
+            GestureDetector(
+              onTap: () =>
+                  Get.to(() => StatistikDetailPageTPK(type: 'inventory')),
+              child: Row(
+                children: [
+                  Text(
+                    "Lihat Detail",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFF2E7D32),
+                    size: 26,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 15),
         // Statistik Cards
