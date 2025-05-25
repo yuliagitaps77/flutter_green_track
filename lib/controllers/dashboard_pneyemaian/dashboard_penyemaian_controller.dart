@@ -8,6 +8,7 @@ import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_j
 import 'package:flutter_green_track/service/services.dart';
 import 'package:get/get.dart';
 import 'dart:math' as math;
+import 'dart:async';
 
 import '../../fitur/dashboard_penyemaian/page_cetak_bibit.dart';
 import '../../fitur/dashboard_tpk/model/model_dashboard_tpk.dart';
@@ -74,6 +75,10 @@ class PenyemaianDashboardController extends GetxController {
   final lowestGrowth = "0.0".obs;
   final totalMeasurements = "0".obs;
 
+  // Firestore subscription
+  StreamSubscription<QuerySnapshot>? _bibitSubscription;
+  Timer? _debounceTimer;
+
   @override
   void onInit() {
     super.onInit();
@@ -81,6 +86,32 @@ class PenyemaianDashboardController extends GetxController {
     initUserData();
     fetchGrowthData();
     refreshDashboardData();
+    _setupBibitListener();
+  }
+
+  @override
+  void onClose() {
+    _bibitSubscription?.cancel();
+    _debounceTimer?.cancel();
+    super.onClose();
+  }
+
+  void _setupBibitListener() {
+    // Listen to Firestore changes
+    _bibitSubscription = FirebaseFirestore.instance
+        .collection('bibit')
+        .snapshots()
+        .listen((snapshot) {
+      print('🔄 Bibit collection changed, refreshing dashboard data...');
+      _debouncedRefresh();
+    });
+  }
+
+  void _debouncedRefresh() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      refreshDashboardData();
+    });
   }
 
   // Initialize user data
