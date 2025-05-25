@@ -177,10 +177,7 @@ class FirebaseService {
   Future<Map<String, dynamic>> calculateTPKDashboardData(String userId) async {
     try {
       // Ambil semua kayu yang terkait dengan user ini
-      QuerySnapshot kayuSnapshot = await _firestore
-          .collection('kayu')
-          .where('id_user', isEqualTo: userId)
-          .get();
+      QuerySnapshot kayuSnapshot = await _firestore.collection('kayu').get();
 
       // Inisialisasi counter
       int totalKayu = kayuSnapshot.docs.length;

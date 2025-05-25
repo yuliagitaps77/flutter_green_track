@@ -4,10 +4,16 @@ import 'package:flutter_green_track/controllers/authentication/authentication_co
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:flutter_green_track/routes.dart';
 import 'package:get/get.dart';
+import 'package:flutter_green_track/service/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize NotificationService
+  final notificationService = NotificationService();
+  await notificationService.initNotification();
+  Get.put(notificationService);
 
   // Register services
   Get.put(FirestoreActivityService());
