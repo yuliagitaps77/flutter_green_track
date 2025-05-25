@@ -312,10 +312,8 @@ class TPKDashboardController extends GetxController {
       if (currentUser == null) return;
 
       // Get wood inventory data
-      final QuerySnapshot woodSnapshot = await FirebaseFirestore.instance
-          .collection('kayu')
-          .where('id_user', isEqualTo: currentUser.uid)
-          .get();
+      final QuerySnapshot woodSnapshot =
+          await FirebaseFirestore.instance.collection('kayu').get();
 
       // Calculate total wood and batches
       int totalKayu = 0;
@@ -701,7 +699,6 @@ class TPKDashboardController extends GetxController {
       // Get wood data from Firestore
       final QuerySnapshot woodSnapshot = await FirebaseFirestore.instance
           .collection('kayu')
-          .where('id_user', isEqualTo: currentUser.uid)
           .orderBy('created_at', descending: true)
           .get();
 

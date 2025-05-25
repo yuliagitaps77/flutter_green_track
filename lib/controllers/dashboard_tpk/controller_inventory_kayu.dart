@@ -110,7 +110,6 @@ class InventoryKayuController extends GetxController {
       print('🔥 [FIRESTORE FETCH] Querying Firestore collection "kayu"...');
       final snapshot = await _firestore
           .collection('kayu')
-          .where('id_user', isEqualTo: userId)
           .get()
           .timeout(const Duration(seconds: 15));
 
