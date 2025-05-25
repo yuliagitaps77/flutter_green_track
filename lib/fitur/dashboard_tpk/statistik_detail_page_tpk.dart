@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class StatistikDetailPageTPK extends StatefulWidget {
   final String type;
@@ -17,6 +18,26 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
   final TPKDashboardController controller = Get.find<TPKDashboardController>();
   String selectedPeriod = '6 Bulan';
   final List<String> periods = ['1 Bulan', '3 Bulan', '6 Bulan', '1 Tahun'];
+
+  // Tambahkan RxString untuk menyimpan detail point yang dipilih
+  final RxString selectedPointDetail = ''.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi format tanggal untuk locale Indonesia
+    initializeDateFormatting('id', null);
+  }
+
+  void updateSelectedPoint(DateTime date, double value,
+      {bool isSelected = true}) {
+    if (isSelected) {
+      selectedPointDetail.value =
+          '${value.toInt()} ${widget.type == 'inventory' ? 'kayu' : 'pemindaian'} pada ${DateFormat('dd MMM yyyy', 'id').format(date)}';
+    } else {
+      selectedPointDetail.value = '';
+    }
+  }
 
   String getFormattedDate(DateTime date, String period) {
     if (period == '1 Bulan') {
@@ -58,6 +79,36 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
       default:
         return 30;
     }
+  }
+
+  String formatNumber(double number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toStringAsFixed(0);
+  }
+
+  double calculateYAxisInterval(List<FlSpot> spots) {
+    if (spots.isEmpty) return 5;
+
+    double maxY = spots
+        .map((spot) => spot.y)
+        .reduce((max, value) => value > max ? value : max);
+    double minY = spots
+        .map((spot) => spot.y)
+        .reduce((min, value) => value < min ? value : min);
+    double range = maxY - minY;
+
+    if (range <= 10) return 1;
+    if (range <= 50) return 5;
+    if (range <= 100) return 10;
+    if (range <= 500) return 50;
+    if (range <= 1000) return 100;
+    if (range <= 5000) return 500;
+    if (range <= 10000) return 1000;
+    return 5000;
   }
 
   @override
@@ -403,17 +454,31 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
                     ),
                     titlesData: FlTitlesData(
                       leftTitles: AxisTitles(
+                        axisNameWidget: Text(
+                          widget.type == 'inventory'
+                              ? 'Jumlah Kayu'
+                              : 'Jumlah Pemindaian',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 30,
-                          interval: 5,
+                          reservedSize: 45,
+                          interval: calculateYAxisInterval(
+                            widget.type == 'inventory'
+                                ? controller.inventorySpots
+                                : controller.revenueSpots,
+                          ),
                           getTitlesWidget: (value, meta) {
                             return Text(
-                              '${value.toInt()}',
+                              formatNumber(value),
                               style: TextStyle(
                                 color: Colors.grey[600],
-                                fontSize: 9,
-                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
                               ),
                             );
                           },
@@ -487,42 +552,35 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
                     ],
                     lineTouchData: LineTouchData(
                       enabled: true,
+                      handleBuiltInTouches: true,
                       touchTooltipData: LineTouchTooltipData(
                         fitInsideHorizontally: true,
                         fitInsideVertically: true,
-                        tooltipPadding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        tooltipMargin: 6,
+                        tooltipPadding: EdgeInsets.all(8),
+                        tooltipMargin: 8,
                         tooltipRoundedRadius: 8,
                         tooltipBorder: BorderSide(
                           color: Color(0xFF4CAF50).withOpacity(0.2),
                           width: 1,
                         ),
                         getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          if (touchedSpots.isEmpty) return [];
+
                           return touchedSpots.map((LineBarSpot touchedSpot) {
                             final now = DateTime.now();
                             final date = now.subtract(Duration(
                                 days:
                                     ((dataPoints - 1) - touchedSpot.x).toInt() *
                                         interval.toInt()));
-                            String periodLabel = '';
-                            if (selectedPeriod == '1 Bulan') {
-                              periodLabel =
-                                  '${DateFormat('dd MMMM yyyy', 'id').format(date)}';
-                            } else if (selectedPeriod == '3 Bulan') {
-                              periodLabel =
-                                  'Minggu ${date.difference(date.subtract(Duration(days: date.weekday - 1))).inDays ~/ 7 + 1}\n${DateFormat('MMMM yyyy', 'id').format(date)}';
-                            } else if (selectedPeriod == '6 Bulan') {
-                              periodLabel =
-                                  '${DateFormat('dd MMM', 'id').format(date)} - ${DateFormat('dd MMM yyyy', 'id').format(date.add(Duration(days: 13)))}';
-                            } else {
-                              periodLabel =
-                                  DateFormat('MMMM yyyy', 'id').format(date);
-                            }
+
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              // Update selected point detail in the next frame
+                              selectedPointDetail.value =
+                                  '${touchedSpot.y.toInt()} ${widget.type == 'inventory' ? 'kayu' : 'pemindaian'} pada ${DateFormat('dd MMM yyyy', 'id').format(date)}';
+                            });
+
                             return LineTooltipItem(
-                              '${touchedSpot.y.toInt()} ${widget.type == 'inventory' ? 'kayu' : 'pemindaian'}\n$periodLabel',
+                              '${touchedSpot.y.toInt()} ${widget.type == 'inventory' ? 'kayu' : 'pemindaian'}\n${DateFormat('dd MMM yyyy', 'id').format(date)}',
                               TextStyle(
                                 color: Color(0xFF4CAF50),
                                 fontWeight: FontWeight.w600,
@@ -533,6 +591,20 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
                           }).toList();
                         },
                       ),
+                      touchCallback: (FlTouchEvent event,
+                          LineTouchResponse? touchResponse) {
+                        if (event is FlPanEndEvent ||
+                            event is FlPointerExitEvent) {
+                          // Only clear when actually leaving the chart area
+                          selectedPointDetail.value = '';
+                        } else if (event is FlTapUpEvent) {
+                          if (touchResponse?.lineBarSpots == null ||
+                              touchResponse!.lineBarSpots!.isEmpty) {
+                            // Clear only if tapped outside any data point
+                            selectedPointDetail.value = '';
+                          }
+                        }
+                      },
                     ),
                   ),
                 )),
@@ -607,6 +679,14 @@ class _StatistikDetailPageTPKState extends State<StatistikDetailPageTPK> {
                         ? controller.woodStatTrend.value
                         : controller.scanStatTrend.value,
                   ),
+                  if (selectedPointDetail.value.isNotEmpty) ...[
+                    SizedBox(height: 12),
+                    _buildStatItem(
+                      icon: Icons.touch_app_rounded,
+                      title: 'Detail Point',
+                      value: selectedPointDetail.value,
+                    ),
+                  ],
                 ],
               )),
         ],

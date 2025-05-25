@@ -666,24 +666,41 @@ class TPKDashboardController extends GetxController {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // Clear cache to force refresh
-      await _firebaseService.clearDashboardCache(currentUser.uid);
+      // Get wood data from Firestore
+      final QuerySnapshot woodSnapshot =
+          await FirebaseFirestore.instance.collection('kayu').get();
 
-      // Get fresh data
-      final dashboardData =
-          await _firebaseService.getTPKDashboardData(currentUser.uid);
+      // Get scanning data
+      final QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
+          .collectionGroup('riwayat_scan')
+          .where('id_user', isEqualTo: currentUser.uid)
+          .get();
+
+      // Calculate totals
+      int totalWoodCount = 0;
+      Set<String> uniqueBatches = {};
+
+      for (var doc in woodSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        totalWoodCount += (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+        String batchPanen = data['batch_panen'] as String? ?? '';
+        if (batchPanen.isNotEmpty) {
+          uniqueBatches.add(batchPanen);
+        }
+      }
 
       // Update observable values
-      totalWood.value = dashboardData['total_kayu']?.toString() ?? '0';
-      scannedWood.value =
-          dashboardData['total_kayu_dipindai']?.toString() ?? '0';
-      totalBatch.value = dashboardData['total_batch']?.toString() ?? '0';
+      totalWood.value = totalWoodCount.toString();
+      scannedWood.value = scanSnapshot.docs.length.toString();
+      totalBatch.value = uniqueBatches.length.toString();
 
-      // Update chart data based on selected period
+      // Update chart data
       await _updateChartData();
 
-      // Refresh activities
-      await fetchRecentActivities();
+      print('Dashboard data refreshed successfully:');
+      print('Total Wood: ${totalWood.value}');
+      print('Scanned Wood: ${scannedWood.value}');
+      print('Total Batch: ${totalBatch.value}');
     } catch (e) {
       print('Error refreshing dashboard data: $e');
     } finally {
@@ -713,12 +730,11 @@ class TPKDashboardController extends GetxController {
       Map<DateTime, int> woodByDate = {};
       Map<DateTime, int> scansByDate = {};
 
-      // Get date range based on selected period
+      // Get date range for last 7 days
       DateTime now = DateTime.now();
-      DateTime startDate = now
-          .subtract(Duration(days: 7)); // Selalu tampilkan data 7 hari terakhir
+      DateTime startDate = now.subtract(Duration(days: 7));
 
-      // Initialize dates for the last 7 days
+      // Initialize dates for the last 7 days with 0
       for (int i = 0; i < 7; i++) {
         DateTime date = startDate.add(Duration(days: i));
         DateTime normalizedDate = DateTime(date.year, date.month, date.day);
@@ -727,36 +743,42 @@ class TPKDashboardController extends GetxController {
       }
 
       // Aggregate wood data
+      int woodLastWeek = 0;
       for (var doc in woodSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        final createdAt = (data['created_at'] as Timestamp).toDate();
-        if (createdAt.isAfter(startDate)) {
+        final createdAt = (data['created_at'] as Timestamp?)?.toDate();
+        final stockCount = (data['jumlah_stok'] as num?)?.toInt() ?? 0;
+
+        if (createdAt != null && createdAt.isAfter(startDate)) {
           final normalizedDate = DateTime(
             createdAt.year,
             createdAt.month,
             createdAt.day,
           );
-          final stockCount = (data['jumlah_stok'] as num?)?.toInt() ?? 0;
           woodByDate[normalizedDate] =
               (woodByDate[normalizedDate] ?? 0) + stockCount;
+          woodLastWeek += stockCount;
         }
       }
 
       // Aggregate scan data
+      int scansLastWeek = 0;
       for (var doc in scanSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        final timestamp = (data['timestamp'] as Timestamp).toDate();
-        if (timestamp.isAfter(startDate)) {
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+
+        if (timestamp != null && timestamp.isAfter(startDate)) {
           final normalizedDate = DateTime(
             timestamp.year,
             timestamp.month,
             timestamp.day,
           );
           scansByDate[normalizedDate] = (scansByDate[normalizedDate] ?? 0) + 1;
+          scansLastWeek++;
         }
       }
 
-      // Convert to spots ensuring all days have values
+      // Convert to spots
       List<FlSpot> woodSpots = [];
       List<FlSpot> scanSpots = [];
 
@@ -773,29 +795,15 @@ class TPKDashboardController extends GetxController {
       inventorySpots.assignAll(woodSpots);
       revenueSpots.assignAll(scanSpots);
 
-      // Update trends with proper Indonesian formatting
-      int woodLastWeek = woodByDate.values.fold(0, (a, b) => a + b);
-      int scansLastWeek = scansByDate.values.fold(0, (a, b) => a + b);
-
+      // Update trends
       woodStatTrend.value = "$woodLastWeek kayu dalam 7 hari terakhir";
       scanStatTrend.value = "$scansLastWeek pemindaian dalam 7 hari terakhir";
 
-      // Update total counts
-      int totalWoodCount = 0;
-      Set<String> uniqueBatches = {};
-
-      for (var doc in woodSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        totalWoodCount += (data['jumlah_stok'] as num?)?.toInt() ?? 0;
-        String batchPanen = data['batch_panen'] as String? ?? '';
-        if (batchPanen.isNotEmpty) {
-          uniqueBatches.add(batchPanen);
-        }
-      }
-
-      totalWood.value = totalWoodCount.toString();
-      totalBatch.value = uniqueBatches.length.toString();
-      scannedWood.value = scanSnapshot.docs.length.toString();
+      print('Chart data updated successfully:');
+      print('Wood spots: ${woodSpots.length}');
+      print('Scan spots: ${scanSpots.length}');
+      print('Wood trend: ${woodStatTrend.value}');
+      print('Scan trend: ${scanStatTrend.value}');
     } catch (e) {
       print('Error updating chart data: $e');
     }
