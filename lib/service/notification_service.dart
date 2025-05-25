@@ -1,6 +1,7 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_green_track/fitur/dashboard_penyemaian/page_penyemaian_jadwal_perawatan.dart';
 
 class NotificationService extends GetxService {
   Future<void> initNotification() async {
@@ -118,6 +119,54 @@ class NotificationService extends GetxService {
     }
   }
 
+  Future<void> rescheduleNotificationsFromJadwal(
+      List<JadwalPerawatan> jadwalList) async {
+    try {
+      print('Rescheduling notifications from fetched data...');
+
+      // Cancel all existing notifications first to prevent duplicates
+      await cancelAllNotifications();
+
+      final now = DateTime.now();
+
+      for (var jadwal in jadwalList) {
+        // Only schedule notifications for future events that are not completed
+        if (!jadwal.selesai && jadwal.tanggal.isAfter(now)) {
+          // Create DateTime that combines date and time
+          final scheduledDateTime = DateTime(
+            jadwal.tanggal.year,
+            jadwal.tanggal.month,
+            jadwal.tanggal.day,
+            int.parse(jadwal.waktu.split(':')[0]),
+            int.parse(jadwal.waktu.split(':')[1]),
+          );
+
+          if (scheduledDateTime.isAfter(now)) {
+            await scheduleNotification(
+              title: 'Jadwal ${_formatJenisPerawatan(jadwal.jenisPerawatan)}',
+              body:
+                  'Waktunya melakukan ${jadwal.jenisPerawatan} untuk tanaman ${jadwal.namaBibit}\n${jadwal.catatan}',
+              scheduledDate: scheduledDateTime,
+              payload: jadwal.id,
+            );
+          }
+        }
+      }
+      print('Successfully rescheduled all notifications');
+    } catch (e) {
+      print('Error rescheduling notifications: $e');
+    }
+  }
+
+  String _formatJenisPerawatan(String jenis) {
+    if (jenis.isEmpty) return jenis;
+    final chars = jenis.split('');
+    if (chars.isNotEmpty) {
+      chars[0] = chars[0].toUpperCase();
+    }
+    return chars.join('');
+  }
+
   Future<void> scheduleNotification({
     required String title,
     required String body,
@@ -127,6 +176,13 @@ class NotificationService extends GetxService {
     try {
       print(
           'Attempting to schedule notification for: ${scheduledDate.toString()}');
+
+      // Check if the scheduled time is in the past
+      if (scheduledDate.isBefore(DateTime.now())) {
+        print('Skipping notification as scheduled time is in the past');
+        return;
+      }
+
       print('Title: $title');
       print('Body: $body');
 

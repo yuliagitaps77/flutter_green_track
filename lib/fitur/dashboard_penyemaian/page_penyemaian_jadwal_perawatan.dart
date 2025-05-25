@@ -236,9 +236,11 @@ class JadwalPerawatanController extends GetxController {
           await _firestore.collection('jadwal_perawatan').get();
 
       Map<DateTime, List<JadwalPerawatan>> tempEvents = {};
+      List<JadwalPerawatan> allJadwal = [];
 
       for (var doc in snapshot.docs) {
         final jadwal = JadwalPerawatan.fromFirestore(doc);
+        allJadwal.add(jadwal);
 
         // Create DateTime with only year, month, day for event key
         final eventDate = DateTime(
@@ -256,6 +258,9 @@ class JadwalPerawatanController extends GetxController {
 
       jadwalEvents.value = tempEvents;
       updateSelectedDateEvents();
+
+      // Reschedule notifications for all fetched jadwal
+      await _notificationService.rescheduleNotificationsFromJadwal(allJadwal);
     } catch (e) {
       print('Error fetching jadwal perawatan: ${e}');
       Get.snackbar('Error', 'Gagal memuat jadwal perawatan');
