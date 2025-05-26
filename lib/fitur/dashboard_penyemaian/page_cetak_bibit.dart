@@ -11,6 +11,7 @@ import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibi
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'package:flutter/services.dart';
 
 class CetakBarcodeBibitPage extends StatefulWidget {
   static String routeName = "/cetak-barcode-bibit";
@@ -39,6 +40,7 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
       controller.usiaController.text = b.usia.toString();
       controller.tinggiController.text = b.tinggi.toString();
       controller.jenisBibitController.text = b.jenisBibit;
+      controller.jenisBibit.value = b.jenisBibit;
 
       // Ensure dropdown values match available options
       if (b.kondisi == 'Siap Tanam') {
@@ -384,6 +386,12 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           hintText: 'Contoh: Arumanis',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Varietas tidak boleh kosong';
+                          }
+                          return null;
+                        },
                       ),
                     ),
 
@@ -417,16 +425,29 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       child: TextFormField(
                         controller: controller.usiaController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         style: const TextStyle(
                           fontSize: 16,
                           color: Color(0xFF424242),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Usia bibit wajib diisi';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Usia harus berupa angka';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: 30',
+                          hintText: 'Masukkan usia bibit',
                           hintStyle: TextStyle(color: Colors.grey),
+                          suffixText: 'hari',
                         ),
                       ),
                     ),
@@ -461,16 +482,30 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                       child: TextFormField(
                         controller: controller.tinggiController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d*\.?\d*$')),
+                        ],
                         style: const TextStyle(
                           fontSize: 16,
                           color: Color(0xFF424242),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Tinggi bibit wajib diisi';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Tinggi harus berupa angka';
+                          }
+                          return null;
+                        },
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: 25',
+                          hintText: 'Masukkan tinggi bibit',
                           hintStyle: TextStyle(color: Colors.grey),
+                          suffixText: 'cm',
                         ),
                       ),
                     ),
@@ -502,19 +537,41 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: controller.jenisBibitController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        value: controller.jenisBibit.value.isEmpty
+                            ? null
+                            : controller.jenisBibit.value,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: Buah',
+                          hintText: 'Pilih jenis bibit',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF424242),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: ['Kayu', 'Buah'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Jenis bibit tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.jenisBibit.value = value;
+                            controller.jenisBibitController.text = value;
+                          }
+                        },
                       ),
                     ),
 
@@ -667,19 +724,47 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: controller.mediaTanamController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        value: controller.mediaTanam.value.isEmpty
+                            ? null
+                            : controller.mediaTanam.value,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: Tanah',
+                          hintText: 'Pilih media tanam',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF424242),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: [
+                          'Polybag',
+                          'Tanah',
+                          'Tanah + Kompos',
+                          'Tanah + Sekam',
+                          'Tanah + Pupuk Kandang'
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Media tanam tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.mediaTanam.value = value;
+                            controller.mediaTanamController.text = value;
+                          }
+                        },
                       ),
                     ),
 
@@ -710,19 +795,49 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: controller.nutrisiController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        value: controller.nutrisi.value.isEmpty
+                            ? null
+                            : controller.nutrisi.value,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: NPK',
+                          hintText: 'Pilih jenis nutrisi',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF424242),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: [
+                          'NPK',
+                          'Urea',
+                          'KCL',
+                          'TSP',
+                          'Pupuk Organik',
+                          'Pupuk Kandang',
+                          'Kompos'
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Nutrisi tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.nutrisi.value = value;
+                            controller.nutrisiController.text = value;
+                          }
+                        },
                       ),
                     ),
 
@@ -753,25 +868,54 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: controller.asalBibitController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        value: controller.asalBibit.value.isEmpty
+                            ? null
+                            : controller.asalBibit.value,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: Pembibitan KPH',
+                          hintText: 'Pilih asal bibit',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF424242),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: [
+                          'Cangkok',
+                          'Stek',
+                          'Okulasi',
+                          'Sambung Pucuk',
+                          'Merunduk',
+                          'Kultur Jaringan'
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Asal bibit tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.asalBibit.value = value;
+                            controller.asalBibitController.text = value;
+                          }
+                        },
                       ),
                     ),
 
                     const SizedBox(height: 20),
 
-                    // Produktivitas Section
+                    // Produktivitas Section with improved hint
                     const Text(
                       'Produktivitas',
                       style: TextStyle(
@@ -796,19 +940,48 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: controller.produktivitasController,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        value: controller.produktivitas.value.isEmpty
+                            ? null
+                            : controller.produktivitas.value,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 16),
                           border: InputBorder.none,
-                          hintText: 'Contoh: Tinggi',
+                          hintText: 'Pilih tingkat produktivitas',
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF424242),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: [
+                          'Sangat Tinggi',
+                          'Tinggi',
+                          'Sedang',
+                          'Rendah',
+                          'Sangat Rendah',
+                          'Belum Produktif'
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Produktivitas tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.produktivitas.value = value;
+                            controller.produktivitasController.text = value;
+                          }
+                        },
                       ),
                     ),
 
@@ -1081,6 +1254,12 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                               suffixIcon: Icon(Icons.calendar_today,
                                   color: Color(0xFF4CAF50)),
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Tanggal pembibitan tidak boleh kosong';
+                              }
+                              return null;
+                            },
                           ),
                         ),
                       ),
@@ -1132,6 +1311,12 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                             fontSize: 15,
                           ),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Catatan tidak boleh kosong';
+                          }
+                          return null;
+                        },
                       ),
                     ),
 

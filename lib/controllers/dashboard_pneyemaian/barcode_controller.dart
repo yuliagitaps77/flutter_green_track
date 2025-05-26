@@ -34,6 +34,20 @@ class BarcodeController extends GetxController {
   final produktivitasController = TextEditingController();
   final catatanController = TextEditingController();
   final tanggalPembibitanController = TextEditingController();
+
+  // Add new RxString for jenisBibit
+  final jenisBibit = "".obs;
+
+  // Add new RxString for nutrisi and asalBibit
+  final nutrisi = "".obs;
+  final asalBibit = "".obs;
+
+  // Add new RxString for mediaTanam
+  final mediaTanam = "".obs;
+
+  // Add new RxString for produktivitas
+  final produktivitas = "".obs;
+
   void updateSelectedImage() {
     if (selectedImages.isNotEmpty) {
       // Ensure the selected image is always the first image in the list
