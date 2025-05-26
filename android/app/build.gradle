@@ -40,12 +40,12 @@ android {
         // Flag to enable support for the new language APIs
         coreLibraryDesugaringEnabled true
         // Sets Java compatibility to Java 8
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -61,11 +61,44 @@ android {
         multiDexEnabled true
     }
 
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a", "x86_64"
+            universalApk true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig signingConfigs.debug
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        disable 'InvalidPackage'
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.core:core-ktx:1.12.0'
+            force 'androidx.core:core:1.12.0'
+            force 'com.google.android.play:core-common:2.0.3'
+            exclude group: 'com.google.android.play', module: 'core'
         }
     }
 
@@ -73,9 +106,13 @@ android {
         coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
         implementation 'androidx.window:window:1.0.0'
         implementation 'androidx.window:window-java:1.0.0'
-        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
-        implementation 'com.google.android.material:material:1.10.0'
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+        implementation 'com.google.android.material:material:1.11.0'
         implementation 'androidx.multidex:multidex:2.0.1'
+        implementation 'com.google.android.play:app-update:2.1.0'
+        implementation 'androidx.core:core-ktx:1.12.0'
+        implementation 'androidx.core:core:1.12.0'
+        implementation 'androidx.work:work-runtime-ktx:2.9.0'
     }
 }
 

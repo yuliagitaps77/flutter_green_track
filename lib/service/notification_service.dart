@@ -1,13 +1,45 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_green_track/widgets/permission_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class NotificationService extends GetxService {
+  static const String PERMISSION_ASKED_KEY = 'notification_permission_asked';
+  final RxBool permissionGranted = false.obs;
+
+  Future<void> checkAndRequestPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasAskedBefore = prefs.getBool(PERMISSION_ASKED_KEY) ?? false;
+
+    final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    permissionGranted.value = isAllowed;
+
+    if (!isAllowed && !hasAskedBefore) {
+      await prefs.setBool(PERMISSION_ASKED_KEY, true);
+      Get.dialog(
+        NotificationPermissionDialog(
+          onPermissionGranted: () {
+            permissionGranted.value = true;
+          },
+        ),
+        barrierDismissible: false,
+      );
+    }
+  }
+
   Future<void> initNotification() async {
     try {
       print('Initializing Awesome Notifications...');
+
+      // Check if notifications are already initialized
+      final isInitialized =
+          await AwesomeNotifications().isNotificationAllowed();
+      print('Notifications already initialized: $isInitialized');
+
       final initialized = await AwesomeNotifications().initialize(
-        'resource://drawable/ic_notification',
+        null, // Removing icon here as it might cause issues in release mode
         [
           NotificationChannel(
             channelKey: 'care_schedule_channel',
@@ -15,41 +47,38 @@ class NotificationService extends GetxService {
             channelDescription: 'Notifikasi untuk jadwal perawatan tanaman',
             defaultColor: const Color(0xFF4CAF50),
             ledColor: Colors.white,
-            importance: NotificationImportance.Max,
-            defaultRingtoneType: DefaultRingtoneType.Alarm,
+            importance: NotificationImportance.High,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
             enableVibration: true,
             playSound: true,
             criticalAlerts: true,
-            locked: true,
+            onlyAlertOnce: false,
             defaultPrivacy: NotificationPrivacy.Public,
-            soundSource: 'resource://raw/notification_sound',
+            locked: true,
           ),
         ],
-        debug: true,
+        debug: false, // Set to false for release mode
       );
-      print('Awesome Notifications initialized: $initialized');
+      print('Awesome Notifications initialization result: $initialized');
 
-      // Request notification permissions with critical alerts
-      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
-      print('Notifications allowed: $isAllowed');
+      // Explicitly request permissions after initialization
+      final isAllowed = await AwesomeNotifications()
+          .requestPermissionToSendNotifications(permissions: [
+        NotificationPermission.Alert,
+        NotificationPermission.Sound,
+        NotificationPermission.Badge,
+        NotificationPermission.Vibration,
+        NotificationPermission.Light,
+        NotificationPermission.PreciseAlarms,
+      ]);
+      print('Notification permissions granted: $isAllowed');
 
       if (!isAllowed) {
-        print('Requesting notification permissions...');
-        final permissionGranted = await AwesomeNotifications()
-            .requestPermissionToSendNotifications(permissions: [
-          NotificationPermission.Alert,
-          NotificationPermission.Sound,
-          NotificationPermission.Badge,
-          NotificationPermission.Vibration,
-          NotificationPermission.Light,
-          NotificationPermission.FullScreenIntent,
-          NotificationPermission.CriticalAlert,
-          NotificationPermission.PreciseAlarms,
-        ]);
-        print('Permission granted: $permissionGranted');
+        print('Notification permissions were denied');
+        return;
       }
 
-      // Listen to notification events
+      // Set up listeners
       AwesomeNotifications().setListeners(
         onActionReceivedMethod: onActionReceivedMethod,
         onNotificationCreatedMethod: onNotificationCreatedMethod,
@@ -60,6 +89,8 @@ class NotificationService extends GetxService {
     } catch (e, stackTrace) {
       print('Error initializing notifications: $e');
       print('Stack trace: $stackTrace');
+      // Rethrow in release mode to ensure we catch all issues
+      if (!kDebugMode) rethrow;
     }
   }
 
@@ -127,151 +158,85 @@ class NotificationService extends GetxService {
     try {
       print(
           'Attempting to schedule notification for: ${scheduledDate.toString()}');
-      print('Title: $title');
-      print('Body: $body');
 
-      bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-      print('Notifications allowed: $isAllowed');
-
+      // Verify permissions before scheduling
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
       if (!isAllowed) {
-        print('Requesting notification permissions...');
-        isAllowed = await AwesomeNotifications()
-            .requestPermissionToSendNotifications(permissions: [
-          NotificationPermission.Alert,
-          NotificationPermission.Sound,
-          NotificationPermission.Badge,
-          NotificationPermission.Vibration,
-          NotificationPermission.Light,
-          NotificationPermission.FullScreenIntent,
-          NotificationPermission.CriticalAlert,
-          NotificationPermission.PreciseAlarms,
-        ]);
-        print('Permission granted: $isAllowed');
-      }
-
-      if (!isAllowed) {
-        print('Notification permission denied');
-        return;
+        print('Notification permissions not granted, requesting...');
+        final granted =
+            await AwesomeNotifications().requestPermissionToSendNotifications();
+        if (!granted) {
+          print('Notification permission request denied');
+          return;
+        }
       }
 
       final notificationId =
           scheduledDate.millisecondsSinceEpoch.remainder(100000);
-      print('Generated notification ID: $notificationId');
+      final emoji = _getEmoji(title.split(' ')[1]);
 
-      // Extract jenis perawatan from title for emoji
-      final jenisPerawatan = title.split(' ')[1];
-      final emoji = _getEmoji(jenisPerawatan);
-
-      // Schedule notification for the exact time
-      final mainNotificationScheduled =
+      // Schedule main notification
+      final mainScheduleResult =
           await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: notificationId,
           channelKey: 'care_schedule_channel',
           title: '$emoji $title',
           body: body,
-          notificationLayout: NotificationLayout.BigText,
+          notificationLayout: NotificationLayout.Default,
           criticalAlert: true,
           wakeUpScreen: true,
-          fullScreenIntent: true,
-          category: NotificationCategory.Alarm,
+          category: NotificationCategory.Reminder,
           displayOnForeground: true,
           displayOnBackground: true,
-          backgroundColor: const Color(0xFFE8F5E9),
-          color: const Color(0xFF2E7D32),
-          largeIcon: 'resource://drawable/ic_notification',
-          payload: {
-            'type': 'schedule',
-            'data': payload ?? '',
-          },
+          payload: {'type': 'schedule', 'data': payload ?? ''},
         ),
-        schedule: NotificationCalendar(
-          year: scheduledDate.year,
-          month: scheduledDate.month,
-          day: scheduledDate.day,
-          hour: scheduledDate.hour,
-          minute: scheduledDate.minute,
-          second: 0,
-          millisecond: 0,
-          repeats: false,
-          preciseAlarm: true,
+        schedule: NotificationCalendar.fromDate(
+          date: scheduledDate,
           allowWhileIdle: true,
-          timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
+          preciseAlarm: true,
         ),
-        actionButtons: [
-          NotificationActionButton(
-            key: 'MARK_DONE',
-            label: 'Tandai Selesai',
-            actionType: ActionType.Default,
-          ),
-          NotificationActionButton(
-            key: 'SNOOZE',
-            label: 'Ingatkan Nanti',
-            actionType: ActionType.Default,
-          ),
-        ],
       );
-      print('Main notification scheduled: $mainNotificationScheduled');
 
-      // Schedule reminder 30 minutes before
+      print('Main notification schedule result: $mainScheduleResult');
+
+      // Schedule reminder (30 minutes before)
       final reminderTime = scheduledDate.subtract(const Duration(minutes: 30));
       if (reminderTime.isAfter(DateTime.now())) {
-        print(
-            'Scheduling reminder notification for: ${reminderTime.toString()}');
-        final reminderNotificationScheduled =
+        final reminderScheduleResult =
             await AwesomeNotifications().createNotification(
           content: NotificationContent(
             id: reminderTime.millisecondsSinceEpoch.remainder(100000),
             channelKey: 'care_schedule_channel',
             title: '⏰ Pengingat: $title',
             body: 'Jadwal perawatan akan dimulai dalam 30 menit\n$body',
-            notificationLayout: NotificationLayout.BigText,
-            criticalAlert: true,
-            wakeUpScreen: true,
-            fullScreenIntent: true,
+            notificationLayout: NotificationLayout.Default,
             category: NotificationCategory.Reminder,
             displayOnForeground: true,
             displayOnBackground: true,
-            backgroundColor: const Color(0xFFE8F5E9),
-            color: const Color(0xFF2E7D32),
-            largeIcon: 'resource://drawable/ic_notification',
-            payload: {
-              'type': 'reminder',
-              'data': payload ?? '',
-            },
+            payload: {'type': 'reminder', 'data': payload ?? ''},
           ),
-          schedule: NotificationCalendar(
-            year: reminderTime.year,
-            month: reminderTime.month,
-            day: reminderTime.day,
-            hour: reminderTime.hour,
-            minute: reminderTime.minute,
-            second: 0,
-            millisecond: 0,
-            repeats: false,
-            preciseAlarm: true,
+          schedule: NotificationCalendar.fromDate(
+            date: reminderTime,
             allowWhileIdle: true,
-            timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
+            preciseAlarm: true,
           ),
-          actionButtons: [
-            NotificationActionButton(
-              key: 'SHOW_SCHEDULE',
-              label: 'Lihat Jadwal',
-              actionType: ActionType.Default,
-            ),
-          ],
         );
-        print(
-            'Reminder notification scheduled: $reminderNotificationScheduled');
-      } else {
-        print('Skipping reminder notification as it would be in the past');
+        print('Reminder notification schedule result: $reminderScheduleResult');
       }
 
-      print('Notification scheduling completed successfully');
+      // Verify scheduled notifications
+      final pendingNotifications =
+          await AwesomeNotifications().listScheduledNotifications();
+      print('Current pending notifications: ${pendingNotifications.length}');
+      for (var notification in pendingNotifications) {
+        print(
+            'Scheduled notification: ${notification.content?.title} at ${notification.schedule?.toMap()}');
+      }
     } catch (e, stackTrace) {
       print('Error scheduling notification: $e');
       print('Stack trace: $stackTrace');
-      rethrow;
+      if (!kDebugMode) rethrow;
     }
   }
 
