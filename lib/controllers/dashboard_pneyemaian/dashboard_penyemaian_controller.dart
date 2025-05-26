@@ -77,6 +77,7 @@ class PenyemaianDashboardController extends GetxController {
 
   // Firestore subscription
   StreamSubscription<QuerySnapshot>? _bibitSubscription;
+  StreamSubscription<DocumentSnapshot>? _dashboardSubscription;
   Timer? _debounceTimer;
 
   @override
@@ -85,13 +86,13 @@ class PenyemaianDashboardController extends GetxController {
     initActions();
     initUserData();
     fetchGrowthData();
-    refreshDashboardData();
     _setupBibitListener();
   }
 
   @override
   void onClose() {
     _bibitSubscription?.cancel();
+    _dashboardSubscription?.cancel();
     _debounceTimer?.cancel();
     super.onClose();
   }
@@ -370,40 +371,62 @@ class PenyemaianDashboardController extends GetxController {
   Future<void> fetchDashboardData() async {
     if (currentUserId == null) return;
 
-    isLoading.value = true;
     try {
-      // Fetch dashboard data directly from collections
-      final dashboardData =
-          await _firebaseService.getPenyemaianDashboardData(currentUserId!);
+      // Cancel existing subscription if any
+      _dashboardSubscription?.cancel();
 
-      if (dashboardData.isNotEmpty) {
-        // Format numbers with commas if needed
-        totalBibit.value = _formatNumber(dashboardData['total_bibit'] ?? 0);
-        bibitSiapTanam.value =
-            _formatNumber(dashboardData['bibit_siap_tanam'] ?? 0);
-        bibitButuhPerhatian.value =
-            _formatNumber(dashboardData['butuh_perhatian'] ?? 0);
-        bibitDipindai.value =
-            _formatNumber(dashboardData['total_bibit_dipindai'] ?? 0);
+      // Set up real-time listener for dashboard data
+      _dashboardSubscription = FirebaseFirestore.instance
+          .collection('dashboard_penyemaian')
+          .doc(currentUserId)
+          .snapshots()
+          .listen((snapshot) {
+        isLoading.value = true;
+        try {
+          if (snapshot.exists) {
+            final dashboardData = snapshot.data() as Map<String, dynamic>;
 
-        // Calculate growth if available
-        if (dashboardData['previous_total_bibit'] != null &&
-            dashboardData['previous_total_bibit'] > 0) {
-          final current = dashboardData['total_bibit'] ?? 0;
-          final previous = dashboardData['previous_total_bibit'] ?? 1;
-          final growth = ((current - previous) / previous) * 100;
-          bibitMasukTrend.value = "${growth.toStringAsFixed(1)}%";
-        } else {
-          bibitMasukTrend.value = "0%";
+            // Format numbers with commas if needed
+            totalBibit.value = _formatNumber(dashboardData['total_bibit'] ?? 0);
+            bibitSiapTanam.value =
+                _formatNumber(dashboardData['bibit_siap_tanam'] ?? 0);
+            bibitButuhPerhatian.value =
+                _formatNumber(dashboardData['butuh_perhatian'] ?? 0);
+            bibitDipindai.value =
+                _formatNumber(dashboardData['total_bibit_dipindai'] ?? 0);
+
+            // Calculate growth if available
+            if (dashboardData['previous_total_bibit'] != null &&
+                dashboardData['previous_total_bibit'] > 0) {
+              final current = dashboardData['total_bibit'] ?? 0;
+              final previous = dashboardData['previous_total_bibit'] ?? 1;
+              final growth = ((current - previous) / previous) * 100;
+              bibitMasukTrend.value = "${growth.toStringAsFixed(1)}%";
+            } else {
+              bibitMasukTrend.value = "0%";
+            }
+
+            // Update chart data if needed
+            updateChartData();
+          } else {
+            // If document doesn't exist, reset values to default
+            totalBibit.value = "0";
+            bibitSiapTanam.value = "0";
+            bibitButuhPerhatian.value = "0";
+            bibitDipindai.value = "0";
+            bibitMasukTrend.value = "0%";
+          }
+        } catch (e) {
+          print('Error processing dashboard data: $e');
+        } finally {
+          isLoading.value = false;
         }
-      }
-
-      // Update chart data if needed
-      updateChartData();
+      }, onError: (error) {
+        print('Error in dashboard stream: $error');
+        isLoading.value = false;
+      });
     } catch (e) {
-      print('Error fetching dashboard data: $e');
-      // Handle error appropriately
-    } finally {
+      print('Error setting up dashboard listener: $e');
       isLoading.value = false;
     }
   }

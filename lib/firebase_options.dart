@@ -59,4 +59,5 @@ class DefaultFirebaseOptions {
     projectId: 'green-track-firebase',
     storageBucket: 'green-track-firebase.firebasestorage.app',
   );
+
 }
