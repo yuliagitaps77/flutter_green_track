@@ -39,27 +39,42 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
       controller.varietasController.text = b.varietas;
       controller.usiaController.text = b.usia.toString();
       controller.tinggiController.text = b.tinggi.toString();
-      controller.jenisBibitController.text = b.jenisBibit;
-      controller.jenisBibit.value = b.jenisBibit;
 
-      // Ensure dropdown values match available options
-      if (b.kondisi == 'Siap Tanam') {
-        controller.kondisi.value = 'Baik';
-      } else {
-        controller.kondisi.value = b.kondisi;
-      }
+      // Set jenis bibit with normalization
+      String normalizedJenisBibit =
+          controller.normalizeJenisBibitValue(b.jenisBibit);
+      controller.jenisBibitController.text = normalizedJenisBibit;
+      controller.selectedJenisBibit.value = normalizedJenisBibit;
+      controller.jenisBibit.value = normalizedJenisBibit;
 
-      // Convert status hama to match dropdown options
-      if (b.statusHama == 'Tidak Ada') {
-        controller.statusHama.value = 'Tidak ada';
-      } else {
-        controller.statusHama.value = b.statusHama;
-      }
+      // Normalize and set kondisi
+      controller.kondisi.value =
+          controller.normalizeDropdownValue(b.kondisi, controller.kondisiList);
 
+      // Normalize and set status hama
+      controller.statusHama.value = controller.normalizeDropdownValue(
+          b.statusHama, controller.statusHamaList);
+
+      // Set media tanam with validation
       controller.mediaTanamController.text = b.mediaTanam;
+      controller.mediaTanam.value = controller.normalizeDropdownValue(
+          b.mediaTanam, controller.mediaTanamList);
+
+      // Set nutrisi with validation
       controller.nutrisiController.text = b.nutrisi;
+      controller.nutrisi.value =
+          controller.normalizeDropdownValue(b.nutrisi, controller.nutrisiList);
+
+      // Set asal bibit with validation
       controller.asalBibitController.text = b.asalBibit;
+      controller.asalBibit.value = controller.normalizeDropdownValue(
+          b.asalBibit, controller.asalBibitList);
+
+      // Set produktivitas with validation
       controller.produktivitasController.text = b.produktivitas;
+      controller.produktivitas.value = controller.normalizeDropdownValue(
+          b.produktivitas, controller.produktivitasList);
+
       controller.catatanController.text = b.catatan;
       controller.selectedKPH.value = b.kph;
       controller.loadBKPHOptions(b.kph);
@@ -524,55 +539,44 @@ class _CetakBarcodeBibitPageState extends State<CetakBarcodeBibitPage> {
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.3),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[50],
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Obx(() {
+                        final items = [
+                          ...controller.jenisBibitList
+                              .where((jenis) => jenis.isNotEmpty)
+                              .map((jenis) => DropdownMenuItem<String>(
+                                    value: jenis,
+                                    child: Text(jenis),
+                                  ))
+                              .toList(),
+                        ];
+
+                        return DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            border: InputBorder.none,
+                            hintText: 'Pilih Jenis Bibit',
+                            hintStyle: TextStyle(color: Colors.grey),
                           ),
-                        ],
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        value: controller.jenisBibit.value.isEmpty
-                            ? null
-                            : controller.jenisBibit.value,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 16),
-                          border: InputBorder.none,
-                          hintText: 'Pilih jenis bibit',
-                          hintStyle: TextStyle(color: Colors.grey),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF424242),
-                        ),
-                        dropdownColor: Colors.white,
-                        items: ['Kayu', 'Buah'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Jenis bibit tidak boleh kosong';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          if (value != null) {
-                            controller.jenisBibit.value = value;
-                            controller.jenisBibitController.text = value;
-                          }
-                        },
-                      ),
+                          value: controller.selectedJenisBibit.value.isEmpty
+                              ? null
+                              : controller.selectedJenisBibit.value,
+                          isExpanded: true,
+                          icon: const Icon(Icons.arrow_drop_down,
+                              color: Color(0xFF4CAF50)),
+                          dropdownColor: Colors.white,
+                          items: items,
+                          onChanged: (value) {
+                            if (value != null) {
+                              controller.setJenisBibit(value);
+                            }
+                          },
+                        );
+                      }),
                     ),
 
                     const SizedBox(height: 20),

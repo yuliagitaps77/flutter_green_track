@@ -55,17 +55,17 @@ class TambahPersediaanController extends GetxController {
 
   /// Isi cepat field saat `isAutoFill == true`.
   void _applyDummyData() {
-    namaController.text = 'Kayu Jati Super';
-    varietasController.text = 'Tectona grandis';
-    usiaController.text = '5'; // tahun
-    tinggiController.text = '12'; // meter
-    jenisController.text = 'Jati';
-    jumlahStokController.text = '100'; // batang
+    // namaController.text = 'Kayu Jati Super';
+    // varietasController.text = 'Tectona grandis';
+    // usiaController.text = '5'; // tahun
+    // tinggiController.text = '12'; // meter
+    // jenisController.text = 'Jati';
+    // jumlahStokController.text = '100'; // batang
     batchPanenController.text = '2025-A';
-    catatanController.text = 'Data dummy untuk keperluan testing.';
+    // catatanController.text = 'Data dummy untuk keperluan testing.';
 
     // Tanggal tanam contoh
-    selectedDate.value = DateTime(2020, 1, 15);
+    //  selectedDate.value = DateTime(2020, 1, 15);
     _updateDateDisplay();
 
     // Jangan sentuh dropdown & gambar ⇢ biarkan user memilih sendiri

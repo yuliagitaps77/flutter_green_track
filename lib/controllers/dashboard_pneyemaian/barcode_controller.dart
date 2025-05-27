@@ -48,6 +48,64 @@ class BarcodeController extends GetxController {
   // Add new RxString for produktivitas
   final produktivitas = "".obs;
 
+  // Dropdown related properties
+  final RxString selectedJenisBibit = ''.obs;
+  final RxList<String> jenisBibitList = <String>[].obs;
+
+  // Predefined lists for dropdowns
+  final List<String> kondisiList = [
+    'Siap Tanam',
+    'Baik',
+    'Sedang',
+    'Buruk',
+    'Belum Siap Tanam'
+  ];
+
+  final List<String> statusHamaList = [
+    'Tidak ada',
+    'Ringan',
+    'Sedang',
+    'Berat'
+  ];
+
+  final List<String> mediaTanamList = [
+    'Polybag',
+    'Tanah',
+    'Tanah + Kompos',
+    'Tanah + Sekam',
+    'Tanah + Pupuk Kandang'
+  ];
+
+  final List<String> nutrisiList = [
+    'NPK',
+    'Urea',
+    'KCL',
+    'TSP',
+    'Pupuk Organik',
+    'Pupuk Kandang',
+    'Kompos'
+  ];
+
+  final List<String> asalBibitList = [
+    'Cangkok',
+    'Stek',
+    'Okulasi',
+    'Sambung Pucuk',
+    'Merunduk',
+    'Kultur Jaringan'
+  ];
+
+  final List<String> produktivitasList = [
+    'Sangat Tinggi',
+    'Tinggi',
+    'Sedang',
+    'Rendah',
+    'Sangat Rendah',
+    'Belum Produktif'
+  ];
+
+  final List<String> jenisBibitOptions = ['Buah', 'Kayu'];
+
   void updateSelectedImage() {
     if (selectedImages.isNotEmpty) {
       // Ensure the selected image is always the first image in the list
@@ -225,6 +283,7 @@ class BarcodeController extends GetxController {
         DateFormat('dd-MM-yyyy').format(DateTime.now());
     selectedImages.clear();
     // autoFillBibitForm(); // Auto-fill form for testing
+    loadJenisBibitList();
   }
 
   @override
@@ -383,6 +442,12 @@ Image Details:
       }
 
       bibitData['id_user'] = userId;
+
+      // Jika mode edit dan tidak ada gambar baru, hapus field gambar dari data yang akan diupdate
+      if (isUpdate && selectedImages.isEmpty) {
+        bibitData.remove('gambar_image');
+      }
+
       if (isUpdate) {
         AppController.to.recordActivity(
           activityType: ActivityTypes.updateBibit,
@@ -403,7 +468,8 @@ Image Details:
             'asal_bibit': asalBibitController.text,
             'produktivitas': produktivitasController.text,
             'catatan': catatanController.text,
-            'gambar_image': selectedImages, // URL ya, kalau upload
+            'gambar_image':
+                selectedImages.isEmpty ? bibit?.gambarImage : selectedImages,
             'lokasi_tanam': {
               'kph': selectedKPH.value,
               'bkph': selectedBKPH.value,
@@ -434,7 +500,7 @@ Image Details:
             'asal_bibit': asalBibitController.text,
             'produktivitas': produktivitasController.text,
             'catatan': catatanController.text,
-            'gambar_image': selectedImages, // URL ya, kalau upload
+            'gambar_image': selectedImages,
             'lokasi_tanam': {
               'kph': selectedKPH.value,
               'bkph': selectedBKPH.value,
@@ -446,10 +512,19 @@ Image Details:
           },
         );
       }
-      await FirebaseFirestore.instance
-          .collection('bibit')
-          .doc(bibitData['id_bibit'])
-          .set(bibitData);
+
+      // Jika mode edit dan tidak ada gambar baru, gunakan update() untuk tidak mengubah field gambar
+      if (isUpdate && selectedImages.isEmpty) {
+        await FirebaseFirestore.instance
+            .collection('bibit')
+            .doc(bibitData['id_bibit'])
+            .update(bibitData);
+      } else {
+        await FirebaseFirestore.instance
+            .collection('bibit')
+            .doc(bibitData['id_bibit'])
+            .set(bibitData);
+      }
 
       Get.snackbar(
         'Sukses',
@@ -461,11 +536,7 @@ Image Details:
       // Refresh daftar bibit dan kembali
       await Get.find<BibitController>().fetchBibitFromFirestore();
       await Get.find<BibitController>().fetchJenisList();
-      final userRole = Get.find<AuthenticationController>()
-          .currentUser
-          .value; // Assuming you have an AuthController with userRole
-      // Or however you get the current user role in your app
-      // Get.offAll(() => MainNavigationContainer(userRole: userRole!.role));
+      final userRole = Get.find<AuthenticationController>().currentUser.value;
       Navigator.of(Get.context!).pop();
       navigationController.navigateToInventory();
 
@@ -499,7 +570,8 @@ Image Details:
     if (selectedBKPH.value.isEmpty) errors.add("BKPH");
     if (selectedRKPH.value.isEmpty) errors.add("RKPH");
 
-    if (selectedImages.isEmpty) {
+    // Hanya validasi gambar kosong jika bukan mode edit
+    if (!isUpdate && selectedImages.isEmpty) {
       errors.add("Minimal 1 Gambar");
     }
 
@@ -517,16 +589,21 @@ Image Details:
     }
 
     try {
-      // Upload gambar
       List<String> uploadedUrls = [];
 
-      for (String path in selectedImages) {
-        final uploadedUrl = await uploadImageToImgBB(path);
-        if (uploadedUrl != null) {
-          uploadedUrls.add(uploadedUrl);
-        } else {
-          throw Exception("Upload gambar gagal");
+      // Jika ada gambar baru yang dipilih, upload gambar-gambar tersebut
+      if (selectedImages.isNotEmpty) {
+        for (String path in selectedImages) {
+          final uploadedUrl = await uploadImageToImgBB(path);
+          if (uploadedUrl != null) {
+            uploadedUrls.add(uploadedUrl);
+          } else {
+            throw Exception("Upload gambar gagal");
+          }
         }
+      } else if (isUpdate && bibit != null) {
+        // Jika mode edit dan tidak ada gambar baru, gunakan gambar yang sudah ada
+        uploadedUrls = List<String>.from(bibit!.gambarImage);
       }
 
       final bibitData = {
@@ -561,9 +638,33 @@ Image Details:
 
       await saveBibitToFirestore(bibitData, isUpdate);
 
-      // Pastikan loading berhenti dan kembali ke halaman sebelumnya
+      // Pastikan loading berhenti
       isLoading.value = false;
-      Get.back();
+
+      // Buat objek Bibit baru dengan data yang diupdate
+      final updatedBibit = Bibit(
+        id: bibitData['id_bibit'] as String,
+        namaBibit: bibitData['nama_bibit'] as String,
+        varietas: bibitData['varietas'] as String,
+        usia: bibitData['usia'] as int,
+        tinggi: bibitData['tinggi'] as int,
+        jenisBibit: bibitData['jenis_bibit'] as String,
+        kondisi: bibitData['kondisi'] as String,
+        statusHama: bibitData['status_hama'] as String,
+        mediaTanam: bibitData['media_tanam'] as String,
+        nutrisi: bibitData['nutrisi'] as String,
+        asalBibit: bibitData['asal_bibit'] as String,
+        produktivitas: bibitData['produktivitas'] as String,
+        catatan: bibitData['catatan'] as String,
+        gambarImage: uploadedUrls, // Gunakan uploadedUrls yang sudah diproses
+        kph: (bibitData['lokasi_tanam'] as Map)['kph'] as String,
+        bkph: (bibitData['lokasi_tanam'] as Map)['bkph'] as String,
+        rkph: (bibitData['lokasi_tanam'] as Map)['rkph'] as String,
+        tanggalPembibitan: bibitData['tanggal_pembibitan'] as DateTime,
+        urlBibit: bibit?.urlBibit ?? '',
+        createdAt: bibit?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
       // Tampilkan snackbar sukses
       Get.snackbar(
@@ -578,6 +679,11 @@ Image Details:
       // Refresh data
       await Get.find<BibitController>().fetchBibitFromFirestore();
       await Get.find<BibitController>().fetchJenisList();
+
+      // Kembali ke halaman detail dengan data yang diupdate
+      Get.back(result: updatedBibit);
+
+      // Navigasi ke inventory setelah data berhasil disimpan
       navigationController.navigateToInventory();
     } catch (e) {
       print("Error saat simpan bibit: $e");
@@ -647,5 +753,96 @@ Image Details:
     final bhMap = bagianHutanMap[selectedKPH.value];
     if (bhMap == null) return 0.0;
     return bhMap.values.reduce((a, b) => a + b);
+  }
+
+  void loadJenisBibitList() {
+    // Load jenis bibit list from predefined options
+    jenisBibitList.value = jenisBibitOptions;
+  }
+
+  void setJenisBibit(String value) {
+    // Normalize the value first
+    String normalizedValue = normalizeJenisBibitValue(value);
+    if (jenisBibitList.contains(normalizedValue)) {
+      selectedJenisBibit.value = normalizedValue;
+      jenisBibitController.text = normalizedValue;
+    } else {
+      // If value is not in list, set to first option
+      selectedJenisBibit.value = jenisBibitList.first;
+      jenisBibitController.text = jenisBibitList.first;
+    }
+  }
+
+  String normalizeJenisBibitValue(String value) {
+    // Convert common variations to standard values
+    Map<String, String> normalizations = {
+      'Buah': 'Buah',
+      'Kayu': 'Kayu',
+      'Bibit Buah': 'Buah',
+      'Bibit Kayu': 'Kayu',
+      'Tanaman Buah': 'Buah',
+      'Tanaman Kayu': 'Kayu'
+    };
+
+    // If the value exists in normalizations, return the normalized value
+    if (normalizations.containsKey(value)) {
+      return normalizations[value]!;
+    }
+
+    // If no match found, return the first option as default
+    return jenisBibitOptions.first;
+  }
+
+  void setKondisi(String value) {
+    if (kondisiList.contains(value)) {
+      kondisi.value = value;
+    }
+  }
+
+  void setStatusHama(String value) {
+    if (statusHamaList.contains(value)) {
+      statusHama.value = value;
+    }
+  }
+
+  void setMediaTanam(String value) {
+    if (mediaTanamList.contains(value)) {
+      mediaTanam.value = value;
+      mediaTanamController.text = value;
+    }
+  }
+
+  void setNutrisi(String value) {
+    if (nutrisiList.contains(value)) {
+      nutrisi.value = value;
+      nutrisiController.text = value;
+    }
+  }
+
+  void setAsalBibit(String value) {
+    if (asalBibitList.contains(value)) {
+      asalBibit.value = value;
+      asalBibitController.text = value;
+    }
+  }
+
+  void setProduktivitas(String value) {
+    if (produktivitasList.contains(value)) {
+      produktivitas.value = value;
+      produktivitasController.text = value;
+    }
+  }
+
+  // Helper method to normalize dropdown values
+  String normalizeDropdownValue(String value, List<String> validOptions) {
+    // Convert common variations to standard values
+    if (value == 'Tidak Ada') return 'Tidak ada';
+    if (value == 'Siap Tanam') return 'Baik';
+
+    // If the value exists in valid options, return it
+    if (validOptions.contains(value)) return value;
+
+    // If no match found, return the first option as default
+    return validOptions.first;
   }
 }

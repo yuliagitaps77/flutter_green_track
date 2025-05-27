@@ -45,6 +45,17 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when returning from edit page
+    if (Get.arguments != null && Get.arguments is Bibit) {
+      setState(() {
+        bibit = Get.arguments as Bibit;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Get screen dimensions for responsive layout
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -356,10 +367,7 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
             icon: const Icon(Icons.edit),
             label: const Text("Edit"),
             onPressed: () {
-              Get.toNamed(
-                CetakBarcodeBibitPage.routeName,
-                arguments: bibit,
-              );
+              _navigateToEditPage();
             },
           ),
         ),
@@ -412,10 +420,7 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        Get.toNamed(
-                          CetakBarcodeBibitPage.routeName,
-                          arguments: bibit,
-                        );
+                        _navigateToEditPage();
                       },
                     ),
                     const Divider(),
@@ -831,5 +836,20 @@ class _BibitDetailPageState extends State<BibitDetailPage> {
   void dispose() {
     _imagePageController.dispose();
     super.dispose();
+  }
+
+  void _navigateToEditPage() {
+    Navigator.pop(context);
+    Get.toNamed(
+      CetakBarcodeBibitPage.routeName,
+      arguments: bibit,
+    )?.then((_) {
+      // Refresh data when returning from edit page
+      if (Get.arguments != null && Get.arguments is Bibit) {
+        setState(() {
+          bibit = Get.arguments as Bibit;
+        });
+      }
+    });
   }
 }

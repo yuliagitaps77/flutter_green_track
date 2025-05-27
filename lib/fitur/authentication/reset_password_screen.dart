@@ -11,7 +11,6 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with TickerProviderStateMixin {
-  // Gunakan satu controller saja untuk menghindari kebingungan
   final AuthenticationController _authController =
       Get.find<AuthenticationController>();
   final TextEditingController _emailController = TextEditingController();
@@ -67,7 +66,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     });
 
     try {
-      // Validate email
+      // Validate email format
       final email = _emailController.text.trim();
       if (email.isEmpty) {
         throw Exception('Email tidak boleh kosong');
@@ -77,6 +76,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         throw Exception('Format email tidak valid');
       }
 
+      // TAMBAHAN: Cek apakah email ada di database terlebih dahulu
+      print('Mengecek keberadaan email: $email');
+      bool emailExists = await _authController.checkEmailExists(email);
+
+      if (!emailExists) {
+        throw Exception(
+            'Email tidak terdaftar. Silakan gunakan email yang sudah terdaftar.');
+      }
+
+      print('Email ditemukan, mengirim reset password...');
       // Send reset password email
       await _authController.resetPassword(email);
 
@@ -84,6 +93,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         _isLoading = false;
         _success = true;
       });
+
+      // Tampilkan pesan sukses
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tautan reset password telah dikirim ke email Anda'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -96,6 +113,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           content: Text(_errorMessage?.replaceAll('Exception: ', '') ??
               'Terjadi kesalahan'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
         ),
       );
     }
@@ -172,12 +190,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                           "Ubah Kata Sandi",
                           style: Theme.of(context).textTheme.displayLarge,
                         ),
-                        // Welcome text
-                        SizedBox(
-                          height: 10,
-                        ),
+                        SizedBox(height: 10),
                         Text(
-                          "Masukan alamat email anda untuk menerima tautan reset password",
+                          "Masukan alamat email yang terdaftar untuk menerima tautan reset password",
                           style: TextStyle(
                             color: Color(0xFF757575),
                             fontSize: 16,
@@ -187,60 +202,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
                         SizedBox(height: 50),
 
-                        // Login form
+                        // Form atau success message
                         if (!_success) _buildLoginForm(),
-                        if (_success)
-                          Column(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border:
-                                      Border.all(color: Colors.green.shade200),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                      size: 60,
-                                    ),
-                                    SizedBox(height: 15),
-                                    Text(
-                                      'Tautan Reset Terkirim!',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green.shade700,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      'Silakan periksa email Anda untuk tautan reset password. Jika tidak menemukannya, periksa folder spam.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.green.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 20),
-                              TextButton.icon(
-                                icon: Icon(Icons.refresh),
-                                label: Text('Kirim Ulang'),
-                                onPressed: () {
-                                  setState(() {
-                                    _success = false;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        Spacer(),
+                        if (_success) _buildSuccessMessage(),
 
+                        Spacer(),
                         SizedBox(height: 20),
                       ],
                     ),
@@ -251,6 +217,57 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSuccessMessage() {
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 60,
+              ),
+              SizedBox(height: 15),
+              Text(
+                'Tautan Reset Terkirim!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Silakan periksa email Anda untuk tautan reset password. Jika tidak menemukannya, periksa folder spam.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 20),
+        TextButton.icon(
+          icon: Icon(Icons.refresh),
+          label: Text('Kirim Ulang'),
+          onPressed: () {
+            setState(() {
+              _success = false;
+            });
+          },
+        ),
+      ],
     );
   }
 
@@ -340,11 +357,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ],
           ),
           child: TextField(
-            controller:
-                _emailController, // PERBAIKAN: Gunakan _emailController daripada controller.emailController
+            controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              hintText: "Email",
+              hintText: "Email yang terdaftar",
               prefixIcon: Icon(
                 Icons.email_outlined,
                 color: Color(0xFF4CAF50),
@@ -362,63 +378,81 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
         // Error message (if any)
         if (_errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              _errorMessage!.replaceAll('Exception: ', ''),
-              style: TextStyle(
-                color: Colors.red[700],
-                fontSize: 12,
-              ),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage!.replaceAll('Exception: ', ''),
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
         SizedBox(height: 30),
 
-        // Login button with animation
+        // Reset button with animation
         GestureDetector(
-            onTap: _isLoading
-                ? null
-                : _sendResetLink, // Pastikan ini tidak kosong saat loading
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF66BB6A),
-                    Color(0xFF4CAF50),
-                    Color(0xFF388E3C),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFF4CAF50).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
+          onTap: _isLoading ? null : _sendResetLink,
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              gradient: _isLoading
+                  ? LinearGradient(
+                      colors: [Colors.grey, Colors.grey],
                     )
-                  : Center(
-                      child: Text(
-                        'Kirim Tautan Reset',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                  : LinearGradient(
+                      colors: [
+                        Color(0xFF66BB6A),
+                        Color(0xFF4CAF50),
+                        Color(0xFF388E3C),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: _isLoading
+                      ? Colors.grey.withOpacity(0.3)
+                      : Color(0xFF4CAF50).withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      'Kirim Tautan Reset',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-            ))
+                  ),
+          ),
+        ),
       ],
     );
   }

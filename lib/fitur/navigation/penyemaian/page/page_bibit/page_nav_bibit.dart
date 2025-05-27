@@ -36,9 +36,11 @@ class _DaftarBibitPageState extends State<DaftarBibitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text(
-          "Daftar Bibit",
+          "Bibit",
           style: TextStyle(
             color: Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,
@@ -50,93 +52,64 @@ class _DaftarBibitPageState extends State<DaftarBibitPage> {
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.green),
       ),
-      body: Stack(
-        children: [
-          // Background gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Color(0xFFF5F9F5),
-                  Color(0xFFEDF7ED),
-                ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  onChanged: (value) => controller.filterBibit(value),
+                  decoration: const InputDecoration(
+                    hintText: 'Cari bibit...',
+                    prefixIcon: Icon(Icons.search, color: Colors.green),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 15),
+                  ),
+                ),
               ),
             ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    onChanged: (value) => controller.filterBibit(value),
-                    decoration: const InputDecoration(
-                      hintText: 'Cari bibit...',
-                      prefixIcon: Icon(Icons.search, color: Colors.green),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Jenis filter
-                // SingleChildScrollView(
-                //   scrollDirection: Axis.horizontal,
-                //   child: Obx(() => Row(
-                //         children: [
-                //           _buildJenisChip(
-                //               'Semua', controller.selectedJenis == 'Semua'),
-                //           ...controller.jenisList
-                //               .map((jenis) => _buildJenisChip(
-                //                     jenis,
-                //                     controller.selectedJenis == jenis,
-                //                   )),
-                //         ],
-                //       )),
-                // ),
-                const SizedBox(height: 20),
-                // Grid view of bibit
-                Expanded(
-                  child: Obx(
-                    () => controller.filteredBibitList.isEmpty
-                        ? const Center(child: Text('Tidak ada data bibit'))
-                        : GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
-                            itemCount: controller.filteredBibitList.length,
-                            itemBuilder: (context, index) {
-                              final bibit = controller.filteredBibitList[index];
-                              return _buildBibitCard(bibit);
-                            },
+            Expanded(
+              child: Obx(
+                () => controller.filteredBibitList.isEmpty
+                    ? const Center(child: Text('Tidak ada data bibit'))
+                    : NotificationListener<OverscrollIndicatorNotification>(
+                        onNotification:
+                            (OverscrollIndicatorNotification overscroll) {
+                          overscroll.disallowIndicator();
+                          return true;
+                        },
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.75,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
                           ),
-                  ),
-                ),
-              ],
+                          itemCount: controller.filteredBibitList.length,
+                          itemBuilder: (context, index) {
+                            final bibit = controller.filteredBibitList[index];
+                            return _buildBibitCard(bibit);
+                          },
+                        ),
+                      ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

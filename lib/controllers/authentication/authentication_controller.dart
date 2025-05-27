@@ -19,6 +19,87 @@ enum LoginStatus { initial, loading, success, failure }
 
 class AuthenticationController extends GetxController {
   final FirebaseService _firebaseService = FirebaseService();
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      print('Checking email existence for: $email');
+
+      // Query ke collection 'akun' untuk mencari email
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('akun')
+          .where('email', isEqualTo: email.toLowerCase().trim())
+          .limit(1)
+          .get();
+
+      bool exists = querySnapshot.docs.isNotEmpty;
+
+      if (exists) {
+        // Cek juga status akun jika ada
+        var userData = querySnapshot.docs.first.data() as Map<String, dynamic>;
+
+        // print('Email found with status: $status');
+
+        // Opsional: Cek apakah akun aktif
+        // if (status.toLowerCase() == 'nonaktif') {
+        //   throw Exception(
+        //       'Akun dengan email ini tidak aktif. Silakan hubungi administrator.');
+        // }
+      }
+
+      print('Email exists: $exists');
+      return exists;
+    } catch (e) {
+      print('Error checking email existence: $e');
+      // Jika ada error dalam pengecekan, rethrow exception
+      if (e.toString().contains('Akun dengan email ini tidak aktif')) {
+        rethrow;
+      }
+      throw Exception(
+          'Terjadi kesalahan saat memverifikasi email. Silakan coba lagi.');
+    }
+  }
+
+  /// Alternative method jika Anda ingin mengecek di Firebase Auth juga
+  Future<bool> checkEmailExistsInAuth(String email) async {
+    try {
+      print('Checking email in Firebase Auth: $email');
+
+      // Cek di Firebase Auth
+      final methods =
+          await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+      bool existsInAuth = methods.isNotEmpty;
+
+      if (existsInAuth) {
+        // Jika ada di Auth, cek juga di Firestore
+        return await checkEmailExists(email);
+      }
+
+      return false;
+    } catch (e) {
+      print('Error checking email in Auth: $e');
+      // Fallback ke pengecekan Firestore saja
+      return await checkEmailExists(email);
+    }
+  }
+
+  /// Method untuk mendapatkan detail akun berdasarkan email
+  Future<Map<String, dynamic>?> getAccountByEmail(String email) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('akun')
+          .where('email', isEqualTo: email.toLowerCase().trim())
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.data() as Map<String, dynamic>;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error getting account by email: $e');
+      return null;
+    }
+  }
 
   // Observable for current user
   final Rx<UserModel?> currentUser = Rx<UserModel?>(null);
