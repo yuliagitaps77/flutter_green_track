@@ -139,6 +139,7 @@ class JadwalPerawatanController extends GetxController {
   final Rx<String> selectedJenisPerawatan = "penyiraman".obs;
   final TextEditingController catatanController = TextEditingController();
   final RxString selectedTime = "08:00".obs;
+  final RxBool isFormValid = false.obs;
 
   // Current user
   String? currentUserId;
@@ -172,10 +173,19 @@ class JadwalPerawatanController extends GetxController {
     fetchBibitList();
     fetchJadwalPerawatan();
     _notificationService.initNotification();
+
+    // Add listener to catatanController
+    catatanController.addListener(_validateForm);
+  }
+
+  void _validateForm() {
+    isFormValid.value = selectedBibitForJadwal.value != null &&
+        catatanController.text.trim().isNotEmpty;
   }
 
   @override
   void onClose() {
+    catatanController.removeListener(_validateForm);
     catatanController.dispose();
     super.onClose();
   }
@@ -317,16 +327,19 @@ class JadwalPerawatanController extends GetxController {
   // Set bibit for new jadwal
   void setBibitForNewJadwal(Bibit bibit) {
     selectedBibitForJadwal.value = bibit;
+    _validateForm();
   }
 
   // Set jenis perawatan
   void setJenisPerawatan(String jenis) {
     selectedJenisPerawatan.value = jenis;
+    _validateForm();
   }
 
   // Set waktu jadwal
   void setWaktuJadwal(String time) {
     selectedTime.value = time;
+    _validateForm();
   }
 
   String _formatJenisPerawatan(String jenis) {
@@ -795,17 +808,30 @@ class JadwalPerawatanPage extends StatelessWidget {
                 ],
               ),
             )),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddJadwalDialog(),
-        backgroundColor: Color(0xFF4CAF50),
-        elevation: 3,
-        label: Column(
-          children: [
-            Icon(Icons.add),
-            SizedBox(width: 6),
-          ],
-        ),
-      ),
+      floatingActionButton: Obx(() {
+        final selectedDay = controller.selectedDay.value;
+        final now = DateTime.now();
+        final isPastDate = selectedDay.year < now.year ||
+            (selectedDay.year == now.year && selectedDay.month < now.month) ||
+            (selectedDay.year == now.year &&
+                selectedDay.month == now.month &&
+                selectedDay.day < now.day);
+
+        return FloatingActionButton.extended(
+          onPressed: isPastDate ? null : () => _showAddJadwalDialog(),
+          backgroundColor: isPastDate ? Colors.grey : Color(0xFF4CAF50),
+          elevation: 3,
+          tooltip: isPastDate
+              ? 'Tidak dapat menambahkan jadwal untuk hari yang telah lewat'
+              : 'Tambah Jadwal',
+          label: Column(
+            children: [
+              Icon(Icons.add),
+              SizedBox(width: 6),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -2088,22 +2114,27 @@ class JadwalPerawatanPage extends StatelessWidget {
                           ),
                           SizedBox(width: 16),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Get.back();
-                                controller.createJadwalPerawatan();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF4CAF50),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text('Simpan Jadwal'),
-                            ),
+                            child: Obx(() => ElevatedButton(
+                                  onPressed: controller.isFormValid.value
+                                      ? () {
+                                          Get.back();
+                                          controller.createJadwalPerawatan();
+                                        }
+                                      : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        controller.isFormValid.value
+                                            ? Color(0xFF4CAF50)
+                                            : Colors.grey[400],
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text('Simpan Jadwal'),
+                                )),
                           ),
                         ],
                       ),
