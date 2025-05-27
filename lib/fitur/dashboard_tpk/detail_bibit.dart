@@ -733,7 +733,15 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                 controller: amountController,
                 decoration: InputDecoration(
                   labelText: 'Jumlah',
+                  hintText:
+                      'Total stok saat ini: ${kayuData['jumlah_stok'] ?? 0} unit',
                   border: OutlineInputBorder(),
+                  helperText: isAddition
+                      ? 'Masukkan jumlah yang akan ditambahkan'
+                      : 'Masukkan jumlah yang akan dikurangi',
+                  helperStyle: TextStyle(
+                    color: isAddition ? Colors.green : Colors.orange,
+                  ),
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -787,6 +795,19 @@ class _KayuDetailPageState extends State<KayuDetailPage> {
                           : (int.tryParse(
                                   data['jumlah_stok']?.toString() ?? '0') ??
                               0);
+
+                      // Validasi untuk pengurangan stok
+                      if (!isAddition && amount > currentStock) {
+                        Get.back(); // Tutup loading
+                        Get.snackbar(
+                          'Validasi',
+                          'Jumlah pengurangan ($amount) tidak boleh melebihi stok saat ini ($currentStock)',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                          duration: Duration(seconds: 5),
+                        );
+                        return;
+                      }
 
                       // Hitung stok baru
                       int newStock = currentStock;
