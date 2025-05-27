@@ -574,13 +574,23 @@ class TambahPersediaanController extends GetxController {
         try {
           final inventoryController = Get.find<InventoryKayuController>();
           final newItem = InventoryItem(
-              id: idController.text,
-              batch:
-                  '${jenisController.text} - Batch ${batchPanenController.text}',
-              stock: '${jumlahStokController.text} Unit',
-              jumlahStok: int.tryParse(jumlahStokController.text) ?? 0);
-          inventoryController.inventoryItems.add(newItem);
+            id: idController.text,
+            batch:
+                '${jenisController.text} - Batch ${batchPanenController.text}',
+            stock: '${jumlahStokController.text} Unit',
+            jumlahStok: int.tryParse(jumlahStokController.text) ?? 0,
+            namaKayu: namaController.text,
+            jenisKayu: jenisController.text,
+            batchPanen: batchPanenController.text,
+            imageUrl: uploadedUrls.isNotEmpty ? uploadedUrls[0] : '',
+          );
+
+          // Add to the beginning of the list since we're using descending order
+          inventoryController.inventoryItems.insert(0, newItem);
           inventoryController.updateCounts();
+
+          // Trigger a manual refresh to ensure everything is in sync
+          await inventoryController.fetchInventoryFromFirestore();
           print('✅ Item added to local inventory successfully');
         } catch (inventoryError) {
           print(

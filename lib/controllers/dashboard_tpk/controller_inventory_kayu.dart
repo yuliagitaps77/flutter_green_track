@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_controller.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/detail_bibit.dart';
 import 'package:flutter_green_track/fitur/dashboard_tpk/tambah_persedian_kayu_page.dart';
 import 'package:flutter_green_track/fitur/lacak_history/user_activity_model.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 import '../dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 
@@ -24,31 +26,35 @@ class InventoryItem {
     required this.id,
     required this.batch,
     required this.stock,
+    required this.jumlahStok,
     this.namaKayu = '',
     this.jenisKayu = '',
     this.batchPanen = '',
     this.imageUrl = '',
-    this.jumlahStok = 0,
   });
 
   // Factory constructor to create from Firestore document
   factory InventoryItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
 
-    // Extract fields
-    final jenis = data['jenis_kayu'] ?? '';
-    final batchPanen = data['batch_panen'] ?? '';
-    final namaKayu = data['nama_kayu'] ?? '';
+    // Extract fields with proper null handling
+    final jenisKayu = data['jenis_kayu']?.toString() ?? '';
+    final batchPanen = data['batch_panen']?.toString() ?? '';
+    final namaKayu = data['nama_kayu']?.toString() ?? '';
 
     // Make sure jumlahStok is correctly extracted as an integer
     final jumlahStok = data['jumlah_stok'] is int
         ? data['jumlah_stok']
         : (int.tryParse(data['jumlah_stok']?.toString() ?? '0') ?? 0);
 
-    print('🔥 [INVENTORY ITEM] Creating item with jumlahStok: $jumlahStok');
+    print('🔥 [INVENTORY ITEM] Creating item with data:');
+    print('🔥 [INVENTORY ITEM] Nama Kayu: $namaKayu');
+    print('🔥 [INVENTORY ITEM] Jenis Kayu: $jenisKayu');
+    print('🔥 [INVENTORY ITEM] Batch Panen: $batchPanen');
+    print('🔥 [INVENTORY ITEM] Jumlah Stok: $jumlahStok');
 
     // Format batch display name
-    final batch = '$jenis - Batch $batchPanen';
+    final batch = '$jenisKayu - Batch $batchPanen';
 
     // Format stock display
     final stock = '$jumlahStok Unit';
@@ -62,10 +68,10 @@ class InventoryItem {
       batch: batch,
       stock: stock,
       namaKayu: namaKayu,
-      jenisKayu: jenis,
+      jenisKayu: jenisKayu,
       batchPanen: batchPanen,
       imageUrl: imageUrl,
-      jumlahStok: jumlahStok, // Make sure this is correctly passed
+      jumlahStok: jumlahStok,
     );
   }
 }
@@ -83,80 +89,113 @@ class InventoryKayuController extends GetxController {
   var isEditing = false.obs;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  StreamSubscription<QuerySnapshot>? _inventorySubscription;
+  bool _isProcessingUpdate = false;
 
   @override
   void onInit() {
     super.onInit();
+    // Initial fetch
     fetchInventoryFromFirestore();
+    // Setup real-time listener after initial fetch
+    setupRealtimeListener();
+  }
+
+  @override
+  void onClose() {
+    _inventorySubscription?.cancel();
+    super.onClose();
+  }
+
+  void setupRealtimeListener() {
+    print('🔄 [INVENTORY] Setting up real-time listener...');
+    _inventorySubscription?.cancel();
+
+    _inventorySubscription = _firestore
+        .collection('kayu')
+        .orderBy('created_at',
+            descending: true) // Add ordering for better performance
+        .limit(
+            50) // Limit the number of documents to prevent performance issues
+        .snapshots()
+        .listen((snapshot) {
+      if (_isProcessingUpdate) return; // Skip if already processing
+      _isProcessingUpdate = true;
+
+      print('📡 [INVENTORY] Received real-time update');
+      _processInventorySnapshot(snapshot);
+
+      _isProcessingUpdate = false;
+    }, onError: (error) {
+      print('❌ [INVENTORY] Error in real-time listener: $error');
+      errorMessage.value = 'Error listening to updates: $error';
+      _isProcessingUpdate = false;
+    });
+  }
+
+  void _processInventorySnapshot(QuerySnapshot snapshot) {
+    if (snapshot.docs.isEmpty) {
+      print('⚠️ [INVENTORY] No documents found');
+      inventoryItems.clear();
+      updateCounts();
+      return;
+    }
+
+    try {
+      final newItems = <InventoryItem>[];
+      int runningTotal = 0;
+
+      for (var doc in snapshot.docs) {
+        try {
+          final item = InventoryItem.fromFirestore(doc);
+          newItems.add(item);
+          runningTotal += item.jumlahStok;
+        } catch (e) {
+          print('❌ [INVENTORY] Error processing document ${doc.id}: $e');
+        }
+      }
+
+      // Update the list only if there are changes
+      if (!_areListsEqual(inventoryItems, newItems)) {
+        inventoryItems.value = newItems;
+        totalKayu.value = runningTotal;
+        jumlahBatch.value = newItems.length;
+        print('✅ [INVENTORY] Updated list with ${newItems.length} items');
+      }
+    } catch (e) {
+      print('❌ [INVENTORY] Error processing snapshot: $e');
+      errorMessage.value = 'Error processing data: $e';
+    }
+  }
+
+  bool _areListsEqual(List<InventoryItem> list1, List<InventoryItem> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i].id != list2[i].id ||
+          list1[i].jumlahStok != list2[i].jumlahStok) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> fetchInventoryFromFirestore() async {
-    print('🔥 [FIRESTORE FETCH] Starting to fetch inventory data...');
+    print('🔄 [INVENTORY] Manually refreshing inventory...');
     isLoading.value = true;
     errorMessage.value = '';
 
     try {
-      print('🔥 [FIRESTORE FETCH] Getting current user ID...');
-      final user = FirebaseAuth.instance.currentUser;
-      final userId = user?.uid;
-
-      if (userId == null) {
-        print('❌ [FIRESTORE FETCH] No user logged in');
-        errorMessage.value = 'Anda harus login terlebih dahulu';
-        return;
-      }
-      print('🔥 [FIRESTORE FETCH] User ID: $userId');
-
-      print('🔥 [FIRESTORE FETCH] Querying Firestore collection "kayu"...');
       final snapshot = await _firestore
           .collection('kayu')
+          .orderBy('created_at', descending: true)
+          .limit(50)
           .get()
           .timeout(const Duration(seconds: 15));
 
-      print(
-          '✅ [FIRESTORE FETCH] Query successful. Documents count: ${snapshot.docs.length}');
-
-      // Clear existing items
-      inventoryItems.clear();
-
-      // Process documents
-      if (snapshot.docs.isEmpty) {
-        print('⚠️ [FIRESTORE FETCH] No documents found for this user');
-      } else {
-        int runningTotal = 0; // For debugging
-
-        for (var doc in snapshot.docs) {
-          print('🔥 [FIRESTORE FETCH] Processing document: ${doc.id}');
-          try {
-            final data = doc.data();
-
-            // Extract jumlahStok directly from Firestore document
-            final jumlahStok = data['jumlah_stok'] ?? 0;
-            print(
-                '🔥 [FIRESTORE FETCH] Document ${doc.id} has jumlahStok: $jumlahStok');
-
-            runningTotal += (jumlahStok as num).toInt();
-
-            final item = InventoryItem.fromFirestore(doc);
-            inventoryItems.add(item);
-            print(
-                '✅ [FIRESTORE FETCH] Added item: ${item.batch} (${item.stock}) with stok: ${item.jumlahStok}');
-          } catch (e) {
-            print(
-                '❌ [FIRESTORE FETCH] Error processing document ${doc.id}: $e');
-          }
-        }
-
-        print(
-            '🔥 [FIRESTORE FETCH] Running total from all documents: $runningTotal');
-      }
-
-      // Update counts
-      updateCounts();
-      print('✅ [FIRESTORE FETCH] Fetch completed successfully');
-    } catch (e, stackTrace) {
-      print('❌ [FIRESTORE FETCH] Error fetching inventory: $e');
-      print('❌ [FIRESTORE FETCH] Stack trace: $stackTrace');
+      _processInventorySnapshot(snapshot);
+      print('✅ [INVENTORY] Manual refresh completed successfully');
+    } catch (e) {
+      print('❌ [INVENTORY] Error in manual refresh: $e');
       errorMessage.value = 'Gagal memuat data: $e';
     } finally {
       isLoading.value = false;
@@ -197,6 +236,18 @@ class InventoryKayuController extends GetxController {
     final batchController = TextEditingController(text: item.batchPanen);
     final stokController =
         TextEditingController(text: item.jumlahStok.toString());
+
+    // Ensure the text is set after controller initialization
+    jenisController.text = item.jenisKayu;
+    namaController.text = item.namaKayu;
+    batchController.text = item.batchPanen;
+    stokController.text = item.jumlahStok.toString();
+
+    print('📝 [EDIT] Initialized controllers with values:');
+    print('📝 [EDIT] Nama Kayu: ${namaController.text}');
+    print('📝 [EDIT] Jenis Kayu: ${jenisController.text}');
+    print('📝 [EDIT] Batch Panen: ${batchController.text}');
+    print('📝 [EDIT] Jumlah Stok: ${stokController.text}');
 
     isEditing.value = true;
 
@@ -250,24 +301,40 @@ class InventoryKayuController extends GetxController {
                   ),
 
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Nama Kayu'),
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Kayu',
+                    border: OutlineInputBorder(),
+                  ),
                   controller: namaController,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Jenis Kayu'),
+                  decoration: const InputDecoration(
+                    labelText: 'Jenis Kayu',
+                    border: OutlineInputBorder(),
+                  ),
                   controller: jenisController,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Batch Panen'),
+                  decoration: const InputDecoration(
+                    labelText: 'Batch Panen',
+                    border: OutlineInputBorder(),
+                  ),
                   controller: batchController,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  decoration: const InputDecoration(labelText: 'Jumlah Stok'),
+                  decoration: const InputDecoration(
+                    labelText: 'Jumlah Stok',
+                    border: OutlineInputBorder(),
+                  ),
                   controller: stokController,
                   keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
                 ),
               ],
             ),
@@ -447,12 +514,19 @@ class InventoryKayuController extends GetxController {
                         try {
                           // Set deleting state
                           isDeleting.value = true;
+
+                          // Close dialog first
+                          Get.back();
+
+                          // Remove from local list immediately for better UX
+                          inventoryItems.removeAt(index);
+                          updateCounts();
+
+                          // Record activity
                           AppController.to.recordActivity(
                             activityType: ActivityTypes.deleteKayu,
                             name: "${item.namaKayu} | ${item.jenisKayu}",
                           );
-                          // Close dialog first
-                          Get.back();
 
                           print(
                               '🔥 [FIRESTORE DELETE] Deleting document: ${item.id}');
@@ -467,9 +541,16 @@ class InventoryKayuController extends GetxController {
                           print(
                               '✅ [FIRESTORE DELETE] Document deleted successfully');
 
-                          // Remove from local list
-                          inventoryItems.removeAt(index);
-                          updateCounts();
+                          // Refresh dashboard data
+                          try {
+                            final dashboardController =
+                                Get.find<TPKDashboardController>();
+                            await dashboardController.refreshDashboardData();
+                            print('✅ Dashboard data refreshed after deletion');
+                          } catch (dashboardError) {
+                            print(
+                                '⚠️ Warning: Could not refresh dashboard: $dashboardError');
+                          }
 
                           Get.snackbar(
                             'Sukses',
@@ -482,6 +563,10 @@ class InventoryKayuController extends GetxController {
                               '❌ [FIRESTORE DELETE] Error deleting document: $e');
                           print(
                               '❌ [FIRESTORE DELETE] Stack trace: $stackTrace');
+
+                          // If there's an error, add the item back to the list
+                          inventoryItems.insert(index, item);
+                          updateCounts();
 
                           Get.snackbar(
                             'Error',
