@@ -17,15 +17,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'tambah_persedian_kayu_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'tambah_persedian_kayu_controller.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'tambah_persedian_kayu_controller.dart';
 import 'package:flutter_green_track/data/models/user_model.dart';
 import 'package:flutter_green_track/fitur/navigation/navigation_page.dart';
+import 'package:flutter_green_track/controllers/dashboard_tpk/dashboard_tpk_controller.dart';
 
 class LocationData {
   final String kph;
@@ -561,65 +559,76 @@ class TambahPersediaanController extends GetxController {
             .set(kayuData)
             .timeout(const Duration(seconds: 30));
         print('✅ Document successfully saved to Firestore');
+
+        // Update dashboard data after successful save
+        try {
+          final dashboardController = Get.find<TPKDashboardController>();
+          await dashboardController.refreshDashboardData();
+          print('✅ Dashboard data refreshed successfully');
+        } catch (dashboardError) {
+          print('⚠️ Warning: Could not refresh dashboard: $dashboardError');
+        }
+
+        // Add to local inventory
+        print('🔵 Adding to local inventory through controller');
+        try {
+          final inventoryController = Get.find<InventoryKayuController>();
+          final newItem = InventoryItem(
+              id: idController.text,
+              batch:
+                  '${jenisController.text} - Batch ${batchPanenController.text}',
+              stock: '${jumlahStokController.text} Unit',
+              jumlahStok: int.tryParse(jumlahStokController.text) ?? 0);
+          inventoryController.inventoryItems.add(newItem);
+          inventoryController.updateCounts();
+          print('✅ Item added to local inventory successfully');
+        } catch (inventoryError) {
+          print(
+              '⚠️ Warning: Could not add to local inventory: $inventoryError');
+        }
+
+        // Show success message with styled snackbar
+        print('🔵 Showing success message');
+        Get.snackbar(
+          'Sukses',
+          'Persediaan kayu berhasil ditambahkan',
+          backgroundColor: Color(0xFF4CAF50),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+          borderRadius: 15,
+          margin: const EdgeInsets.all(10),
+          snackPosition: SnackPosition.BOTTOM,
+          icon: Icon(Icons.check_circle, color: Colors.white),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          titleText: Text(
+            'Sukses',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          messageText: Text(
+            'Persediaan kayu berhasil ditambahkan',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        );
+
+        // Navigate back using Get.off
+        print('🔵 Navigating back');
+        Get.off(() => MainNavigationContainer(userRole: UserRole.adminTPK));
+        print('✅ saveInventory function completed successfully');
       } catch (firestoreError, stackTrace) {
         print('❌ Firestore save operation failed');
         print('❌ Firestore error: $firestoreError');
         print('❌ Stack trace: $stackTrace');
         throw firestoreError;
       }
-
-      // Add to local inventory
-      print('🔵 Adding to local inventory through controller');
-      try {
-        final inventoryController = Get.find<InventoryKayuController>();
-        final newItem = InventoryItem(
-            id: idController.text,
-            batch:
-                '${jenisController.text} - Batch ${batchPanenController.text}',
-            stock: '${jumlahStokController.text} Unit');
-        inventoryController.inventoryItems.add(newItem);
-        inventoryController.updateCounts();
-        print('✅ Item added to local inventory successfully');
-      } catch (inventoryError) {
-        print('⚠️ Warning: Could not add to local inventory: $inventoryError');
-      }
-
-      // Show success message with styled snackbar
-      print('🔵 Showing success message');
-      Get.snackbar(
-        'Sukses',
-        'Persediaan kayu berhasil ditambahkan',
-        backgroundColor: Color(0xFF4CAF50),
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-        borderRadius: 15,
-        margin: const EdgeInsets.all(10),
-        snackPosition: SnackPosition.BOTTOM,
-        icon: Icon(Icons.check_circle, color: Colors.white),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        titleText: Text(
-          'Sukses',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        messageText: Text(
-          'Persediaan kayu berhasil ditambahkan',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontFamily: 'Poppins',
-          ),
-        ),
-      );
-
-      // Navigate back using Get.off
-      print('🔵 Navigating back');
-      Get.off(() => MainNavigationContainer(userRole: UserRole.adminTPK));
-      print('✅ saveInventory function completed successfully');
     } catch (e, stackTrace) {
       print('❌ Error in saveInventory function: $e');
       print('❌ Stack trace: $stackTrace');

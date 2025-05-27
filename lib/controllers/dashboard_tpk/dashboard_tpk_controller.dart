@@ -78,6 +78,29 @@ class TPKDashboardController extends GetxController {
     super.onInit();
     initActions();
     initUserData();
+    setupRealtimeListeners();
+  }
+
+  void setupRealtimeListeners() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    // Listen to kayu collection changes
+    FirebaseFirestore.instance
+        .collection('kayu')
+        .snapshots()
+        .listen((snapshot) {
+      calculateWoodStatistics();
+    });
+
+    // Listen to scan history changes
+    FirebaseFirestore.instance
+        .collectionGroup('riwayat_scan')
+        .where('id_user', isEqualTo: currentUser.uid)
+        .snapshots()
+        .listen((snapshot) {
+      calculateScanningStatistics();
+    });
   }
 
   Future<void> initUserData() async {
@@ -392,7 +415,7 @@ class TPKDashboardController extends GetxController {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // Get scan activities for current user
+      // Get scan activities from AppController
       final activities = AppController.to.recentActivities
           .where((activity) =>
               activity.userId == currentUser.uid &&
@@ -403,12 +426,13 @@ class TPKDashboardController extends GetxController {
       scannedWood.value = activities.length.toString();
 
       // Calculate trend
-      int recentScans = activities
-          .where((activity) =>
-              activity.timestamp != null &&
-              activity.timestamp!
-                  .isAfter(DateTime.now().subtract(Duration(days: 7))))
-          .length;
+      int recentScans = 0;
+      for (var activity in activities) {
+        if (activity.timestamp
+            .isAfter(DateTime.now().subtract(Duration(days: 7)))) {
+          recentScans++;
+        }
+      }
       scanStatTrend.value = "$recentScans pemindaian minggu ini";
 
       // Generate scanning spots for chart with dates
@@ -424,15 +448,13 @@ class TPKDashboardController extends GetxController {
 
       // Aggregate scans by date
       for (var activity in activities) {
-        if (activity.timestamp != null) {
-          DateTime date = DateTime(
-            activity.timestamp!.year,
-            activity.timestamp!.month,
-            activity.timestamp!.day,
-          );
-          if (date.isAfter(now.subtract(Duration(days: 7)))) {
-            scansByDate[date] = (scansByDate[date] ?? 0) + 1;
-          }
+        DateTime date = DateTime(
+          activity.timestamp.year,
+          activity.timestamp.month,
+          activity.timestamp.day,
+        );
+        if (date.isAfter(now.subtract(Duration(days: 7)))) {
+          scansByDate[date] = (scansByDate[date] ?? 0) + 1;
         }
       }
 

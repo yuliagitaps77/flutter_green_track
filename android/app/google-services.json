@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "244149195560",
-    "project_id": "greentrack-cadangan",
-    "storage_bucket": "greentrack-cadangan.firebasestorage.app"
+    "project_number": "204040363624",
+    "project_id": "green-track-firebase",
+    "storage_bucket": "green-track-firebase.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:244149195560:android:5ca9323c71cc178503761d",
+        "mobilesdk_app_id": "1:204040363624:android:d1eac929bb79c2b9f0a5dd",
         "android_client_info": {
           "package_name": "com.app.green_track"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCNNPj9B7mBAZu0TucGaSIdjzOMbQWYh_4"
+          "current_key": "AIzaSyB-3_z5GgssuG38XTOBXSwFraLPjHSlF7U"
         }
       ],
       "services": {
