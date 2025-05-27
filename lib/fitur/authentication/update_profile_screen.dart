@@ -71,17 +71,24 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
 
   Future<void> _updateProfile() async {
     // Validate name field
-    Get.snackbar(
-      'Sukses',
-      'Profil berhasil diperbarui',
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.BOTTOM,
-    );
     if (_nameController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = 'Nama tidak boleh kosong';
+        _errorMessage = 'Nama lengkap tidak boleh kosong';
       });
+      Get.snackbar(
+        'Validasi',
+        'Nama lengkap tidak boleh kosong',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+        margin: EdgeInsets.all(10),
+        borderRadius: 10,
+        icon: Icon(Icons.error_outline, color: Colors.white),
+        isDismissible: true,
+        dismissDirection: DismissDirection.horizontal,
+        forwardAnimationCurve: Curves.easeOutBack,
+      );
       return;
     }
 
@@ -121,20 +128,68 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
         photoUrl: photoUrl,
       );
 
+      setState(() {
+        _isSaving = false;
+      });
+
+      // Show success snackbar
       Get.snackbar(
         'Sukses',
         'Profil berhasil diperbarui',
         backgroundColor: Colors.green,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 2),
+        margin: EdgeInsets.all(10),
+        borderRadius: 10,
+        icon: Icon(Icons.check_circle_outline, color: Colors.white),
+        shouldIconPulse: true,
+        isDismissible: true,
+        dismissDirection: DismissDirection.horizontal,
+        forwardAnimationCurve: Curves.easeOutBack,
+        mainButton: TextButton(
+          onPressed: () {
+            Get.back();
+            Future.delayed(Duration(milliseconds: 500), () {
+              Get.back();
+            });
+          },
+          child: Text(
+            'OK',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
       );
-
-      Get.back();
     } catch (e) {
       setState(() {
         _errorMessage = 'Gagal memperbarui profil: ${e.toString()}';
         _isSaving = false;
+        _isUploading = false;
       });
+
+      // Show error snackbar
+      Get.snackbar(
+        'Error',
+        'Gagal memperbarui profil: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: Duration(seconds: 3),
+        margin: EdgeInsets.all(10),
+        borderRadius: 10,
+        icon: Icon(Icons.error_outline, color: Colors.white),
+        shouldIconPulse: true,
+        isDismissible: true,
+        dismissDirection: DismissDirection.horizontal,
+        forwardAnimationCurve: Curves.easeOutBack,
+        mainButton: TextButton(
+          onPressed: () => Get.back(),
+          child: Text(
+            'OK',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
     }
   }
 
@@ -573,8 +628,9 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: _isSaving ? null : _updateProfile,
-                  child: _isUploading
+                  onPressed:
+                      (_isSaving || _isUploading) ? null : _updateProfile,
+                  child: (_isSaving || _isUploading)
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
