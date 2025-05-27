@@ -77,8 +77,10 @@ class PenyemaianDashboardController extends GetxController {
 
   // Firestore subscription
   StreamSubscription<QuerySnapshot>? _bibitSubscription;
-  StreamSubscription<DocumentSnapshot>? _dashboardSubscription;
   Timer? _debounceTimer;
+
+  // Add new subscription for activities
+  StreamSubscription<QuerySnapshot>? _activitiesSubscription;
 
   @override
   void onInit() {
@@ -87,16 +89,13 @@ class PenyemaianDashboardController extends GetxController {
     initUserData();
     fetchGrowthData();
     _setupBibitListener();
-    // Listen to AppController's recentActivities changes
-    ever(appController.recentActivities, (_) {
-      calculateScanningStatistics();
-    });
+    _setupActivitiesListener();
   }
 
   @override
   void onClose() {
     _bibitSubscription?.cancel();
-    _dashboardSubscription?.cancel();
+    _activitiesSubscription?.cancel();
     _debounceTimer?.cancel();
     super.onClose();
   }
@@ -110,6 +109,55 @@ class PenyemaianDashboardController extends GetxController {
       print('🔄 Bibit collection changed, refreshing dashboard data...');
       _debouncedRefresh();
     });
+  }
+
+  void _setupActivitiesListener() {
+    print('🔄 [ACTIVITIES] Setting up real-time listener...');
+    _activitiesSubscription?.cancel();
+
+    final currentUser = authController.currentUser.value;
+    if (currentUser == null) return;
+
+    _activitiesSubscription = FirebaseFirestore.instance
+        .collection('aktivitas')
+        .where('id_user', isEqualTo: currentUser.id)
+        .where('nama_aktivitas', isEqualTo: 'Scan Barcode')
+        .snapshots()
+        .listen((snapshot) {
+      print('📡 [ACTIVITIES] Received real-time update');
+      _processActivitiesSnapshot(snapshot);
+    }, onError: (error) {
+      print('❌ [ACTIVITIES] Error in real-time listener: $error');
+    });
+  }
+
+  void _processActivitiesSnapshot(QuerySnapshot snapshot) {
+    print(
+        '🔄 [ACTIVITIES] Processing snapshot with ${snapshot.docs.length} documents');
+    try {
+      // Update local activities list
+      final activities = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return UserActivity(
+          id: doc.id,
+          userId: data['id_user'] ?? '',
+          activityType: ActivityTypes.scanBarcode,
+          timestamp:
+              (data['tanggal_waktu'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          description: data['nama_aktivitas'] ?? '',
+          userRole: 'admin_penyemaian',
+        );
+      }).toList();
+
+      // Update appController's activities
+      appController.recentActivities.value = activities;
+
+      // Recalculate statistics
+      calculateScanningStatistics();
+      print('✅ [ACTIVITIES] Activities processed and statistics updated');
+    } catch (e) {
+      print('❌ [ACTIVITIES] Error processing activities: $e');
+    }
   }
 
   void _debouncedRefresh() {
@@ -375,62 +423,40 @@ class PenyemaianDashboardController extends GetxController {
   Future<void> fetchDashboardData() async {
     if (currentUserId == null) return;
 
+    isLoading.value = true;
     try {
-      // Cancel existing subscription if any
-      _dashboardSubscription?.cancel();
+      // Fetch dashboard data directly from collections
+      final dashboardData =
+          await _firebaseService.getPenyemaianDashboardData(currentUserId!);
 
-      // Set up real-time listener for dashboard data
-      _dashboardSubscription = FirebaseFirestore.instance
-          .collection('dashboard_penyemaian')
-          .doc(currentUserId)
-          .snapshots()
-          .listen((snapshot) {
-        isLoading.value = true;
-        try {
-          if (snapshot.exists) {
-            final dashboardData = snapshot.data() as Map<String, dynamic>;
+      if (dashboardData.isNotEmpty) {
+        // Format numbers with commas if needed
+        totalBibit.value = _formatNumber(dashboardData['total_bibit'] ?? 0);
+        bibitSiapTanam.value =
+            _formatNumber(dashboardData['bibit_siap_tanam'] ?? 0);
+        bibitButuhPerhatian.value =
+            _formatNumber(dashboardData['butuh_perhatian'] ?? 0);
+        bibitDipindai.value =
+            _formatNumber(dashboardData['total_bibit_dipindai'] ?? 0);
 
-            // Format numbers with commas if needed
-            totalBibit.value = _formatNumber(dashboardData['total_bibit'] ?? 0);
-            bibitSiapTanam.value =
-                _formatNumber(dashboardData['bibit_siap_tanam'] ?? 0);
-            bibitButuhPerhatian.value =
-                _formatNumber(dashboardData['butuh_perhatian'] ?? 0);
-            bibitDipindai.value =
-                _formatNumber(dashboardData['total_bibit_dipindai'] ?? 0);
-
-            // Calculate growth if available
-            if (dashboardData['previous_total_bibit'] != null &&
-                dashboardData['previous_total_bibit'] > 0) {
-              final current = dashboardData['total_bibit'] ?? 0;
-              final previous = dashboardData['previous_total_bibit'] ?? 1;
-              final growth = ((current - previous) / previous) * 100;
-              bibitMasukTrend.value = "${growth.toStringAsFixed(1)}%";
-            } else {
-              bibitMasukTrend.value = "0%";
-            }
-
-            // Update chart data if needed
-            updateChartData();
-          } else {
-            // If document doesn't exist, reset values to default
-            totalBibit.value = "0";
-            bibitSiapTanam.value = "0";
-            bibitButuhPerhatian.value = "0";
-            bibitDipindai.value = "0";
-            bibitMasukTrend.value = "0%";
-          }
-        } catch (e) {
-          print('Error processing dashboard data: $e');
-        } finally {
-          isLoading.value = false;
+        // Calculate growth if available
+        if (dashboardData['previous_total_bibit'] != null &&
+            dashboardData['previous_total_bibit'] > 0) {
+          final current = dashboardData['total_bibit'] ?? 0;
+          final previous = dashboardData['previous_total_bibit'] ?? 1;
+          final growth = ((current - previous) / previous) * 100;
+          bibitMasukTrend.value = "${growth.toStringAsFixed(1)}%";
+        } else {
+          bibitMasukTrend.value = "0%";
         }
-      }, onError: (error) {
-        print('Error in dashboard stream: $error');
-        isLoading.value = false;
-      });
+      }
+
+      // Update chart data if needed
+      updateChartData();
     } catch (e) {
-      print('Error setting up dashboard listener: $e');
+      print('Error fetching dashboard data: $e');
+      // Handle error appropriately
+    } finally {
       isLoading.value = false;
     }
   }
@@ -479,8 +505,12 @@ class PenyemaianDashboardController extends GetxController {
 
   Future<void> calculateScanningStatistics() async {
     try {
+      print('🔄 [SCAN] Calculating scanning statistics...');
       final currentUser = authController.currentUser.value;
-      if (currentUser == null) return;
+      if (currentUser == null) {
+        print('❌ [SCAN] No current user found');
+        return;
+      }
 
       // Get scan activities for current user
       List<UserActivity> scanActivities = appController.recentActivities
@@ -489,10 +519,12 @@ class PenyemaianDashboardController extends GetxController {
               activity.activityType == ActivityTypes.scanBarcode)
           .toList();
 
-      // Update total scans and ensure it's formatted with commas
+      print('📊 [SCAN] Found ${scanActivities.length} scan activities');
+
+      // Update total scans with proper formatting
       bibitDipindai.value = _formatNumber(scanActivities.length);
 
-      // Calculate trend
+      // Calculate trend for last 7 days
       int recentScans = scanActivities
           .where((activity) =>
               activity.timestamp != null &&
@@ -535,16 +567,49 @@ class PenyemaianDashboardController extends GetxController {
       }
       scannedSpots.value = spots;
 
-      // Update Firestore dashboard data to keep it in sync
-      await FirebaseFirestore.instance
+      // Update Firestore dashboard data
+      final dashboardRef = FirebaseFirestore.instance
           .collection('dashboard_penyemaian')
-          .doc(currentUser.id)
-          .update({
-        'total_bibit_dipindai': scanActivities.length,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
+          .doc(currentUser.id);
+
+      try {
+        // First check if document exists
+        final docSnapshot = await dashboardRef.get();
+
+        if (!docSnapshot.exists) {
+          // Create new document with initial data
+          await dashboardRef.set({
+            'total_bibit_dipindai': scanActivities.length,
+            'created_at': FieldValue.serverTimestamp(),
+            'updated_at': FieldValue.serverTimestamp(),
+            'user_id': currentUser.id,
+            'total_bibit': 0,
+            'bibit_siap_tanam': 0,
+            'butuh_perhatian': 0,
+          });
+          print(
+              '✅ [SCAN] Created new dashboard document for user ${currentUser.id}');
+        } else {
+          // Update existing document
+          await dashboardRef.update({
+            'total_bibit_dipindai': scanActivities.length,
+            'updated_at': FieldValue.serverTimestamp(),
+          });
+          print(
+              '✅ [SCAN] Updated existing dashboard document for user ${currentUser.id}');
+        }
+      } catch (e) {
+        print('❌ [SCAN] Error updating Firestore: $e');
+        // Don't throw the error, just log it and continue
+      }
+
+      print('✅ [SCAN] Scanning statistics updated successfully');
     } catch (e) {
-      print('Error calculating scanning statistics: $e');
+      print('❌ [SCAN] Error calculating scanning statistics: $e');
+      // Set default values in case of error
+      bibitDipindai.value = "0";
+      scanStatTrend.value = "0 pemindaian minggu ini";
+      scannedSpots.value = List.generate(7, (i) => FlSpot(i.toDouble(), 0));
     }
   }
 

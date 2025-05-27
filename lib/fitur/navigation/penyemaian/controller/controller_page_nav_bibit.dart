@@ -5,6 +5,7 @@ import 'package:flutter_green_track/fitur/navigation/penyemaian/model/model_bibi
 import 'package:flutter_green_track/fitur/scan_penyemaian/detail_halaman_scan.dart';
 import 'package:get/get.dart';
 import 'package:flutter_green_track/controllers/dashboard_pneyemaian/barcode_controller.dart';
+import 'package:flutter_green_track/controllers/dashboard_pneyemaian/dashboard_penyemaian_controller.dart';
 
 class BibitController extends GetxController {
   final RxList<Bibit> _bibitList = <Bibit>[].obs;
@@ -58,7 +59,9 @@ class BibitController extends GetxController {
 
       if (bibit != null) {
         Get.to(() => DetailPage(barcodeId: barcodeResult));
-        AppController.to.recordActivity(
+
+        // Record activity and update dashboard
+        await AppController.to.recordActivity(
             activityType: ActivityTypes.scanBarcode,
             name: "${bibit.namaBibit} | ${bibit.jenisBibit}",
             metadata: {
@@ -95,6 +98,12 @@ class BibitController extends GetxController {
                 'device': 'mobile',
               }
             });
+
+        // Get the dashboard controller and update statistics
+        final dashboardController = Get.find<PenyemaianDashboardController>();
+        await dashboardController.calculateScanningStatistics();
+
+        print('✅ [SCAN] Dashboard statistics updated after scan');
       } else {
         Get.snackbar(
           'Informasi',

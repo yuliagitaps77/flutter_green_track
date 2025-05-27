@@ -461,15 +461,6 @@ class TPKDashboardController extends GetxController {
             FlSpot(i.toDouble(), scansByDate[sortedDates[i]]?.toDouble() ?? 0));
       }
       revenueSpots.value = spots;
-
-      // Update Firestore dashboard data to keep it in sync
-      await FirebaseFirestore.instance
-          .collection('dashboard_tpk')
-          .doc(currentUser.uid)
-          .update({
-        'total_kayu_dipindai': activities.length,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
     } catch (e) {
       print('Error calculating scanning statistics: $e');
     }
