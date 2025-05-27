@@ -79,6 +79,10 @@ class TPKDashboardController extends GetxController {
     initActions();
     initUserData();
     setupRealtimeListeners();
+    // Listen to AppController's recentActivities changes
+    ever(AppController.to.recentActivities, (_) {
+      calculateScanningStatistics();
+    });
   }
 
   void setupRealtimeListeners() {
@@ -91,15 +95,6 @@ class TPKDashboardController extends GetxController {
         .snapshots()
         .listen((snapshot) {
       calculateWoodStatistics();
-    });
-
-    // Listen to scan history changes
-    FirebaseFirestore.instance
-        .collectionGroup('riwayat_scan')
-        .where('id_user', isEqualTo: currentUser.uid)
-        .snapshots()
-        .listen((snapshot) {
-      calculateScanningStatistics();
     });
   }
 
@@ -422,8 +417,8 @@ class TPKDashboardController extends GetxController {
               activity.activityType == ActivityTypes.scanPohon)
           .toList();
 
-      // Update total scans
-      scannedWood.value = activities.length.toString();
+      // Update total scans and ensure it's formatted with commas
+      scannedWood.value = _formatNumber(activities.length);
 
       // Calculate trend
       int recentScans = 0;
@@ -466,6 +461,15 @@ class TPKDashboardController extends GetxController {
             FlSpot(i.toDouble(), scansByDate[sortedDates[i]]?.toDouble() ?? 0));
       }
       revenueSpots.value = spots;
+
+      // Update Firestore dashboard data to keep it in sync
+      await FirebaseFirestore.instance
+          .collection('dashboard_tpk')
+          .doc(currentUser.uid)
+          .update({
+        'total_kayu_dipindai': activities.length,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       print('Error calculating scanning statistics: $e');
     }
@@ -692,11 +696,12 @@ class TPKDashboardController extends GetxController {
       final QuerySnapshot woodSnapshot =
           await FirebaseFirestore.instance.collection('kayu').get();
 
-      // Get scanning data
-      final QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
-          .collectionGroup('riwayat_scan')
-          .where('id_user', isEqualTo: currentUser.uid)
-          .get();
+      // Get scan activities from AppController
+      final activities = AppController.to.recentActivities
+          .where((activity) =>
+              activity.userId == currentUser.uid &&
+              activity.activityType == ActivityTypes.scanPohon)
+          .toList();
 
       // Calculate totals
       int totalWoodCount = 0;
@@ -713,7 +718,7 @@ class TPKDashboardController extends GetxController {
 
       // Update observable values
       totalWood.value = totalWoodCount.toString();
-      scannedWood.value = scanSnapshot.docs.length.toString();
+      scannedWood.value = activities.length.toString();
       totalBatch.value = uniqueBatches.length.toString();
 
       // Update chart data
@@ -741,12 +746,12 @@ class TPKDashboardController extends GetxController {
           .orderBy('created_at', descending: true)
           .get();
 
-      // Get scanning data
-      final QuerySnapshot scanSnapshot = await FirebaseFirestore.instance
-          .collectionGroup('riwayat_scan')
-          .where('id_user', isEqualTo: currentUser.uid)
-          .orderBy('timestamp', descending: true)
-          .get();
+      // Get scan activities from AppController
+      final activities = AppController.to.recentActivities
+          .where((activity) =>
+              activity.userId == currentUser.uid &&
+              activity.activityType == ActivityTypes.scanPohon)
+          .toList();
 
       // Create maps to store aggregated data
       Map<DateTime, int> woodByDate = {};
@@ -785,15 +790,12 @@ class TPKDashboardController extends GetxController {
 
       // Aggregate scan data
       int scansLastWeek = 0;
-      for (var doc in scanSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
-
-        if (timestamp != null && timestamp.isAfter(startDate)) {
+      for (var activity in activities) {
+        if (activity.timestamp.isAfter(startDate)) {
           final normalizedDate = DateTime(
-            timestamp.year,
-            timestamp.month,
-            timestamp.day,
+            activity.timestamp.year,
+            activity.timestamp.month,
+            activity.timestamp.day,
           );
           scansByDate[normalizedDate] = (scansByDate[normalizedDate] ?? 0) + 1;
           scansLastWeek++;

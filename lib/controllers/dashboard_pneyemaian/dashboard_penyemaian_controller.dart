@@ -87,6 +87,10 @@ class PenyemaianDashboardController extends GetxController {
     initUserData();
     fetchGrowthData();
     _setupBibitListener();
+    // Listen to AppController's recentActivities changes
+    ever(appController.recentActivities, (_) {
+      calculateScanningStatistics();
+    });
   }
 
   @override
@@ -485,8 +489,8 @@ class PenyemaianDashboardController extends GetxController {
               activity.activityType == ActivityTypes.scanBarcode)
           .toList();
 
-      // Update total scans
-      bibitDipindai.value = scanActivities.length.toString();
+      // Update total scans and ensure it's formatted with commas
+      bibitDipindai.value = _formatNumber(scanActivities.length);
 
       // Calculate trend
       int recentScans = scanActivities
@@ -530,6 +534,15 @@ class PenyemaianDashboardController extends GetxController {
             FlSpot(i.toDouble(), scansByDate[sortedDates[i]]?.toDouble() ?? 0));
       }
       scannedSpots.value = spots;
+
+      // Update Firestore dashboard data to keep it in sync
+      await FirebaseFirestore.instance
+          .collection('dashboard_penyemaian')
+          .doc(currentUser.id)
+          .update({
+        'total_bibit_dipindai': scanActivities.length,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       print('Error calculating scanning statistics: $e');
     }
