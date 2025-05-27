@@ -34,7 +34,7 @@ class _PenyemaianHistoryPageState extends State<PenyemaianHistoryPage> {
 
   // For pagination
   final int itemsPerPage = 20;
-  bool isLoading = false;
+  bool isLoading = true; // Set initial loading to true
   bool hasMoreData = true;
 
   @override
@@ -49,12 +49,16 @@ class _PenyemaianHistoryPageState extends State<PenyemaianHistoryPage> {
       isLoading = true;
     });
 
-    // Sync with Firestore to get latest activities
-    await appController.syncActivitiesFromFirestore(limit: 50);
-
-    setState(() {
-      isLoading = false;
-    });
+    try {
+      // Sync with Firestore to get latest activities
+      await appController.syncActivitiesFromFirestore(refresh: true);
+    } catch (e) {
+      print('Error loading initial data: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   List<UserActivity> _getFilteredActivities() {
@@ -230,9 +234,38 @@ class _PenyemaianHistoryPageState extends State<PenyemaianHistoryPage> {
 
               if (isLoading) {
                 return Center(
-                  child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFE8F5E9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Memuat Aktivitas...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF757575),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Mohon tunggu sebentar',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF9E9E9E),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }
@@ -271,6 +304,29 @@ class _PenyemaianHistoryPageState extends State<PenyemaianHistoryPage> {
                           color: Color(0xFF9E9E9E),
                         ),
                       ),
+                      SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          setState(() {
+                            isLoading = true;
+                          });
+                          await appController.refreshActivities();
+                          setState(() {
+                            isLoading = false;
+                          });
+                        },
+                        icon: Icon(Icons.refresh, color: Colors.white),
+                        label: Text('Refresh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF4CAF50),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -279,7 +335,15 @@ class _PenyemaianHistoryPageState extends State<PenyemaianHistoryPage> {
               return Container(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: RefreshIndicator(
-                  onRefresh: _loadInitialData,
+                  onRefresh: () async {
+                    setState(() {
+                      isLoading = true;
+                    });
+                    await appController.refreshActivities();
+                    setState(() {
+                      isLoading = false;
+                    });
+                  },
                   color: Color(0xFF4CAF50),
                   child: ListView.builder(
                     itemCount: activities.length,
@@ -344,7 +408,7 @@ class _TPKHistoryPageState extends State<TPKHistoryPage> {
     });
 
     // Sync with Firestore to get latest activities
-    await appController.syncActivitiesFromFirestore(limit: 50);
+    await appController.syncActivitiesFromFirestore(refresh: true);
 
     setState(() {
       isLoading = false;
@@ -522,8 +586,9 @@ class _TPKHistoryPageState extends State<TPKHistoryPage> {
           Expanded(
             child: Obx(() {
               final activities = _getFilteredActivities();
+              final appController = Get.find<AppController>();
 
-              if (isLoading) {
+              if (appController.isLoadingMore.value && activities.isEmpty) {
                 return Center(
                   child: CircularProgressIndicator(
                     valueColor:
@@ -574,21 +639,46 @@ class _TPKHistoryPageState extends State<TPKHistoryPage> {
               return Container(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: RefreshIndicator(
-                  onRefresh: _loadInitialData,
+                  onRefresh: () => appController.refreshActivities(),
                   color: Color(0xFF4CAF50),
-                  child: ListView.builder(
-                    itemCount: activities.length,
-                    physics: BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    itemBuilder: (context, index) {
-                      final activity = activities[index];
-                      return ActivityListItem(
-                        activity: activity,
-                        isFirst: index == 0,
-                        isLast: index == activities.length - 1,
-                        color: Color(0xFF4CAF50),
-                      );
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification scrollInfo) {
+                      if (scrollInfo.metrics.pixels ==
+                          scrollInfo.metrics.maxScrollExtent) {
+                        if (!appController.isLoadingMore.value &&
+                            appController.hasMoreData.value) {
+                          appController.loadMoreActivities();
+                        }
+                      }
+                      return true;
                     },
+                    child: ListView.builder(
+                      itemCount: activities.length +
+                          (appController.hasMoreData.value ? 1 : 0),
+                      physics: BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      itemBuilder: (context, index) {
+                        if (index == activities.length) {
+                          return Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF4CAF50)),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final activity = activities[index];
+                        return ActivityListItem(
+                          activity: activity,
+                          isFirst: index == 0,
+                          isLast: index == activities.length - 1,
+                          color: Color(0xFF4CAF50),
+                        );
+                      },
+                    ),
                   ),
                 ),
               );

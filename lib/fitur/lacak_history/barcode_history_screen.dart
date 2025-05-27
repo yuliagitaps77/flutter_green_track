@@ -60,7 +60,9 @@ class _BarcodeScanHistoryScreenState extends State<BarcodeScanHistoryScreen> {
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
-              appController.syncActivitiesFromFirestore(limit: 50).then((_) {
+              appController
+                  .syncActivitiesFromFirestore(refresh: true)
+                  .then((_) {
                 _loadScanActivities();
               });
             },
@@ -69,7 +71,7 @@ class _BarcodeScanHistoryScreenState extends State<BarcodeScanHistoryScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await appController.syncActivitiesFromFirestore(limit: 50);
+          await appController.syncActivitiesFromFirestore(refresh: true);
           _loadScanActivities();
         },
         child: _isLoading

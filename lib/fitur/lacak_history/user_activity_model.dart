@@ -54,37 +54,47 @@ class FirestoreActivityService {
 
   // Mengambil aktivitas dari Firestore berdasarkan user ID
   Future<List<UserActivity>> getActivitiesForUserFromFirestore(String userId,
-      {int limit = 20}) async {
+      {int limit = 20, DocumentSnapshot? lastDocument}) async {
     try {
-      final QuerySnapshot snapshot = await _activitiesCollection
-          .where('userId', isEqualTo: userId)
+      Query query = _activitiesCollection
           .orderBy('timestamp', descending: true)
-          .limit(limit)
-          .get();
+          .limit(limit);
 
-      return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      // If we have a last document, start after it
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
 
-        // Konversi Timestamp ke DateTime
-        DateTime timestamp;
-        if (data['timestamp'] is Timestamp) {
-          timestamp = (data['timestamp'] as Timestamp).toDate();
-        } else {
-          timestamp = DateTime.now(); // Fallback
-        }
+      final QuerySnapshot snapshot = await query.get();
 
-        return UserActivity(
-          id: data['id'],
-          userId: data['userId'],
-          userRole: data['userRole'],
-          activityType: data['activityType'],
-          description: data['description'],
-          targetId: data['targetId'],
-          icon: data['icon'],
-          metadata: data['metadata'],
-          timestamp: timestamp,
-        );
-      }).toList();
+      // Filter and map activities on client side
+      return snapshot.docs
+          .map((doc) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+            // Konversi Timestamp ke DateTime
+            DateTime timestamp;
+            if (data['timestamp'] is Timestamp) {
+              timestamp = (data['timestamp'] as Timestamp).toDate();
+            } else {
+              timestamp = DateTime.now(); // Fallback
+            }
+
+            return UserActivity(
+              id: data['id'],
+              userId: data['userId'],
+              userRole: data['userRole'],
+              activityType: data['activityType'],
+              description: data['description'],
+              targetId: data['targetId'],
+              icon: data['icon'],
+              metadata: data['metadata'],
+              timestamp: timestamp,
+            );
+          })
+          .where((activity) =>
+              activity.userId == userId) // Filter by userId on client
+          .toList();
     } catch (e) {
       print('Error getting activities from Firestore: $e');
       return [];
@@ -227,8 +237,20 @@ class AppController extends GetxController {
   // Observable list of recent activities
   final recentActivities = <UserActivity>[].obs;
 
+  // Pagination related properties
+  final isLoadingMore = false.obs;
+  final hasMoreData = true.obs;
+  DocumentSnapshot? lastDocument;
+  final int pageSize = 10;
+
+  // Cache related properties
+  final String cacheKey = 'cached_activities';
+  final String lastSyncKey = 'last_sync_timestamp';
+  final Duration cacheValidity =
+      Duration(minutes: 5); // Cache valid for 5 minutes
+
   // Maximum number of activities to store locally
-  final int maxStoredActivities = 100;
+  final int maxStoredActivities = 50;
 
   // Storage key for activities
   final String storageKey = 'user_activities';
@@ -239,6 +261,10 @@ class AppController extends GetxController {
   // Firestore Activity Service
   final FirestoreActivityService _firestoreActivityService =
       FirestoreActivityService();
+
+  // Get Firestore collection reference
+  CollectionReference get _activitiesCollection =>
+      FirebaseFirestore.instance.collection('activities');
 
   // Map of description templates by activity type
   final Map<String, String> _activityDescriptions = {
@@ -285,13 +311,59 @@ class AppController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
     // Get user from auth controller
     final authController = Get.find<AuthenticationController>();
     currentUser = authController.currentUser;
 
-    // Load stored activities
-    loadActivities();
+    // Load cached activities first and then sync if needed
+    loadCachedActivities().then((_) {
+      // If no activities in cache or activities list is empty, sync from Firestore
+      if (recentActivities.isEmpty) {
+        syncActivitiesFromFirestore(refresh: true);
+      }
+    });
+  }
+
+  // Load cached activities
+  Future<void> loadCachedActivities() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(cacheKey);
+      final lastSync = prefs.getInt(lastSyncKey);
+
+      if (cachedData != null && lastSync != null) {
+        final lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSync);
+        final now = DateTime.now();
+
+        // Check if cache is still valid
+        if (now.difference(lastSyncTime) < cacheValidity) {
+          final List<dynamic> decoded = jsonDecode(cachedData);
+          final activities =
+              decoded.map((item) => UserActivity.fromJson(item)).toList();
+          recentActivities.assignAll(activities);
+          return;
+        }
+      }
+
+      // If no cache or cache expired, load from storage
+      await loadActivities();
+    } catch (e) {
+      print('Error loading cached activities: $e');
+      await loadActivities();
+    }
+  }
+
+  // Save activities to cache
+  Future<void> saveToCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final activitiesJson = jsonEncode(
+          recentActivities.map((activity) => activity.toJson()).toList());
+      await prefs.setString(cacheKey, activitiesJson);
+      await prefs.setInt(lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving to cache: $e');
+    }
   }
 
   // Load activities from local storage
@@ -451,36 +523,54 @@ class AppController extends GetxController {
     return recentActivities.take(limit).toList();
   }
 
-  // Sync activities from Firestore
-  Future<void> syncActivitiesFromFirestore({int limit = 20}) async {
+  // Sync activities from Firestore with caching
+  Future<void> syncActivitiesFromFirestore({bool refresh = false}) async {
     if (currentUser.value == null) return;
 
     try {
-      // Get user activities from Firestore
-      final firestoreActivities = await _firestoreActivityService
-          .getActivitiesForUserFromFirestore(currentUser.value!.id,
-              limit: limit);
+      // Check if we need to refresh based on cache
+      if (!refresh) {
+        final prefs = await SharedPreferences.getInstance();
+        final lastSync = prefs.getInt(lastSyncKey);
+        if (lastSync != null) {
+          final lastSyncTime = DateTime.fromMillisecondsSinceEpoch(lastSync);
+          final now = DateTime.now();
+          if (now.difference(lastSyncTime) < cacheValidity) {
+            // Cache is still valid, no need to sync
+            return;
+          }
+        }
+      }
+
+      // Reset pagination if refreshing
+      if (refresh) {
+        lastDocument = null;
+        hasMoreData.value = true;
+        recentActivities.clear();
+      }
+
+      if (!hasMoreData.value || isLoadingMore.value) return;
+
+      isLoadingMore.value = true;
+
+      // Get user activities from Firestore with pagination
+      final firestoreActivities =
+          await _firestoreActivityService.getActivitiesForUserFromFirestore(
+        currentUser.value!.id,
+        limit: pageSize,
+        lastDocument: lastDocument,
+      );
 
       if (firestoreActivities.isNotEmpty) {
-        // Merge with local activities (avoid duplicates by ID)
-        final Map<String, UserActivity> activityMap = {};
+        // Update last document for next pagination
+        lastDocument =
+            await _activitiesCollection.doc(firestoreActivities.last.id).get();
 
-        // Add local activities to map
-        for (var activity in recentActivities) {
-          activityMap[activity.id] = activity;
-        }
+        // Add new activities to the list
+        recentActivities.addAll(firestoreActivities);
 
-        // Add or update with Firestore activities
-        for (var activity in firestoreActivities) {
-          activityMap[activity.id] = activity;
-        }
-
-        // Convert back to list and sort
-        final List<UserActivity> mergedActivities = activityMap.values.toList();
-        mergedActivities.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-        // Update observable list
-        recentActivities.assignAll(mergedActivities);
+        // Check if we have more data
+        hasMoreData.value = firestoreActivities.length >= pageSize;
 
         // Trim if necessary
         if (recentActivities.length > maxStoredActivities) {
@@ -488,12 +578,32 @@ class AppController extends GetxController {
               maxStoredActivities, recentActivities.length);
         }
 
-        // Save to local storage
-        await saveActivities();
+        // Save to cache and local storage
+        await Future.wait([
+          saveToCache(),
+          saveActivities(),
+        ]);
+      } else {
+        hasMoreData.value = false;
       }
     } catch (e) {
       print('Error syncing activities from Firestore: $e');
+      hasMoreData.value = false;
+    } finally {
+      isLoadingMore.value = false;
     }
+  }
+
+  // Load more activities when scrolling
+  Future<void> loadMoreActivities() async {
+    if (!isLoadingMore.value && hasMoreData.value) {
+      await syncActivitiesFromFirestore();
+    }
+  }
+
+  // Refresh activities
+  Future<void> refreshActivities() async {
+    await syncActivitiesFromFirestore(refresh: true);
   }
 
   // Clear all activities
